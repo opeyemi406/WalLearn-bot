@@ -180,9 +180,10 @@ export class WalrusClient {
   /**
    * Polls Walrus relayer for job status to retrieve the on-chain blob_id
    */
-  private async pollJobCompletion(jobId: string, maxAttempts = 6) {
+  private async pollJobCompletion(jobId: string, maxAttempts = 8) {
+    const delays = [1500, 2000, 2500, 3000, 4000, 5000, 5000, 5000];
     for (let i = 0; i < maxAttempts; i++) {
-      await new Promise((r) => setTimeout(r, 4000)); // check every 4 seconds
+      await new Promise((r) => setTimeout(r, delays[i] || 3000));
       try {
         const path = `/api/remember/${jobId}`;
         const headers = await this.signRequest("GET", path, "");

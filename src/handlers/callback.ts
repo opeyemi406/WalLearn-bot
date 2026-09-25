@@ -72,8 +72,28 @@ export async function handleCallback(ctx: Context) {
     // Incorrect answer — trigger Walrus Memory write
     const misconception = q.traps?.[selectedOpt] || `Chose ${selectedOpt} instead of ${q.correct}`;
 
-    // Write to Walrus immediately
-    const rememberResult = await walrus.remember(
+    let text = `❌ *INCORRECT*\n━━━━━━━━━━━━━━━━━━━\n\n`;
+    text += `• *Your Choice:* ${selectedOpt}. ${q.options[selectedOpt]}\n`;
+    text += `• *Correct Answer:* ${q.correct}. ${q.options[q.correct]}\n\n`;
+    text += `⚠️ *Misconception Diagnosis:*\n_${misconception}_\n\n`;
+    text += `💡 *Flashcard Fact:*\n${q.fact}\n\n`;
+    text += `━━━━━━━━━━━━━━━━━━━\n`;
+    text += `🧠 *Walrus Mainnet Persistence:*\n`;
+    text += `• *Topic:* \`${q.topic}\`\n`;
+    text += `• *Status:* ⏳ Storing on Walrus Protocol...\n`;
+    text += `• *On-Chain Account:* [View on Suiscan](${explorerLink})\n`;
+
+    const keyboard = new InlineKeyboard().text("Next Question ➡️", "next_q");
+
+    // Instantly display answer & explanation to student (< 50ms)
+    await ctx.editMessageText(text, {
+      parse_mode: "Markdown",
+      reply_markup: keyboard,
+      link_preview_options: { is_disabled: true },
+    }).catch(() => {});
+
+    // Commit to Walrus Protocol concurrently in the background
+    walrus.remember(
       {
         topic: q.topic,
         question: q.stem,
@@ -83,28 +103,20 @@ export async function handleCallback(ctx: Context) {
         misses: 1,
       },
       session.subject
-    );
-
-    let text = `❌ *INCORRECT*\n━━━━━━━━━━━━━━━━━━━\n\n`;
-    text += `• *Your Choice:* ${selectedOpt}. ${q.options[selectedOpt]}\n`;
-    text += `• *Correct Answer:* ${q.correct}. ${q.options[q.correct]}\n\n`;
-    text += `⚠️ *Misconception Diagnosis:*\n_${misconception}_\n\n`;
-    text += `💡 *Flashcard Fact:*\n${q.fact}\n\n`;
-    text += `━━━━━━━━━━━━━━━━━━━\n`;
-    text += `🧠 *Persisted to Walrus Mainnet:*\n`;
-    text += `• *Topic:* \`${q.topic}\`\n`;
-    text += `• *Status:* ✅ Encrypted & Stored to Memory\n`;
-    if (rememberResult.jobId) {
-      text += `• *Job ID:* \`${rememberResult.jobId}\`\n`;
-    }
-    text += `• *On-Chain Account:* [View on Suiscan](${explorerLink})\n`;
-
-    const keyboard = new InlineKeyboard().text("Next Question ➡️", "next_q");
-
-    await ctx.editMessageText(text, {
-      parse_mode: "Markdown",
-      reply_markup: keyboard,
-      link_preview_options: { is_disabled: true },
-    }).catch(() => {});
+    ).then((res) => {
+      if (res.jobId) {
+        const updatedText = text.replace(
+          "• *Status:* ⏳ Storing on Walrus Protocol...",
+          `• *Status:* ✅ Encrypted & Stored to Memory\n• *Job ID:* \`${res.jobId}\``
+        );
+        ctx.editMessageText(updatedText, {
+          parse_mode: "Markdown",
+          reply_markup: keyboard,
+          link_preview_options: { is_disabled: true },
+        }).catch(() => {});
+      }
+    }).catch((err) => {
+      console.error("Background remember write error:", err);
+    });
   }
 }
