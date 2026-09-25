@@ -3,8 +3,8 @@ import { config } from "../config.js";
 import { walrus } from "../walrus/client.js";
 
 export async function handleLedger(ctx: Context) {
+  const ledger = await walrus.getLedger();
   const health = await walrus.getHealth();
-  const ledger = walrus.getLedger();
 
   const explorerLink = `https://suiscan.xyz/mainnet/object/${config.walrusAccountId}`;
 

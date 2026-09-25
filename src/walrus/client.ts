@@ -342,6 +342,7 @@ export class WalrusClient {
       status = "offline";
     }
 
+    this.loadLedger();
     const confirmedCount = this.localLedger.filter((r) => r.blobId).length;
 
     return {
@@ -353,7 +354,35 @@ export class WalrusClient {
     };
   }
 
-  getLedger(): StoredBlobRecord[] {
+  async getLedger(): Promise<StoredBlobRecord[]> {
+    this.loadLedger();
+
+    // Check if any job needs confirmation from the relayer
+    const pendingWithJob = this.localLedger.filter((r) => r.jobId && !r.blobId);
+    if (pendingWithJob.length > 0) {
+      for (const record of pendingWithJob) {
+        try {
+          const path = `/api/remember/${record.jobId}`;
+          const headers = await this.signRequest("GET", path, "");
+          const res = await fetch(`${RELAYER_URL}${path}`, {
+            method: "GET",
+            headers,
+          });
+
+          if (res.ok) {
+            const data = (await res.json()) as { status?: string; blob_id?: string };
+            if (data.status === "done" && data.blob_id) {
+              record.blobId = data.blob_id;
+              record.status = "confirmed";
+            }
+          }
+        } catch {
+          // ignore transient poll errors
+        }
+      }
+      this.saveLedger();
+    }
+
     return this.localLedger;
   }
 }
