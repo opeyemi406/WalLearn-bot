@@ -26,18 +26,17 @@ export async function handleChatMessage(ctx: Context) {
     const profile = setUserSubject(chatId, text);
 
     const keyboard = new InlineKeyboard()
-      .text("🎯 Start Drill Now", "start_drill")
+      .text("⚡ 5 Questions", "start_quiz_5")
+      .text("🎯 10 Questions", "start_quiz_10")
       .row()
-      .text("📊 View Briefing", "view_briefing")
+      .text("🔥 20 Questions", "start_quiz_20")
       .text("📎 Attach Slides Guide", "upload_guide");
 
     let response = `✅ *Active Course Set:* *${profile.subjectDisplay}*\n`;
     response += `⛓️ *Walrus Protocol Namespace:* \`${profile.subjectCode}\`\n\n`;
-    response += `*What would you like to do next?*\n`;
-    response += `1️⃣ *Start a Drill:* Tap below or type \`/study\` to begin a 5-question cold drill.\n`;
-    response += `2️⃣ *Attach Slides:* Drop any lecture slide or notes PDF directly into this chat to generate questions tailored specifically to your syllabus!\n`;
-    response += `3️⃣ *Ask a Question:* Type any academic question or concept here for personalized tutoring holding you accountable to your mistake history.\n\n`;
-    response += `_Ready when you are!_`;
+    response += `🎯 *Choose your study mode below:*\n`;
+    response += `• *Select question count* to start drilling immediately.\n`;
+    response += `• *Attach a lecture slide PDF* anytime to generate a quiz specifically from your lecture notes!\n`;
 
     await ctx.reply(response, {
       parse_mode: "Markdown",

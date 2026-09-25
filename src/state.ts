@@ -52,7 +52,13 @@ function saveProfiles(profiles: Map<number, UserProfile>) {
   }
 }
 
+export interface PendingSlide {
+  text: string;
+  fileName: string;
+}
+
 export const sessions = new Map<number, QuizSession>();
+export const pendingSlides = new Map<number, PendingSlide>();
 const userProfiles = loadProfiles();
 export const awaitingSubject = new Set<number>();
 

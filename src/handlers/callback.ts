@@ -11,6 +11,12 @@ export async function handleCallback(ctx: Context) {
 
   await ctx.answerCallbackQuery().catch(() => {});
 
+  if (data.startsWith("start_quiz_")) {
+    const count = parseInt(data.replace("start_quiz_", ""), 10) || 5;
+    const { startQuizWithCount } = await import("./study.js");
+    return startQuizWithCount(ctx, count);
+  }
+
   if (data === "start_drill") {
     const { handleStudy } = await import("./study.js");
     return handleStudy(ctx);

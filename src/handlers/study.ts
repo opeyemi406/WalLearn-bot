@@ -5,6 +5,7 @@ import {
   getUserSubject,
   getUserSubjectDisplay,
   sessions,
+  pendingSlides,
   QuizSession,
   Question,
   awaitingSubject,
@@ -34,8 +35,51 @@ Before we begin your drill, please reply with your *Course Code* and *Course Tit
     return;
   }
 
+  // Check if user specified a number directly in the command (e.g., /study 10)
+  const text = ctx.message?.text || "";
+  const match = text.match(/^\/study\s*(\d+)/i);
+  if (match) {
+    const requestedCount = parseInt(match[1], 10);
+    const validCount = Math.min(Math.max(requestedCount, 3), 30);
+    return startQuizWithCount(ctx, validCount);
+  }
+
+  const subjectDisplay = getUserSubjectDisplay(chatId);
+  const pending = pendingSlides.get(chatId);
+
+  const keyboard = new InlineKeyboard()
+    .text("⚡ 5 Questions (Sprint)", "start_quiz_5")
+    .text("🎯 10 Questions (Standard)", "start_quiz_10")
+    .row()
+    .text("🔥 20 Questions (Exam Mode)", "start_quiz_20");
+
+  let msg = `📚 *Course:* *${subjectDisplay}*\n`;
+  if (pending) {
+    msg += `📎 *Attached Slide:* _"${pending.fileName}"_\n`;
+  }
+  msg += `\n🎯 *How many questions would you like to drill?*\n`;
+  msg += `Select an option below or type e.g. \`/study 10\`:\n\n`;
+  if (!pending) {
+    msg += `_💡 Optional: You can attach a lecture slide PDF anytime to quiz from specific slide topics!_`;
+  }
+
+  await ctx.reply(msg, {
+    parse_mode: "Markdown",
+    reply_markup: keyboard,
+  });
+}
+
+export async function startQuizWithCount(ctx: Context, count: number) {
+  const chatId = ctx.chat?.id;
+  if (!chatId) return;
+
   const subjectCode = getUserSubject(chatId);
   const subjectDisplay = getUserSubjectDisplay(chatId);
+  const pending = pendingSlides.get(chatId);
+
+  let materialDesc = pending
+    ? `lecture slides "${pending.fileName}"`
+    : `curriculum benchmarks for ${subjectDisplay}`;
 
   const statusMsg = await ctx.reply(
     `🧠 _Recalling your past mistakes from Walrus for ${subjectDisplay}..._`,
@@ -43,10 +87,13 @@ Before we begin your drill, please reply with your *Course Code* and *Course Tit
   );
 
   try {
-    // 2. Cold recall weakness briefing from Walrus
+    // 1. Cold recall weakness briefing from Walrus
     const briefing = await walrus.getWeaknessBriefing(subjectCode);
 
-    let briefingNotice = `🎯 *Starting Study Drill: ${subjectDisplay}*\n`;
+    let briefingNotice = `🎯 *Starting ${count}-Question Drill: ${subjectDisplay}*\n`;
+    if (pending) {
+      briefingNotice += `📎 *Source:* _"${pending.fileName}"_\n`;
+    }
     if (briefing.weaknesses.length > 0) {
       briefingNotice += `_Recalled ${briefing.weaknesses.length} active weak topics from Walrus Mainnet. Applying 60/30/10 drill ratio..._\n`;
     } else {
@@ -56,16 +103,16 @@ Before we begin your drill, please reply with your *Course Code* and *Course Tit
     await ctx.api.editMessageText(
       chatId,
       statusMsg.message_id,
-      briefingNotice + "\n⏳ _Generating CBT questions via Gemini 3.5 Flash..._",
+      briefingNotice + `\n⏳ _Generating ${count} questions via Gemini 3.5 Flash..._`,
       { parse_mode: "Markdown" }
     );
 
-    // 3. Call Gemini to generate questions
-    const prompt = buildQuizGeneratorPrompt(
-      `Core curriculum and exam benchmarks for university course ${subjectDisplay} (Code: ${subjectCode.toUpperCase()}).`,
-      briefing,
-      5
-    );
+    // 2. Build prompt with slide text or course description
+    const materialSource = pending
+      ? pending.text
+      : `Core curriculum and past question benchmarks for university level ${subjectDisplay} (Code: ${subjectCode.toUpperCase()}).`;
+
+    const prompt = buildQuizGeneratorPrompt(materialSource, briefing, count);
 
     const rawResponse = await askAi([
       {
@@ -84,7 +131,7 @@ Before we begin your drill, please reply with your *Course Code* and *Course Tit
       throw new Error("No questions parsed from AI response.");
     }
 
-    // 4. Initialize session
+    // 3. Initialize session
     const session: QuizSession = {
       subject: subjectCode,
       questions,
@@ -94,15 +141,18 @@ Before we begin your drill, please reply with your *Course Code* and *Course Tit
     };
     sessions.set(chatId, session);
 
-    // 5. Send first question
+    // Clean up pending slide once used for quiz
+    pendingSlides.delete(chatId);
+
+    // 4. Send first question
     await ctx.api.deleteMessage(chatId, statusMsg.message_id).catch(() => {});
     await sendQuestion(ctx, session);
   } catch (error) {
-    console.error("Error in handleStudy:", error);
+    console.error("Error in startQuizWithCount:", error);
     await ctx.api.editMessageText(
       chatId,
       statusMsg.message_id,
-      "⚠️ Failed to generate quiz. Please try again with /study."
+      `⚠️ Failed to generate ${count}-question quiz. Please try again with /study.`
     );
   }
 }
