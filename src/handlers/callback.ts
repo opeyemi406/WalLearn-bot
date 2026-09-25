@@ -45,11 +45,6 @@ export async function handleCallback(ctx: Context) {
     return;
   }
 
-  if (data === "clear_session") {
-    const { handleClear } = await import("./clear.js");
-    return handleClear(ctx);
-  }
-
   if (data === "main_menu") {
     const { handleStart } = await import("./start.js");
     return handleStart(ctx);
