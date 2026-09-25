@@ -67,7 +67,9 @@ _Reply with your course code & title or drop your slide PDF to begin!_`;
     .text("📊 Briefing", "view_briefing")
     .row()
     .text("🔄 Change Course", "change_subject")
-    .text("📎 Attach Slides Guide", "upload_guide");
+    .text("📎 Attach Slides Guide", "upload_guide")
+    .row()
+    .text("🧹 Clear Session", "clear_session");
 
   await ctx.reply(welcomeMessage, {
     parse_mode: "Markdown",
