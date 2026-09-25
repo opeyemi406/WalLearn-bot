@@ -16,55 +16,59 @@ export async function handleStart(ctx: Context) {
   const currentSubjectDisplay = getUserSubjectDisplay(chatId);
   const currentSubjectCode = getUserSubject(chatId);
 
-  if (!isConfigured) {
-    // First-time user onboarding
-    awaitingSubject.add(chatId);
+  const accountShort = `${config.walrusAccountId.slice(0, 10)}...${config.walrusAccountId.slice(-8)}`;
 
-    const onboardingMsg = `🎓 *Welcome to WalLearn!*
-_The AI study chatbot with permanent memory on Walrus Protocol._
+  let welcomeMessage = `🎓 *Welcome to WalLearn!*
+_The study chatbot that never lets you fail the same question twice._
 
-Most AI study tools suffer from amnesia. WalLearn permanently records every mistake and misconception you make on **Walrus Mainnet**, so your future study sessions drill your weakest points first.
+Most AI study tools suffer from amnesia. WalLearn gives your study prep *permanent memory on Walrus Protocol*. Every mistake you make is diagnosed and written to Walrus Mainnet, so future sessions drill your weakest points first.
 
 ━━━━━━━━━━━━━━━━━━━
-📚 *Step 1: What course or subject are you studying?*
+⛓️ *Permanent Memory Engine:*
+• *Storage:* Walrus Protocol (Mainnet)
+• *On-Chain Account:* \`${accountShort}\`
+• *Active Subject:* *${isConfigured ? currentSubjectDisplay : "Not Set Yet ⚠️"}*
+• *Model:* \`${config.aiModel}\`
+━━━━━━━━━━━━━━━━━━━
 
-Please reply to this message with your *Course Code* and *Course Title*, for example:
+🚀 *How to use:*
+1️⃣ *Upload Lecture Slides:* Send any PDF or notes file directly into this chat to generate a personalized CBT quiz.
+2️⃣ *Cold Drill:* Type \`/study\` to recall your past mistakes and drill your weakest topics.
+3️⃣ *Check Memory:* Type \`/briefing\` to view your top unresolved misconceptions.
+4️⃣ *Verify On-Chain:* Type \`/ledger\` to see all blobs persisted to Walrus.
+5️⃣ *Switch Subject:* Type \`/subject <code - title>\` (e.g., \`/subject BCH201 - Biochemistry\` or \`/subject CSC302 - OS\`).
+`;
+
+  if (!isConfigured) {
+    awaitingSubject.add(chatId);
+
+    welcomeMessage += `
+━━━━━━━━━━━━━━━━━━━
+📚 *Step 1: Set your active course/subject*
+Please reply to this message with your *Course Code* and *Course Title by the side*, for example:
 👉 \`BCH201 - General Biochemistry\`
 👉 \`CSC302 - Operating Systems\`
 👉 \`PCL301 - Clinical Pharmacokinetics\`
 
 📎 *Step 2: Have lecture slides or notes?*
-You can attach any lecture slide PDF or notes document directly to this chat to generate a personalized CBT quiz grounded in your syllabus!
+Attach any lecture slide PDF or notes document directly to this chat to generate a personalized CBT quiz grounded in your syllabus!
 ━━━━━━━━━━━━━━━━━━━
 
-_Reply with your course code and title below to begin!_`;
+_Reply with your course code & title or drop your slide PDF to begin!_`;
 
-    await ctx.reply(onboardingMsg, { parse_mode: "Markdown" });
+    await ctx.reply(welcomeMessage, { parse_mode: "Markdown" });
     return;
   }
 
-  // Returning user screen
+  // Returning user with subject set
+  welcomeMessage += `\n_Ready? Drop a lecture slide PDF or type /study to begin!_`;
+
   const keyboard = new InlineKeyboard()
     .text("🎯 Start Drill (/study)", "start_drill")
     .text("📊 Briefing", "view_briefing")
     .row()
     .text("🔄 Change Course", "change_subject")
     .text("📎 Attach Slides Guide", "upload_guide");
-
-  const welcomeMessage = `🎓 *Welcome back to WalLearn!*
-
-━━━━━━━━━━━━━━━━━━━
-📚 *Active Course:* *${currentSubjectDisplay}*
-⛓️ *Walrus Namespace:* \`${currentSubjectCode}\`
-🤖 *AI Engine:* \`${config.aiModel}\`
-━━━━━━━━━━━━━━━━━━━
-
-🚀 *Quick Actions:*
-• *Take a Drill:* Tap below or type \`/study\` to recall your Walrus mistakes and quiz yourself.
-• *Attach Slides:* Drop any PDF slide or past question document to quiz from your exact course material.
-• *Review Weaknesses:* Type \`/briefing\` to see your top unresolved misconceptions.
-• *Verify On-Chain:* Type \`/ledger\` to inspect your confirmed Walrus Mainnet blobs.
-• *Switch Course:* Type \`/subject <code - title>\` or tap below.`;
 
   await ctx.reply(welcomeMessage, {
     parse_mode: "Markdown",
