@@ -6,24 +6,34 @@ import {
   hasUserSubject,
   setUserSubject,
   awaitingSubject,
+  sessions,
 } from "../state.js";
 import { askAi } from "../ai/client.js";
 import { buildTutorPrompt } from "../ai/prompts.js";
+import { evaluateAndRespondAnswer } from "./callback.js";
 
 export async function handleChatMessage(ctx: Context) {
   const chatId = ctx.chat?.id;
-  const text = ctx.message?.text?.trim();
-  if (!chatId || !text) return;
+  const rawText = ctx.message?.text?.trim();
+  if (!chatId || !rawText) return;
 
   // Skip commands
-  if (text.startsWith("/")) return;
+  if (rawText.startsWith("/")) return;
 
-  // 1. Check if we are waiting for the user to set their course or if they typed a course format
+  // 1. Check if user typed an answer choice (A, B, C, or D) for an active quiz
+  const activeSession = sessions.get(chatId);
+  const letterMatch = rawText.match(/^(?:option|choice)?\s*([a-d])(?:\b|\.|\))/i);
+  if (activeSession && letterMatch) {
+    const selectedOpt = letterMatch[1].toUpperCase();
+    return evaluateAndRespondAnswer(ctx, activeSession.currentIndex, selectedOpt, activeSession, true);
+  }
+
+  // 2. Check if we are waiting for the user to set their course or if they typed a course format
   const isAwaiting = awaitingSubject.has(chatId) || !hasUserSubject(chatId);
-  const looksLikeCourse = /^[a-zA-Z]{2,5}\s*\d{2,4}/i.test(text);
+  const looksLikeCourse = /^[a-zA-Z]{2,5}\s*\d{2,4}/i.test(rawText);
 
   if (isAwaiting || looksLikeCourse) {
-    const profile = setUserSubject(chatId, text);
+    const profile = setUserSubject(chatId, rawText);
 
     const keyboard = new InlineKeyboard()
       .text("⚡ 5 Questions", "start_quiz_5")
@@ -45,7 +55,14 @@ export async function handleChatMessage(ctx: Context) {
     return;
   }
 
-  // 2. Freeform AI tutor chat with cold recall of past mistakes
+  // 3. Check if user expressed intent to study or take a quiz
+  const isStudyIntent = /^(quiz|study|start|drill|test|test me|quiz me|start quiz|start drill|practice|questions)/i.test(rawText);
+  if (isStudyIntent) {
+    const { handleStudy } = await import("./study.js");
+    return handleStudy(ctx);
+  }
+
+  // 4. Freeform AI tutor chat with cold recall of past mistakes
   const subjectCode = getUserSubject(chatId);
   const subjectDisplay = getUserSubjectDisplay(chatId);
 
@@ -53,11 +70,11 @@ export async function handleChatMessage(ctx: Context) {
 
   try {
     // Cold recall memories related to the user's message & subject
-    const memories = await walrus.recall(`${text} in ${subjectCode}`, subjectCode);
+    const memories = await walrus.recall(`${rawText} in ${subjectCode}`, subjectCode);
 
     // Build tutor prompt with past mistakes context
     const prompt = buildTutorPrompt(
-      `Course: ${subjectDisplay}\nStudent Question: ${text}`,
+      `Course: ${subjectDisplay}\nStudent Question: ${rawText}`,
       memories
     );
 
@@ -70,9 +87,27 @@ export async function handleChatMessage(ctx: Context) {
       { role: "user", content: prompt },
     ]);
 
-    await ctx.reply(response, { parse_mode: "Markdown" }).catch(async () => {
+    // Check if the response contains multiple-choice choices
+    const hasOptions = /\bA\b[\).:]/i.test(response) && /\bB\b[\).:]/i.test(response);
+    let replyKeyboard: InlineKeyboard | undefined = undefined;
+
+    if (hasOptions) {
+      replyKeyboard = new InlineKeyboard()
+        .text("A", "start_drill")
+        .text("B", "start_drill")
+        .row()
+        .text("C", "start_drill")
+        .text("D", "start_drill")
+        .row()
+        .text("🎯 Start Interactive CBT Drill (/study)", "start_drill");
+    }
+
+    await ctx.reply(response, {
+      parse_mode: "Markdown",
+      reply_markup: replyKeyboard,
+    }).catch(async () => {
       // Fallback if markdown parsing fails
-      await ctx.reply(response);
+      await ctx.reply(response, { reply_markup: replyKeyboard });
     });
   } catch (error) {
     console.error("Error in handleChatMessage:", error);

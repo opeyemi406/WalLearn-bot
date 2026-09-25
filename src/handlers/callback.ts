@@ -1,5 +1,5 @@
 import { Context, InlineKeyboard } from "grammy";
-import { sessions } from "../state.js";
+import { sessions, QuizSession } from "../state.js";
 import { walrus } from "../walrus/client.js";
 import { config } from "../config.js";
 import { sendQuestion } from "./quiz-helper.js";
@@ -31,7 +31,7 @@ export async function handleCallback(ctx: Context) {
     const { awaitingSubject } = await import("../state.js");
     awaitingSubject.add(chatId);
     await ctx.reply(
-      `📚 Please reply with your new *Course Code* and *Course Title by the side*, for example:\n👉 \`BCH201 - General Biochemistry\`\n👉 \`CSC302 - Operating Systems\`\n👉 \`PCL301 - Clinical Pharmacokinetics\``,
+      `📚 Please reply with your new *Course Code* and *Course Title by the side*, for example:\n👉 \`BCH201 - General Biochemistry\`\n👉 \`CSC302 - Operating Systems\`\n👉 \`PCL301 - Clinical Pharmacokinetics\`\n\n• Attach a lecture slide PDF anytime to generate a quiz specifically from your lecture notes!`,
       { parse_mode: "Markdown" }
     );
     return;
@@ -39,7 +39,7 @@ export async function handleCallback(ctx: Context) {
 
   if (data === "upload_guide") {
     await ctx.reply(
-      `📎 *How to Quiz from Your Slides:*\n\n1️⃣ Tap the 📎 attachment icon in Telegram.\n2️⃣ Select your lecture slide PDF or class notes.\n3️⃣ Send it to this chat!\n\nWalLearn will instantly extract the high-yield concepts and blend them with your Walrus mistake history to build a personalized 5-question exam drill.`,
+      `📎 *How to Quiz from Your Slides:*\n\n1️⃣ Tap the 📎 attachment icon in Telegram.\n2️⃣ Select your lecture slide PDF or class notes.\n3️⃣ Send it to this chat!\n\nWalLearn will instantly extract the high-yield concepts and blend them with your Walrus mistake history to build a personalized exam drill.`,
       { parse_mode: "Markdown" }
     );
     return;
@@ -84,31 +84,42 @@ export async function handleCallback(ctx: Context) {
     return;
   }
 
+  await evaluateAndRespondAnswer(ctx, qIndex, selectedOpt, session, false);
+}
+
+export async function evaluateAndRespondAnswer(
+  ctx: Context,
+  qIndex: number,
+  selectedOpt: string,
+  session: QuizSession,
+  isTextReply = false
+) {
   const q = session.questions[qIndex];
   if (!q) return;
 
-  const isCorrect = selectedOpt === q.correct;
+  const isCorrect = selectedOpt.toUpperCase() === q.correct.toUpperCase();
   const explorerLink = `https://suiscan.xyz/mainnet/object/${config.walrusAccountId}`;
 
   if (isCorrect) {
     session.score++;
     let text = `✅ *CORRECT!*\n\n`;
-    text += `*Your choice:* ${selectedOpt}. ${q.options[selectedOpt]}\n\n`;
+    text += `*Your choice:* ${selectedOpt}. ${q.options[selectedOpt] || ""}\n\n`;
     text += `💡 *Key Concept:* ${q.fact}\n`;
 
     const keyboard = new InlineKeyboard().text("Next Question ➡️", "next_q");
 
-    await ctx.editMessageText(text, {
-      parse_mode: "Markdown",
-      reply_markup: keyboard,
-    }).catch(() => {});
+    if (isTextReply) {
+      await ctx.reply(text, { parse_mode: "Markdown", reply_markup: keyboard }).catch(() => {});
+    } else {
+      await ctx.editMessageText(text, { parse_mode: "Markdown", reply_markup: keyboard }).catch(() => {});
+    }
   } else {
     // Incorrect answer — trigger Walrus Memory write
     const misconception = q.traps?.[selectedOpt] || `Chose ${selectedOpt} instead of ${q.correct}`;
 
     let text = `❌ *INCORRECT*\n━━━━━━━━━━━━━━━━━━━\n\n`;
-    text += `• *Your Choice:* ${selectedOpt}. ${q.options[selectedOpt]}\n`;
-    text += `• *Correct Answer:* ${q.correct}. ${q.options[q.correct]}\n\n`;
+    text += `• *Your Choice:* ${selectedOpt}. ${q.options[selectedOpt] || ""}\n`;
+    text += `• *Correct Answer:* ${q.correct}. ${q.options[q.correct] || ""}\n\n`;
     text += `⚠️ *Misconception Diagnosis:*\n_${misconception}_\n\n`;
     text += `💡 *Flashcard Fact:*\n${q.fact}\n\n`;
     text += `━━━━━━━━━━━━━━━━━━━\n`;
@@ -119,20 +130,28 @@ export async function handleCallback(ctx: Context) {
 
     const keyboard = new InlineKeyboard().text("Next Question ➡️", "next_q");
 
-    // Instantly display answer & explanation to student (< 50ms)
-    await ctx.editMessageText(text, {
-      parse_mode: "Markdown",
-      reply_markup: keyboard,
-      link_preview_options: { is_disabled: true },
-    }).catch(() => {});
+    let sentMsg: any = null;
+    if (isTextReply) {
+      sentMsg = await ctx.reply(text, {
+        parse_mode: "Markdown",
+        reply_markup: keyboard,
+        link_preview_options: { is_disabled: true },
+      }).catch(() => {});
+    } else {
+      await ctx.editMessageText(text, {
+        parse_mode: "Markdown",
+        reply_markup: keyboard,
+        link_preview_options: { is_disabled: true },
+      }).catch(() => {});
+    }
 
     // Commit to Walrus Protocol concurrently in the background
     walrus.remember(
       {
         topic: q.topic,
         question: q.stem,
-        my_error: `Chose option ${selectedOpt}: ${q.options[selectedOpt]} (${misconception})`,
-        correct: `${q.correct}. ${q.options[q.correct]} — ${q.fact}`,
+        my_error: `Chose option ${selectedOpt}: ${q.options[selectedOpt] || ""} (${misconception})`,
+        correct: `${q.correct}. ${q.options[q.correct] || ""} — ${q.fact}`,
         severity: "high",
         misses: 1,
       },
@@ -143,11 +162,19 @@ export async function handleCallback(ctx: Context) {
           "• *Status:* ⏳ Storing on Walrus Protocol...",
           `• *Status:* ✅ Encrypted & Stored to Memory\n• *Job ID:* \`${res.jobId}\``
         );
-        ctx.editMessageText(updatedText, {
-          parse_mode: "Markdown",
-          reply_markup: keyboard,
-          link_preview_options: { is_disabled: true },
-        }).catch(() => {});
+        if (isTextReply && sentMsg && ctx.chat) {
+          ctx.api.editMessageText(ctx.chat.id, sentMsg.message_id, updatedText, {
+            parse_mode: "Markdown",
+            reply_markup: keyboard,
+            link_preview_options: { is_disabled: true },
+          }).catch(() => {});
+        } else {
+          ctx.editMessageText(updatedText, {
+            parse_mode: "Markdown",
+            reply_markup: keyboard,
+            link_preview_options: { is_disabled: true },
+          }).catch(() => {});
+        }
       }
     }).catch((err) => {
       console.error("Background remember write error:", err);

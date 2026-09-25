@@ -70,6 +70,11 @@ ${recalledMemories || "No previous mistake records found."}
 ## STUDENT'S QUESTION:
 ${userMessage}
 
-Respond directly. If their question relates to any topic they previously missed in Walrus memory, reference their past confusion explicitly so they see their pattern. Keep explanations concise and high-yield.
+Respond directly as an academic tutor.
+
+CRITICAL FORMATTING RULES:
+1. Do NOT output full multiple-choice questions with choices A, B, C, D in this chat response. Quizzes are handled by WalLearn's interactive CBT engine with clickable buttons.
+2. If the student asks to be tested, quizzed, or drilled, explain the key concept briefly and guide them to use /study for the interactive button drill.
+3. If they are asking about a concept, explain it clearly and reference any previous errors from their Walrus memory.
 `;
 }
