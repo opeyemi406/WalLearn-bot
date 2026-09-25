@@ -1,7 +1,15 @@
 import { Context } from "grammy";
 import { parsePdfBuffer } from "../ai/slide-parser.js";
 import { walrus } from "../walrus/client.js";
-import { getUserSubject, sessions, QuizSession, Question } from "../state.js";
+import {
+  getUserSubject,
+  getUserSubjectDisplay,
+  hasUserSubject,
+  setUserSubject,
+  sessions,
+  QuizSession,
+  Question,
+} from "../state.js";
 import { askAi } from "../ai/client.js";
 import { buildQuizGeneratorPrompt } from "../ai/prompts.js";
 import { sendQuestion } from "./quiz-helper.js";
@@ -45,14 +53,33 @@ export async function handleDocument(ctx: Context) {
       return;
     }
 
-    const subject = getUserSubject(chatId);
+    const hasSubject = hasUserSubject(chatId);
+    let subjectCode = getUserSubject(chatId);
+    let subjectDisplay = getUserSubjectDisplay(chatId);
+
+    if (!hasSubject) {
+      const match = fileName.match(/([a-zA-Z]{2,5}\s*\d{2,4})/i);
+      if (match) {
+        const autoProfile = setUserSubject(chatId, `${match[1]} - ${fileName.replace(/\.pdf$/i, "")}`);
+        subjectCode = autoProfile.subjectCode;
+        subjectDisplay = autoProfile.subjectDisplay;
+      } else {
+        const cleanName = fileName.replace(/\.pdf$/i, "").replace(/[_-]/g, " ");
+        const autoProfile = setUserSubject(chatId, cleanName);
+        subjectCode = autoProfile.subjectCode;
+        subjectDisplay = autoProfile.subjectDisplay;
+      }
+    }
 
     // 3. Recall Walrus weaknesses to blend into the quiz
-    const briefing = await walrus.getWeaknessBriefing(subject);
+    const briefing = await walrus.getWeaknessBriefing(subjectCode);
 
-    await ctx.api.editMessageText(chatId, statusMsg.message_id, `🧠 _Generating 5 high-yield CBT questions grounded in your slides..._`, {
-      parse_mode: "Markdown",
-    });
+    await ctx.api.editMessageText(
+      chatId,
+      statusMsg.message_id,
+      `🧠 _Generating 5 high-yield CBT questions for ${subjectDisplay} grounded in your slides..._`,
+      { parse_mode: "Markdown" }
+    );
 
     // 4. Generate questions with Gemini
     const prompt = buildQuizGeneratorPrompt(slideText, briefing, 5);
@@ -71,7 +98,7 @@ export async function handleDocument(ctx: Context) {
 
     // 5. Store session and start quiz
     const session: QuizSession = {
-      subject,
+      subject: subjectCode,
       questions,
       currentIndex: 0,
       score: 0,

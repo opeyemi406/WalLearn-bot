@@ -11,6 +11,34 @@ export async function handleCallback(ctx: Context) {
 
   await ctx.answerCallbackQuery().catch(() => {});
 
+  if (data === "start_drill") {
+    const { handleStudy } = await import("./study.js");
+    return handleStudy(ctx);
+  }
+
+  if (data === "view_briefing") {
+    const { handleBriefing } = await import("./briefing.js");
+    return handleBriefing(ctx);
+  }
+
+  if (data === "change_subject") {
+    const { awaitingSubject } = await import("../state.js");
+    awaitingSubject.add(chatId);
+    await ctx.reply(
+      `📚 Please reply with your new *Course Code* and *Course Title by the side*, for example:\n👉 \`BCH201 - General Biochemistry\`\n👉 \`CSC302 - Operating Systems\`\n👉 \`PCL301 - Clinical Pharmacokinetics\``,
+      { parse_mode: "Markdown" }
+    );
+    return;
+  }
+
+  if (data === "upload_guide") {
+    await ctx.reply(
+      `📎 *How to Quiz from Your Slides:*\n\n1️⃣ Tap the 📎 attachment icon in Telegram.\n2️⃣ Select your lecture slide PDF or class notes.\n3️⃣ Send it to this chat!\n\nWalLearn will instantly extract the high-yield concepts and blend them with your Walrus mistake history to build a personalized 5-question exam drill.`,
+      { parse_mode: "Markdown" }
+    );
+    return;
+  }
+
   if (data.startsWith("next_q")) {
     const session = sessions.get(chatId);
     if (!session) {

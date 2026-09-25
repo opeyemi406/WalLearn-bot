@@ -1,29 +1,30 @@
 import { Context } from "grammy";
 import { walrus } from "../walrus/client.js";
-import { getUserSubject } from "../state.js";
+import { getUserSubject, getUserSubjectDisplay } from "../state.js";
 
 export async function handleBriefing(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  const subject = getUserSubject(chatId);
-  const statusMsg = await ctx.reply(`🔍 _Querying Walrus Memory for ${subject.toUpperCase()}..._`, { parse_mode: "Markdown" });
+  const subjectCode = getUserSubject(chatId);
+  const subjectDisplay = getUserSubjectDisplay(chatId);
+  const statusMsg = await ctx.reply(`🔍 _Querying Walrus Memory for ${subjectDisplay}..._`, { parse_mode: "Markdown" });
 
   try {
-    const briefing = await walrus.getWeaknessBriefing(subject);
+    const briefing = await walrus.getWeaknessBriefing(subjectCode);
 
     if (briefing.weaknesses.length === 0) {
       await ctx.api.editMessageText(
         chatId,
         statusMsg.message_id,
-        `📊 *WalLearn Weakness Briefing*\nSubject: *${subject.toUpperCase()}*\n\n✅ *Zero unresolved mistakes found on Walrus!* You either haven't missed any questions yet, or you've mastered them all.\n\nSend a lecture slide PDF or type /study to test yourself.`,
+        `📊 *WalLearn Weakness Briefing*\nCourse: *${subjectDisplay}*\n\n✅ *Zero unresolved mistakes found on Walrus!* You either haven't missed any questions yet, or you've mastered them all.\n\nSend a lecture slide PDF or type /study to test yourself.`,
         { parse_mode: "Markdown" }
       );
       return;
     }
 
     let report = `📊 *WalLearn Weakness Briefing (Cold Recall)*\n`;
-    report += `Subject: *${subject.toUpperCase()}* | Tracked Mistakes: *${briefing.total_mistakes}*\n`;
+    report += `Course: *${subjectDisplay}* | Tracked Mistakes: *${briefing.total_mistakes}*\n`;
     report += `━━━━━━━━━━━━━━━━━━━\n\n`;
     report += `⚠️ *Top Unresolved Misconceptions (Ranked):*\n`;
 

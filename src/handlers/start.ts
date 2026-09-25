@@ -1,38 +1,75 @@
-import { Context } from "grammy";
+import { Context, InlineKeyboard } from "grammy";
 import { config } from "../config.js";
-import { getUserSubject, setUserSubject } from "../state.js";
+import {
+  hasUserSubject,
+  getUserSubject,
+  getUserSubjectDisplay,
+  setUserSubject,
+  awaitingSubject,
+} from "../state.js";
 
 export async function handleStart(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  const currentSubject = getUserSubject(chatId);
+  const isConfigured = hasUserSubject(chatId);
+  const currentSubjectDisplay = getUserSubjectDisplay(chatId);
+  const currentSubjectCode = getUserSubject(chatId);
 
-  const welcomeMessage = `
-🎓 *Welcome to WalLearn!*
-_The study chatbot that never lets you fail the same question twice._
+  if (!isConfigured) {
+    // First-time user onboarding
+    awaitingSubject.add(chatId);
 
-Most AI study tools suffer from amnesia. WalLearn gives your study prep *permanent memory on Walrus Protocol*. Every mistake you make is diagnosed and written to Walrus Mainnet, so future sessions drill your weakest points first.
+    const onboardingMsg = `🎓 *Welcome to WalLearn!*
+_The AI study chatbot with permanent memory on Walrus Protocol._
+
+Most AI study tools suffer from amnesia. WalLearn permanently records every mistake and misconception you make on **Walrus Mainnet**, so your future study sessions drill your weakest points first.
 
 ━━━━━━━━━━━━━━━━━━━
-⛓️ *Permanent Memory Engine:*
-• *Storage:* Walrus Protocol (Mainnet)
-• *On-Chain Account:* \`${config.walrusAccountId.slice(0, 10)}...${config.walrusAccountId.slice(-8)}\`
-• *Active Subject:* \`${currentSubject.toUpperCase()}\`
-• *Model:* \`${config.aiModel}\`
+📚 *Step 1: What course or subject are you studying?*
+
+Please reply to this message with your *Course Code* and *Course Title*, for example:
+👉 \`BCH201 - General Biochemistry\`
+👉 \`CSC302 - Operating Systems\`
+👉 \`PCL301 - Clinical Pharmacokinetics\`
+
+📎 *Step 2: Have lecture slides or notes?*
+You can attach any lecture slide PDF or notes document directly to this chat to generate a personalized CBT quiz grounded in your syllabus!
 ━━━━━━━━━━━━━━━━━━━
 
-🚀 *How to use:*
-1️⃣ *Upload Lecture Slides:* Send any PDF or notes file directly into this chat to generate a personalized CBT quiz.
-2️⃣ *Cold Drill:* Type \`/study\` to recall your past mistakes and drill your weakest topics.
-3️⃣ *Check Memory:* Type \`/briefing\` to view your top unresolved misconceptions.
-4️⃣ *Verify On-Chain:* Type \`/ledger\` to see all blobs persisted to Walrus.
-5️⃣ *Switch Subject:* Type \`/subject <tag>\` (e.g., \`/subject pcl301\` or \`/subject csc201\`).
+_Reply with your course code and title below to begin!_`;
 
-_Ready? Drop a lecture slide PDF or type /study to begin!_
-`;
+    await ctx.reply(onboardingMsg, { parse_mode: "Markdown" });
+    return;
+  }
 
-  await ctx.reply(welcomeMessage, { parse_mode: "Markdown" });
+  // Returning user screen
+  const keyboard = new InlineKeyboard()
+    .text("🎯 Start Drill (/study)", "start_drill")
+    .text("📊 Briefing", "view_briefing")
+    .row()
+    .text("🔄 Change Course", "change_subject")
+    .text("📎 Attach Slides Guide", "upload_guide");
+
+  const welcomeMessage = `🎓 *Welcome back to WalLearn!*
+
+━━━━━━━━━━━━━━━━━━━
+📚 *Active Course:* *${currentSubjectDisplay}*
+⛓️ *Walrus Namespace:* \`${currentSubjectCode}\`
+🤖 *AI Engine:* \`${config.aiModel}\`
+━━━━━━━━━━━━━━━━━━━
+
+🚀 *Quick Actions:*
+• *Take a Drill:* Tap below or type \`/study\` to recall your Walrus mistakes and quiz yourself.
+• *Attach Slides:* Drop any PDF slide or past question document to quiz from your exact course material.
+• *Review Weaknesses:* Type \`/briefing\` to see your top unresolved misconceptions.
+• *Verify On-Chain:* Type \`/ledger\` to inspect your confirmed Walrus Mainnet blobs.
+• *Switch Course:* Type \`/subject <code - title>\` or tap below.`;
+
+  await ctx.reply(welcomeMessage, {
+    parse_mode: "Markdown",
+    reply_markup: keyboard,
+  });
 }
 
 export async function handleSubject(ctx: Context) {
@@ -40,14 +77,27 @@ export async function handleSubject(ctx: Context) {
   if (!chatId) return;
 
   const text = ctx.message?.text || "";
-  const parts = text.split(" ");
-  if (parts.length < 2) {
-    const current = getUserSubject(chatId);
-    await ctx.reply(`Current subject: *${current.toUpperCase()}*.\nTo change, use \`/subject <tag>\` (e.g. \`/subject pcl301\`).`, { parse_mode: "Markdown" });
+  // Strip command name
+  const match = text.match(/^\/subject\s*(.*)$/i);
+  const rawArg = match ? match[1].trim() : "";
+
+  if (!rawArg) {
+    awaitingSubject.add(chatId);
+    const current = getUserSubjectDisplay(chatId);
+    await ctx.reply(
+      `📚 *Active Course:* *${current}*\n\nTo set or switch your course, please reply with your *Course Code* and *Course Title by the side*, for example:\n👉 \`BCH201 - General Biochemistry\`\n👉 \`CSC302 - Operating Systems\`\n👉 \`PCL301 - Clinical Pharmacokinetics\``,
+      { parse_mode: "Markdown" }
+    );
     return;
   }
 
-  const newSubject = parts[1].toLowerCase().trim();
-  setUserSubject(chatId, newSubject);
-  await ctx.reply(`✅ Active subject updated to *${newSubject.toUpperCase()}*.\nAll Walrus memories and quizzes are now scoped to this subject.`, { parse_mode: "Markdown" });
+  const profile = setUserSubject(chatId, rawArg);
+  const keyboard = new InlineKeyboard()
+    .text("🎯 Start Drill Now", "start_drill")
+    .text("📊 View Briefing", "view_briefing");
+
+  await ctx.reply(
+    `✅ *Active Course Updated!*\n• *Course:* *${profile.subjectDisplay}*\n• *Walrus Namespace:* \`${profile.subjectCode}\`\n\nAll subsequent mistakes, CBT quizzes, and briefings will be scoped to this course on Walrus Mainnet.\n\nType /study or attach a lecture slide PDF to start!`,
+    { parse_mode: "Markdown", reply_markup: keyboard }
+  );
 }
