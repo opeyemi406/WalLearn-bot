@@ -29,7 +29,7 @@ Before we begin your drill, please reply with your *Course Code* and *Course Tit
 👉 \`CSC302 - Operating Systems\`
 👉 \`PCL301 - Clinical Pharmacokinetics\`
 
-📎 *Tip:* You can also attach your lecture slide or notes PDF directly to generate questions tailored specifically to your class material!`;
+• Attach a lecture slide PDF anytime to generate a quiz specifically from your lecture notes!`;
 
     await ctx.reply(askMsg, { parse_mode: "Markdown" });
     return;

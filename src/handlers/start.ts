@@ -50,8 +50,7 @@ Please reply to this message with your *Course Code* and *Course Title by the si
 👉 \`CSC302 - Operating Systems\`
 👉 \`PCL301 - Clinical Pharmacokinetics\`
 
-📎 *Step 2: Have lecture slides or notes?*
-Attach any lecture slide PDF or notes document directly to this chat to generate a personalized CBT quiz grounded in your syllabus!
+• Attach a lecture slide PDF anytime to generate a quiz specifically from your lecture notes!
 ━━━━━━━━━━━━━━━━━━━
 
 _Reply with your course code & title or drop your slide PDF to begin!_`;
@@ -89,7 +88,7 @@ export async function handleSubject(ctx: Context) {
     awaitingSubject.add(chatId);
     const current = getUserSubjectDisplay(chatId);
     await ctx.reply(
-      `📚 *Active Course:* *${current}*\n\nTo set or switch your course, please reply with your *Course Code* and *Course Title by the side*, for example:\n👉 \`BCH201 - General Biochemistry\`\n👉 \`CSC302 - Operating Systems\`\n👉 \`PCL301 - Clinical Pharmacokinetics\``,
+      `📚 *Active Course:* *${current}*\n\nTo set or switch your course, please reply with your *Course Code* and *Course Title by the side*, for example:\n👉 \`BCH201 - General Biochemistry\`\n👉 \`CSC302 - Operating Systems\`\n👉 \`PCL301 - Clinical Pharmacokinetics\`\n\n• Attach a lecture slide PDF anytime to generate a quiz specifically from your lecture notes!`,
       { parse_mode: "Markdown" }
     );
     return;
