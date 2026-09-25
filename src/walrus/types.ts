@@ -28,6 +28,12 @@ export interface StoredBlobRecord {
   jobId?: string;
   blobId?: string;
   topic: string;
+  question?: string;
+  misconception?: string;
+  correctFact?: string;
+  severity?: "high" | "medium" | "low";
+  misses?: number;
+  namespace?: string;
   timestamp: string;
   status: "pending" | "confirmed";
 }

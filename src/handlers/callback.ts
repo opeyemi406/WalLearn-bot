@@ -67,7 +67,7 @@ export async function handleCallback(ctx: Context) {
     await ctx.editMessageText(text, {
       parse_mode: "Markdown",
       reply_markup: keyboard,
-    });
+    }).catch(() => {});
   } else {
     // Incorrect answer — trigger Walrus Memory write
     const misconception = q.traps?.[selectedOpt] || `Chose ${selectedOpt} instead of ${q.correct}`;
@@ -105,6 +105,6 @@ export async function handleCallback(ctx: Context) {
       parse_mode: "Markdown",
       reply_markup: keyboard,
       link_preview_options: { is_disabled: true },
-    });
+    }).catch(() => {});
   }
 }
