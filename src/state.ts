@@ -118,3 +118,12 @@ export function setUserSubject(chatId: number, rawInput: string): UserProfile {
   awaitingSubject.delete(chatId);
   return profile;
 }
+
+export function clearUserProfile(chatId: number) {
+  userProfiles.delete(chatId);
+  saveProfiles(userProfiles);
+  sessions.delete(chatId);
+  pendingSlides.delete(chatId);
+  awaitingSubject.add(chatId);
+}
+
