@@ -1,6 +1,6 @@
 node_modules
 .env
-data
+data/user-profiles.json
 *.log
 .git
 .DS_Store

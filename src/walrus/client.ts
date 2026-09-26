@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { signAsync } from "@noble/ed25519";
 import { config } from "../config.js";
 import { MistakeEntry, WeaknessBriefing, WeaknessItem, StoredBlobRecord } from "./types.js";
+import { SEED_MISTAKES } from "./seed-data.js";
 
 const LEDGER_FILE = path.resolve(process.cwd(), "data/mistakes-ledger.json");
 const RELAYER_URL = "https://relayer.memory.walrus.xyz";
@@ -72,9 +73,16 @@ export class WalrusClient {
     try {
       if (fs.existsSync(LEDGER_FILE)) {
         this.localLedger = JSON.parse(fs.readFileSync(LEDGER_FILE, "utf8"));
+      } else {
+        this.localLedger = [...SEED_MISTAKES];
+        this.saveLedger();
+      }
+      if ((!this.localLedger || this.localLedger.length === 0) && SEED_MISTAKES.length > 0) {
+        this.localLedger = [...SEED_MISTAKES];
+        this.saveLedger();
       }
     } catch (e) {
-      this.localLedger = [];
+      this.localLedger = [...SEED_MISTAKES];
     }
   }
 
