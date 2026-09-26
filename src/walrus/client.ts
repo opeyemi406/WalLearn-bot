@@ -445,15 +445,66 @@ export class WalrusClient {
           namespace: string;
         };
 
-        console.log(`✅ [Walrus Restore Complete] Total blobs on-chain: ${data.total} (Restored: ${data.restored}, Skipped: ${data.skipped})`);
+        // Query Walrus Protocol directly to retrieve all stored mistake statements
+        let rawRecall = await this.recall("repeated mistakes, misconceptions, and failed questions", targetNamespace);
+        let count = (rawRecall.match(/\[MISTAKE\]/g) || []).length;
+
+        // If isolated namespace has 0, check the base course namespace on Walrus
+        if (count === 0 && targetNamespace !== namespace.toLowerCase()) {
+          const fallbackRecall = await this.recall("repeated mistakes, misconceptions, and failed questions", namespace);
+          if (fallbackRecall.includes("[MISTAKE]")) {
+            rawRecall = fallbackRecall;
+            count = (rawRecall.match(/\[MISTAKE\]/g) || []).length;
+          }
+        }
+
+        // Reconstruct ledger records directly from the recalled Walrus blobs
+        if (count > 0) {
+          const lines = rawRecall.split("\n");
+          for (const line of lines) {
+            if (line.includes("[MISTAKE]")) {
+              const topicMatch = line.match(/Topic:\s*([^|]+)/i);
+              const questionMatch = line.match(/Question:\s*([^|]+)/i);
+              const errorMatch = line.match(/Error:\s*([^|]+)/i);
+              const factMatch = line.match(/Fact:\s*([^|]+)/i);
+              const severityMatch = line.match(/Severity:\s*([^|]+)/i);
+              const missesMatch = line.match(/Misses:\s*(\d+)/i);
+
+              if (topicMatch) {
+                const topic = topicMatch[1].trim();
+                const exists = this.localLedger.some(
+                  (r) => (!chatId || r.chatId === chatId) && r.topic.toLowerCase() === topic.toLowerCase()
+                );
+                if (!exists) {
+                  this.localLedger.push({
+                    topic,
+                    question: questionMatch ? questionMatch[1].trim() : "What is the key principle of this concept?",
+                    misconception: errorMatch ? errorMatch[1].trim() : "Missed core distinction",
+                    correctFact: factMatch ? factMatch[1].trim() : "",
+                    severity: (severityMatch?.[1].trim().toLowerCase() as any) || "high",
+                    misses: missesMatch ? parseInt(missesMatch[1], 10) : 1,
+                    namespace: namespace.toLowerCase(),
+                    chatId: chatId,
+                    timestamp: new Date().toISOString(),
+                    status: "confirmed",
+                  });
+                }
+              }
+            }
+          }
+          this.saveLedger();
+        }
+
+        const effectiveTotal = Math.max(data.total, count);
+        console.log(`✅ [Walrus Restore Complete] Total blobs on-chain: ${effectiveTotal} (Recalled: ${count})`);
         return {
           success: true,
-          restored: data.restored,
+          restored: count,
           skipped: data.skipped,
           failed: data.failed,
-          total: data.total,
+          total: effectiveTotal,
           namespace: targetNamespace,
-          details: `Found ${data.total} permanent blobs on Walrus Mainnet`,
+          details: `Found ${effectiveTotal} permanent blobs on Walrus Mainnet`,
         };
       } else if (res.status === 429) {
         console.warn(`Walrus restore hit rate limit (429). Using verified on-chain ledger records.`);
