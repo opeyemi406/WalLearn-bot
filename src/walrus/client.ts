@@ -47,6 +47,11 @@ export class WalrusClient {
 
   private loadCredentials() {
     try {
+      if (process.env.MEMWAL_CREDENTIALS_JSON) {
+        this.creds = JSON.parse(process.env.MEMWAL_CREDENTIALS_JSON);
+        console.log(`✅ Loaded Walrus credentials from environment for account: ${this.creds?.accountId?.slice(0, 12)}...`);
+        return;
+      }
       const credsPath = path.join(config.memwalCredsDir, "credentials.json");
       if (fs.existsSync(credsPath)) {
         this.creds = JSON.parse(fs.readFileSync(credsPath, "utf8"));
