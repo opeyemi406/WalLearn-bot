@@ -213,10 +213,7 @@ export async function executeRestoreAll(ctx: Context) {
     }
 
     const ledger = await walrus.getLedger(chatId);
-    let userRecords = ledger.filter((r) => !chatId || r.chatId === chatId);
-    if (userRecords.length === 0) {
-      userRecords = ledger;
-    }
+    const userRecords = ledger.filter((r) => r.chatId === chatId);
 
     let msg = `⛓️ *Walrus On-Chain Global Recovery Report*\n\n`;
     msg += `• *Permanent Blobs On-Chain:* *${totalBlobsFound}*\n`;

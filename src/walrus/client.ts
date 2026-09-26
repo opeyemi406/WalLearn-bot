@@ -817,7 +817,7 @@ export class WalrusClient {
   /**
    * Check connection and account health via signed whoami endpoint
    */
-  async getHealth(): Promise<{ status: string; accountId: string; walletAddress: string; blobCount: number; confirmedBlobs: number }> {
+  async getHealth(chatId?: number): Promise<{ status: string; accountId: string; walletAddress: string; blobCount: number; confirmedBlobs: number }> {
     let status = "connected (REST direct)";
     try {
       const path = "/api/whoami";
@@ -836,13 +836,14 @@ export class WalrusClient {
     }
 
     this.loadLedger();
-    const confirmedCount = this.localLedger.filter((r) => r.blobId).length;
+    const records = chatId ? this.localLedger.filter((r) => r.chatId === chatId) : this.localLedger;
+    const confirmedCount = records.filter((r) => r.blobId).length;
 
     return {
       status,
       accountId: this.creds?.accountId || config.walrusAccountId,
       walletAddress: this.creds?.walletAddress || config.walrusWalletAddress,
-      blobCount: this.localLedger.length,
+      blobCount: records.length,
       confirmedBlobs: confirmedCount,
     };
   }

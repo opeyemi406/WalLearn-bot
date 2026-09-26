@@ -13,7 +13,7 @@ export async function handleHealth(ctx: Context) {
   });
 
   try {
-    const health = await walrus.getHealth();
+    const health = await walrus.getHealth(chatId);
     const subjectCode = chatId ? getUserSubject(chatId) : "pcl301";
     const subjectDisplay = chatId ? getUserSubjectDisplay(chatId) : "General Studies";
     const userNamespace = walrus.getUserNamespace(subjectCode, chatId);
