@@ -28,7 +28,30 @@ export async function handleChatMessage(ctx: Context) {
     return evaluateAndRespondAnswer(ctx, activeSession.currentIndex, selectedOpt, activeSession, true);
   }
 
-  // 2. Check if we are waiting for the user to set their course or if they typed a course format
+  // 2. Check if user is responding with a course code for /restore
+  const { awaitingRestoreCourse } = await import("../state.js");
+  if (awaitingRestoreCourse.has(chatId)) {
+    awaitingRestoreCourse.delete(chatId);
+    const { executeRestoreCourse } = await import("./restore.js");
+    return executeRestoreCourse(ctx, rawText);
+  }
+
+  // 3. Check if user is responding with a course code for /analyze
+  const { awaitingAnalyzeCourse, awaitingPastQuestions } = await import("../state.js");
+  if (awaitingAnalyzeCourse.has(chatId)) {
+    awaitingAnalyzeCourse.delete(chatId);
+    const { promptForQuestions } = await import("./analyze.js");
+    return promptForQuestions(ctx, rawText);
+  }
+
+  // 4. Check if user is sending past MCQ questions as text
+  if (awaitingPastQuestions.has(chatId)) {
+    const courseCode = awaitingPastQuestions.get(chatId)!;
+    const { processPastQuestionsAnalysis } = await import("./analyze.js");
+    return processPastQuestionsAnalysis(ctx, rawText, courseCode);
+  }
+
+  // 5. Check if we are waiting for the user to set their course or if they typed a course format
   const isAwaiting = awaitingSubject.has(chatId) || !hasUserSubject(chatId);
   const looksLikeCourse = /^[a-zA-Z]{2,5}\s*\d{2,4}/i.test(rawText);
 
@@ -39,14 +62,13 @@ export async function handleChatMessage(ctx: Context) {
       .text("⚡ 5 Questions", "start_quiz_5")
       .text("🎯 10 Questions", "start_quiz_10")
       .row()
-      .text("🔥 20 Questions", "start_quiz_20")
-      .text("📎 Attach Slides Guide", "upload_guide");
+      .text("🔥 20 Questions", "start_quiz_20");
 
     let response = `✅ *Active Course Set:* *${profile.subjectDisplay}*\n`;
     response += `⛓️ *Walrus Protocol Namespace:* \`${profile.subjectCode}\`\n\n`;
-    response += `🎯 *Choose your study mode below:*\n`;
-    response += `• *Select question count* to start drilling immediately.\n`;
-    response += `• *Attach a lecture slide PDF* anytime to generate a quiz specifically from your lecture notes!\n`;
+    response += `📂 *Upload Lecture Slides (Optional)*\n`;
+    response += `If you have lecture slides for this course, upload your slide file now (PDF, PPTX, Word) to quiz directly from your material.\n\n`;
+    response += `🚀 *Don't have slides?* No problem! Select how many questions below and let's start drilling immediately:`;
 
     await ctx.reply(response, {
       parse_mode: "Markdown",
@@ -55,8 +77,8 @@ export async function handleChatMessage(ctx: Context) {
     return;
   }
 
-  // 3. Check if user expressed intent to study or take a quiz
-  const isStudyIntent = /^(quiz|study|start|drill|test|test me|quiz me|start quiz|start drill|practice|questions)/i.test(rawText);
+  // 3. Check if user expressed intent to study or take a quiz, or indicated no slides
+  const isStudyIntent = /^(quiz|study|start|drill|test|test me|quiz me|start quiz|start drill|practice|questions|no|none|no slides|no slide|i don'?t have slides?)/i.test(rawText.trim());
   if (isStudyIntent) {
     const { handleStudy } = await import("./study.js");
     return handleStudy(ctx);
@@ -69,8 +91,8 @@ export async function handleChatMessage(ctx: Context) {
   await ctx.replyWithChatAction("typing");
 
   try {
-    // Cold recall memories related to the user's message & subject
-    const memories = await walrus.recall(`${rawText} in ${subjectCode}`, subjectCode);
+    // Cold recall memories related to the user's message & subject (user-isolated)
+    const memories = await walrus.recall(`${rawText} in ${subjectCode}`, subjectCode, chatId);
 
     // Build tutor prompt with past mistakes context
     const prompt = buildTutorPrompt(

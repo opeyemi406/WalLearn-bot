@@ -10,12 +10,21 @@ export const ai = new OpenAI({
   },
 });
 
-export async function askAi(messages: OpenAI.Chat.ChatCompletionMessageParam[], temperature = 0.4): Promise<string> {
-  const response = await ai.chat.completions.create({
+export async function askAi(
+  messages: OpenAI.Chat.ChatCompletionMessageParam[],
+  temperature = 0.4,
+  jsonMode = false
+): Promise<string> {
+  const params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming = {
     model: config.aiModel,
     messages,
     temperature,
-  });
+  };
 
+  if (jsonMode) {
+    params.response_format = { type: "json_object" };
+  }
+
+  const response = await ai.chat.completions.create(params);
   return response.choices[0]?.message?.content || "";
 }

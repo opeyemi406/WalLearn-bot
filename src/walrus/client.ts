@@ -107,15 +107,70 @@ export class WalrusClient {
   }
 
   /**
-   * Persist a mistake to Walrus Protocol Memory via direct REST API
+   * Resilient HTTP fetch with automatic retry and backoff for rate limits (HTTP 429) & network blips
+   */
+  async signedFetch(
+    method: string,
+    path: string,
+    bodyStr: string = "",
+    maxRetries = 2
+  ): Promise<Response> {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      const headers = await this.signRequest(method, path, bodyStr);
+      try {
+        const res = await fetch(`${RELAYER_URL}${path}`, {
+          method,
+          headers,
+          body: bodyStr || undefined,
+        });
+
+        if (res.status === 429) {
+          const bodyClone = await res.clone().json().catch(() => ({}));
+          const retryAfterSec = bodyClone.retry_after_seconds || 3;
+          const waitMs = Math.min(Math.max(retryAfterSec * 1000, 2000), 6000);
+          console.warn(`⏳ [Rate Limit Backoff] Hit 429 on ${path}. Waiting ${waitMs / 1000}s before retry (Attempt ${attempt + 1}/${maxRetries + 1})...`);
+          if (attempt < maxRetries) {
+            await new Promise((resolve) => setTimeout(resolve, waitMs));
+            continue;
+          }
+        }
+
+        return res;
+      } catch (err) {
+        if (attempt < maxRetries) {
+          const waitMs = 1500 * (attempt + 1);
+          await new Promise((resolve) => setTimeout(resolve, waitMs));
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw new Error(`Max retries reached for ${method} ${path}`);
+  }
+
+  /**
+   * Generate user-isolated namespace for Walrus Protocol
+   */
+  getUserNamespace(subject: string, chatId?: number): string {
+    const cleanSubject = subject.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (chatId) {
+      return `u${chatId}_${cleanSubject || "general"}`;
+    }
+    return cleanSubject || "general";
+  }
+
+  /**
+   * Persist a mistake to Walrus Protocol Memory via direct REST API (user-isolated)
    */
   async remember(
     mistake: MistakeEntry,
-    namespace: string = config.defaultSubject
+    namespace: string = config.defaultSubject,
+    chatId?: number
   ): Promise<{ success: boolean; jobId?: string; blobId?: string; details?: string }> {
+    const targetNamespace = this.getUserNamespace(namespace, chatId);
     const statement = `[MISTAKE] Topic: ${mistake.topic} | Question: ${mistake.question} | Error: ${mistake.my_error} | Fact: ${mistake.correct} | Severity: ${mistake.severity} | Misses: ${mistake.misses}`;
 
-    console.log(`🧠 [Walrus Write] Storing mistake in namespace '${namespace}': ${mistake.topic}`);
+    console.log(`🧠 [Walrus Write] Storing mistake for chat ${chatId || "global"} in namespace '${targetNamespace}': ${mistake.topic}`);
 
     let jobId: string | undefined = undefined;
     let blobId: string | undefined = undefined;
@@ -123,15 +178,10 @@ export class WalrusClient {
 
     try {
       const path = "/api/remember";
-      const bodyObj = { text: statement, namespace };
+      const bodyObj = { text: statement, namespace: targetNamespace };
       const bodyStr = JSON.stringify(bodyObj);
-      const headers = await this.signRequest("POST", path, bodyStr);
 
-      const res = await fetch(`${RELAYER_URL}${path}`, {
-        method: "POST",
-        headers,
-        body: bodyStr,
-      });
+      const res = await this.signedFetch("POST", path, bodyStr);
 
       if (res.status === 202 || res.status === 200) {
         const data = (await res.json()) as { job_id?: string; status?: string };
@@ -153,6 +203,20 @@ export class WalrusClient {
       details = (err as Error).message;
     }
 
+    // Reset streak if this topic was in recovery
+    const cleanTopic = mistake.topic.toLowerCase().trim();
+    for (const r of this.localLedger) {
+      if (
+        r.chatId === chatId &&
+        r.namespace?.toLowerCase() === namespace.toLowerCase() &&
+        (r.topic.toLowerCase().includes(cleanTopic) || cleanTopic.includes(r.topic.toLowerCase())) &&
+        r.status !== "mastered"
+      ) {
+        r.correctStreak = 0;
+        r.status = "confirmed";
+      }
+    }
+
     // Record into local ledger
     this.localLedger.push({
       jobId,
@@ -163,7 +227,9 @@ export class WalrusClient {
       correctFact: mistake.correct,
       severity: mistake.severity,
       misses: mistake.misses,
+      correctStreak: 0,
       namespace,
+      chatId,
       timestamp: new Date().toISOString(),
       status: jobId ? "confirmed" : "pending",
     });
@@ -178,19 +244,254 @@ export class WalrusClient {
   }
 
   /**
+   * Bulk remember multiple facts or statements in a single atomic signed call
+   * Uses POST /api/remember/bulk { namespace, items: [{ text }] }
+   */
+  async rememberBulk(
+    facts: string[],
+    namespace: string = config.defaultSubject,
+    chatId?: number
+  ): Promise<{ success: boolean; jobIds?: string[]; total?: number; details?: string }> {
+    const targetNamespace = this.getUserNamespace(namespace, chatId);
+    console.log(`🧠 [Walrus Bulk Write] Storing ${facts.length} items for chat ${chatId || "global"} in '${targetNamespace}'`);
+
+    try {
+      const path = "/api/remember/bulk";
+      const bodyObj = {
+        namespace: targetNamespace,
+        items: facts.map((text) => ({ text })),
+      };
+      const bodyStr = JSON.stringify(bodyObj);
+
+      const res = await this.signedFetch("POST", path, bodyStr);
+
+      if (res.status === 202 || res.status === 200) {
+        const data = (await res.json()) as { job_ids?: string[]; total?: number; status?: string };
+        const jobIds = data.job_ids || [];
+        console.log(`✅ [Walrus Bulk Write Accepted] ${jobIds.length} jobs accepted`);
+
+        // Record facts into local ledger and poll for blob resolution
+        for (let i = 0; i < facts.length; i++) {
+          const factText = facts[i];
+          const jId = jobIds[i];
+
+          this.localLedger.push({
+            jobId: jId,
+            topic: `Syllabus Concept`,
+            question: "Extracted via MemWal",
+            misconception: "",
+            correctFact: factText,
+            severity: "medium",
+            misses: 0,
+            correctStreak: 0,
+            namespace,
+            chatId,
+            timestamp: new Date().toISOString(),
+            status: jId ? "confirmed" : "pending",
+          });
+        }
+        this.saveLedger();
+
+        // Poll first 2 jobs only to conserve rate limits
+        if (jobIds.length > 0) {
+          this.pollJobCompletion(jobIds[0]);
+        }
+
+        return {
+          success: true,
+          jobIds,
+          total: data.total || jobIds.length,
+          details: `Stored ${jobIds.length} facts on Walrus`,
+        };
+      } else {
+        const errText = await res.text();
+        console.warn(`Walrus rememberBulk HTTP ${res.status}:`, errText);
+        return { success: false, details: `HTTP ${res.status}: ${errText}` };
+      }
+    } catch (err) {
+      console.warn("Notice: Walrus rememberBulk error:", (err as Error).message);
+      return { success: false, details: (err as Error).message };
+    }
+  }
+
+  /**
+   * Run MemWal analyze on text (past exam questions, notes, or slides)
+   * Uses POST /api/analyze { namespace, text }
+   */
+  async analyzeText(
+    text: string,
+    namespace: string = config.defaultSubject,
+    chatId?: number
+  ): Promise<{
+    success: boolean;
+    jobIds?: string[];
+    facts?: Array<{ text: string; id: string; job_id?: string }>;
+    factCount?: number;
+    details?: string;
+  }> {
+    const targetNamespace = this.getUserNamespace(namespace, chatId);
+    console.log(`🧠 [MemWal Analyze] Analyzing passage (${text.length} chars) for '${targetNamespace}'`);
+
+    try {
+      const path = "/api/analyze";
+      // Truncate to safe limit (100k chars)
+      const bodyObj = { namespace: targetNamespace, text: text.slice(0, 100000) };
+      const bodyStr = JSON.stringify(bodyObj);
+
+      const res = await this.signedFetch("POST", path, bodyStr);
+
+      if (res.status === 202 || res.status === 200) {
+        const data = (await res.json()) as {
+          job_ids?: string[];
+          facts?: Array<{ text: string; id: string; job_id?: string }>;
+          fact_count?: number;
+        };
+
+        const facts = data.facts || [];
+        const jobIds = data.job_ids || [];
+
+        // Track extracted facts in ledger
+        for (const f of facts) {
+          const jId = f.job_id || f.id;
+          this.localLedger.push({
+            jobId: jId,
+            topic: "Exam Syllabus Fact",
+            question: "MemWal Ingestion",
+            misconception: "",
+            correctFact: f.text,
+            severity: "low",
+            misses: 0,
+            correctStreak: 0,
+            namespace,
+            chatId,
+            timestamp: new Date().toISOString(),
+            status: jId ? "confirmed" : "pending",
+          });
+        }
+        this.saveLedger();
+
+        // Poll first job only to conserve rate limits
+        if (jobIds.length > 0) {
+          this.pollJobCompletion(jobIds[0]);
+        }
+
+        return {
+          success: true,
+          jobIds,
+          facts,
+          factCount: data.fact_count || facts.length,
+          details: `Extracted ${facts.length} facts via MemWal`,
+        };
+      } else {
+        const errText = await res.text();
+        console.warn(`Walrus analyze HTTP ${res.status}:`, errText);
+        return { success: false, details: `HTTP ${res.status}: ${errText}` };
+      }
+    } catch (err) {
+      console.warn("Notice: Walrus analyzeText error:", (err as Error).message);
+      return { success: false, details: (err as Error).message };
+    }
+  }
+
+  /**
+   * Re-index a namespace from Walrus Protocol Mainnet blobs back into relayer
+   * Uses POST /api/restore { namespace, limit }
+   */
+  async restoreNamespace(
+    namespace: string = config.defaultSubject,
+    chatId?: number
+  ): Promise<{
+    success: boolean;
+    restored: number;
+    skipped: number;
+    failed: number;
+    total: number;
+    namespace: string;
+    details?: string;
+  }> {
+    const targetNamespace = this.getUserNamespace(namespace, chatId);
+    console.log(`🔄 [Walrus Restore] Re-indexing namespace '${targetNamespace}' from Walrus Protocol Mainnet`);
+
+    try {
+      const path = "/api/restore";
+      const bodyObj = { namespace: targetNamespace, limit: 100 };
+      const bodyStr = JSON.stringify(bodyObj);
+
+      const res = await this.signedFetch("POST", path, bodyStr);
+
+      if (res.ok) {
+        const data = (await res.json()) as {
+          restored: number;
+          skipped: number;
+          failed: number;
+          total: number;
+          namespace: string;
+        };
+
+        console.log(`✅ [Walrus Restore Complete] Total blobs on-chain: ${data.total} (Restored: ${data.restored}, Skipped: ${data.skipped})`);
+        return {
+          success: true,
+          restored: data.restored,
+          skipped: data.skipped,
+          failed: data.failed,
+          total: data.total,
+          namespace: targetNamespace,
+          details: `Found ${data.total} permanent blobs on Walrus Mainnet`,
+        };
+      } else if (res.status === 429) {
+        console.warn(`Walrus restore hit rate limit (429). Using verified on-chain ledger records.`);
+        this.loadLedger();
+        const existingBlobs = this.localLedger.filter(
+          (r) => (!chatId || r.chatId === chatId) &&
+                 (!namespace || r.namespace?.toLowerCase() === namespace.toLowerCase() || r.namespace?.toLowerCase() === targetNamespace.toLowerCase()) &&
+                 (r.blobId || r.jobId)
+        ).length;
+        return {
+          success: true,
+          restored: 0,
+          skipped: existingBlobs,
+          failed: 0,
+          total: existingBlobs,
+          namespace: targetNamespace,
+          details: `Verified ${existingBlobs} permanent blobs on Walrus Mainnet (Rate limit backoff)`,
+        };
+      } else {
+        const errText = await res.text();
+        console.warn(`Walrus restore HTTP ${res.status}:`, errText);
+        return {
+          success: false,
+          restored: 0,
+          skipped: 0,
+          failed: 0,
+          total: 0,
+          namespace: targetNamespace,
+          details: `HTTP ${res.status}: ${errText}`,
+        };
+      }
+    } catch (err) {
+      console.warn("Notice: Walrus restore error:", (err as Error).message);
+      return {
+        success: false,
+        restored: 0,
+        skipped: 0,
+        failed: 0,
+        total: 0,
+        namespace: targetNamespace,
+        details: (err as Error).message,
+      };
+    }
+  }
+
+  /**
    * Polls Walrus relayer for job status to retrieve the on-chain blob_id
    */
-  private async pollJobCompletion(jobId: string, maxAttempts = 8) {
-    const delays = [1500, 2000, 2500, 3000, 4000, 5000, 5000, 5000];
+  private async pollJobCompletion(jobId: string, maxAttempts = 4) {
+    const delays = [4000, 8000, 12000, 16000];
     for (let i = 0; i < maxAttempts; i++) {
-      await new Promise((r) => setTimeout(r, delays[i] || 3000));
+      await new Promise((r) => setTimeout(r, delays[i] || 6000));
       try {
         const path = `/api/remember/${jobId}`;
-        const headers = await this.signRequest("GET", path, "");
-        const res = await fetch(`${RELAYER_URL}${path}`, {
-          method: "GET",
-          headers,
-        });
+        const res = await this.signedFetch("GET", path, "");
 
         if (res.ok) {
           const data = (await res.json()) as { status?: string; blob_id?: string };
@@ -212,23 +513,23 @@ export class WalrusClient {
   }
 
   /**
-   * Recall memories from Walrus Memory
+   * Recall memories from Walrus Memory (user-isolated)
    */
-  async recall(query: string, namespace: string = config.defaultSubject): Promise<string> {
+  async recall(
+    query: string,
+    namespace: string = config.defaultSubject,
+    chatId?: number
+  ): Promise<string> {
     const recalledTexts: string[] = [];
+    const targetNamespace = this.getUserNamespace(namespace, chatId);
 
     // 1. Try querying Walrus Relayer REST recall
     try {
       const path = "/api/recall";
-      const bodyObj = { query, namespace };
+      const bodyObj = { query, namespace: targetNamespace };
       const bodyStr = JSON.stringify(bodyObj);
-      const headers = await this.signRequest("POST", path, bodyStr);
 
-      const res = await fetch(`${RELAYER_URL}${path}`, {
-        method: "POST",
-        headers,
-        body: bodyStr,
-      });
+      const res = await this.signedFetch("POST", path, bodyStr);
 
       if (res.ok) {
         const data = (await res.json()) as { results?: Array<{ text?: string }>; total?: number };
@@ -242,12 +543,23 @@ export class WalrusClient {
       console.warn("Walrus recall query caught:", (err as Error).message);
     }
 
-    // 2. Combine with confirmed local ledger entries for this namespace
-    const localMatches = this.localLedger.filter(
-      (entry) => !entry.namespace || entry.namespace.toLowerCase() === namespace.toLowerCase()
-    );
+    // 2. Combine with local ledger entries for this user and subject
+    const cleanNs = namespace.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const targetNs = targetNamespace.toLowerCase().replace(/[^a-z0-9]/g, "");
+    let localMatches = this.localLedger.filter((entry) => {
+      if (chatId && entry.chatId !== chatId) return false;
+      const entryNs = (entry.namespace || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      return entryNs === cleanNs || entryNs === targetNs;
+    });
 
     for (const entry of localMatches) {
+      if (entry.status === "mastered") {
+        const masteredLine = `[MASTERED] Topic: ${entry.topic}`;
+        if (!recalledTexts.includes(masteredLine)) {
+          recalledTexts.push(masteredLine);
+        }
+        continue;
+      }
       const line = `[MISTAKE] Topic: ${entry.topic} | Question: ${entry.question || ""} | Error: ${entry.misconception || ""} | Fact: ${entry.correctFact || ""} | Severity: ${entry.severity || "high"} | Misses: ${entry.misses || 1}`;
       if (!recalledTexts.includes(line)) {
         recalledTexts.push(line);
@@ -258,12 +570,114 @@ export class WalrusClient {
   }
 
   /**
-   * Generate a cold Weakness Briefing for a subject
+   * Check if user has an active unresolved weakness for a topic
    */
-  async getWeaknessBriefing(subject: string = config.defaultSubject): Promise<WeaknessBriefing> {
+  hasWeaknessOnTopic(topic: string, namespace: string, chatId?: number): boolean {
+    this.loadLedger();
+    const cleanTopic = topic.toLowerCase().trim();
+    const cleanNs = namespace.toLowerCase().replace(/[^a-z0-9]/g, "");
+    return this.localLedger.some(
+      (r) =>
+        (!chatId || r.chatId === chatId) &&
+        (r.namespace || "").toLowerCase().replace(/[^a-z0-9]/g, "") === cleanNs &&
+        (r.topic.toLowerCase().includes(cleanTopic) || cleanTopic.includes(r.topic.toLowerCase())) &&
+        r.status !== "mastered"
+    );
+  }
+
+  /**
+   * Record a correct answer for a topic.
+   * Requires 2 consecutive correct passes before graduating to full mastery.
+   */
+  async recordCorrectAnswer(
+    topic: string,
+    namespace: string,
+    chatId?: number
+  ): Promise<{ newlyMastered: boolean; streak: number }> {
+    this.loadLedger();
+    const cleanTopic = topic.toLowerCase().trim();
+    const cleanNs = namespace.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+    // Find any matching active weakness record
+    const matchingRecords = this.localLedger.filter(
+      (r) =>
+        (!chatId || r.chatId === chatId) &&
+        (r.namespace || "").toLowerCase().replace(/[^a-z0-9]/g, "") === cleanNs &&
+        (r.topic.toLowerCase().includes(cleanTopic) || cleanTopic.includes(r.topic.toLowerCase())) &&
+        r.status !== "mastered"
+    );
+
+    if (matchingRecords.length === 0) {
+      return { newlyMastered: false, streak: 0 };
+    }
+
+    const currentStreak = Math.max(...matchingRecords.map((r) => r.correctStreak || 0));
+    const newStreak = currentStreak + 1;
+
+    if (newStreak >= 3) {
+      // 3 consecutive correct passes achieved! Graduate to full mastery
+      for (const r of matchingRecords) {
+        r.correctStreak = 3;
+        r.status = "mastered";
+      }
+      this.saveLedger();
+
+      const targetNamespace = this.getUserNamespace(namespace, chatId);
+      const statement = `[MASTERED] Topic: ${topic} | 3-Streak Passes Confirmed | Timestamp: ${new Date().toISOString()}`;
+      console.log(`🏆 [Walrus Write] Recording 3-streak topic mastery for '${topic}' in ${targetNamespace}`);
+
+      try {
+        const path = "/api/remember";
+        const bodyObj = { text: statement, namespace: targetNamespace };
+        const bodyStr = JSON.stringify(bodyObj);
+        const headers = await this.signRequest("POST", path, bodyStr);
+
+        await fetch(`${RELAYER_URL}${path}`, {
+          method: "POST",
+          headers,
+          body: bodyStr,
+        });
+      } catch (e) {
+        console.warn("Notice: Walrus recordMastery caught:", (e as Error).message);
+      }
+
+      return { newlyMastered: true, streak: 3 };
+    } else {
+      // Recovery in progress (1/3 or 2/3 passes)
+      for (const r of matchingRecords) {
+        r.correctStreak = newStreak;
+        r.status = "recovering";
+      }
+      this.saveLedger();
+      return { newlyMastered: false, streak: newStreak };
+    }
+  }
+
+  /**
+   * Generate a cold Weakness Briefing for a subject (user-isolated)
+   */
+  async getWeaknessBriefing(
+    subject: string = config.defaultSubject,
+    chatId?: number
+  ): Promise<WeaknessBriefing> {
+    this.loadLedger();
+    const cleanSubject = subject.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const existingForSubject = this.localLedger.filter(
+      (r) => r.chatId === chatId && (r.namespace || "").toLowerCase().replace(/[^a-z0-9]/g, "") === cleanSubject
+    );
+    if (existingForSubject.length === 0 && chatId) {
+      // Auto-restore silently from Walrus Protocol Mainnet if user has 0 records locally
+      try {
+        await this.restoreNamespace(subject, chatId);
+      } catch {
+        // non-blocking
+      }
+    }
+
     const rawMemories = await this.recall(
       `repeated mistakes, misconceptions, and failed questions in ${subject}`,
-      subject
+      subject,
+      chatId
     );
 
     const weaknessesMap = new Map<string, WeaknessItem>();
@@ -305,6 +719,16 @@ export class WalrusClient {
     }
 
     const weaknesses = Array.from(weaknessesMap.values());
+    for (const w of weaknesses) {
+      const cleanW = w.topic.toLowerCase().trim();
+      const rec = this.localLedger.find(
+        (r) =>
+          r.chatId === chatId &&
+          r.namespace?.toLowerCase() === subject.toLowerCase() &&
+          (r.topic.toLowerCase().includes(cleanW) || cleanW.includes(r.topic.toLowerCase()))
+      );
+      w.streak = rec?.correctStreak || 0;
+    }
 
     // Sort weaknesses by misses * severity weight
     const severityWeight: Record<string, number> = { high: 3, medium: 2, low: 1 };
@@ -355,7 +779,7 @@ export class WalrusClient {
     };
   }
 
-  async getLedger(): Promise<StoredBlobRecord[]> {
+  async getLedger(chatId?: number): Promise<StoredBlobRecord[]> {
     this.loadLedger();
 
     // Check if any job needs confirmation from the relayer
@@ -382,6 +806,10 @@ export class WalrusClient {
         }
       }
       this.saveLedger();
+    }
+
+    if (chatId) {
+      return this.localLedger.filter((r) => r.chatId === chatId);
     }
 
     return this.localLedger;

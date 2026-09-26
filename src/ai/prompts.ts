@@ -12,24 +12,52 @@ Your mission is to make sure the student NEVER makes the same exam mistake twice
 5. Never re-teach concepts the student has already mastered unless they ask or fail a spot check.
 `;
 
-export function buildQuizGeneratorPrompt(slideText: string, briefing: WeaknessBriefing, count: number = 5): string {
-  const weakTopics = briefing.weaknesses.map((w) => `• ${w.topic} (Missed ${w.misses}x, Severity: ${w.severity}): Misconception was '${w.misconception}'`).join("\n");
+export function buildQuizGeneratorPrompt(
+  materialText: string,
+  briefing: WeaknessBriefing,
+  count: number = 5,
+  isSlideUpload: boolean = false,
+  examBlueprint?: string | null
+): string {
+  const weakTopics = briefing.weaknesses
+    .map((w) => `• ${w.topic} (Missed ${w.misses}x, Severity: ${w.severity}): Misconception was '${w.misconception}'`)
+    .join("\n");
+
+  const distributionSection = isSlideUpload
+    ? `## STRICT LECTURE SLIDE GROUNDING REQUIREMENT:
+The student uploaded their official lecture slides / notes for this quiz.
+1. ALL ${count} questions MUST BE DRAWN 100% FROM THE "LECTURE SLIDE MATERIAL" BELOW.
+2. Do NOT import questions from unrelated chapters or topics (e.g. if the slides are about Drug Toxicity, all questions must strictly test Drug Toxicity assays, LD50, models, therapeutic indices, toxicities, etc. Do NOT ask about general pharmacokinetics or other unrelated topics).
+3. If previous weaknesses are listed above, ONLY test them if they are directly relevant to and covered in the slide material below. If the student has no previous weaknesses on this specific lecture, generate high-yield, conceptually rigorous questions covering key concepts across the slides.`
+    : `## QUESTION DISTRIBUTION REQUIREMENT (60/30/10 Rule):
+- If weaknesses are listed above:
+  - 60% of questions MUST directly test and drill those specific weak topics/misconceptions.
+  - 30% MUST test fresh high-yield concepts from the subject curriculum.
+  - 10% spot-check core fundamental principles.
+- If no weaknesses are listed yet, generate high-yield, conceptually rigorous questions covering the course fundamentals.`;
 
   return `
 You are generating a ${count}-question multiple-choice practice quiz (CBT format) for a student studying "${briefing.subject}".
 
+${examBlueprint ? `## DEPARTMENT PAST QUESTION EXAM PATTERN (MIMIC THIS LECTURER STYLE):
+${examBlueprint}
+Ensure questions strictly mimic the lecturer's distractor style, scenario depth, and trap construction described above!
+` : ""}
+
 ## STUDENT'S PERMANENT WALRUS WEAKNESS RECORD:
-${weakTopics || "No recorded past mistakes yet. Generate high-yield questions from the slide material."}
+${weakTopics || "No recorded past mistakes yet for this student on Walrus. Generate fresh, high-yield questions from the material."}
 
 ## LECTURE SLIDE MATERIAL:
-${slideText.slice(0, 12000)}
+${materialText.slice(0, 16000)}
 
-## QUESTION DISTRIBUTION REQUIREMENT (60/30/10 Rule):
-- If weaknesses are listed above:
-  - 60% of questions MUST directly test and drill those specific weak topics/misconceptions.
-  - 30% MUST test fresh high-yield concepts from the uploaded slide.
-  - 10% spot-check core fundamental principles.
-- If no weaknesses are listed yet, generate high-yield, conceptually rigorous questions from the slide text.
+${distributionSection}
+
+## CBT QUESTION STANDARDS:
+- Clear, clinical or exam-standard question stem.
+- Exactly 4 options (A, B, C, D).
+- Exactly ONE unequivocally correct answer.
+- Distractors (wrong choices) must be believable conceptual traps drawn from the material.
+- Each question must include a concise high-yield "fact" explaining the core concept.
 
 ## OUTPUT FORMAT:
 You MUST respond with ONLY a valid JSON object matching this exact schema:
@@ -56,7 +84,11 @@ You MUST respond with ONLY a valid JSON object matching this exact schema:
   ]
 }
 
-DO NOT wrap with markdown code fences like \`\`\`json. Output raw JSON only.
+CRITICAL FORMATTING RULES:
+1. Output valid, standard JSON only.
+2. Use plain ASCII text. Write scientific/Greek terms phonetically (e.g. 'alpha-1', 'beta-2', 'delta', 'Ca2+') rather than LaTeX backslash symbols.
+3. Never include unescaped backslashes or unescaped quotes inside string properties.
+4. Output raw JSON only.
 `;
 }
 

@@ -4,7 +4,7 @@ dotenv.config();
 export const config = {
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || "",
   openRouterApiKey: process.env.OPENROUTER_API_KEY || "",
-  aiModel: process.env.AI_MODEL || "google/gemini-3.5-flash-lite",
+  aiModel: process.env.AI_MODEL || "google/gemini-2.5-flash",
 
   memwalCredsDir: process.env.MEMWAL_CREDS_DIR || "~/.memwal-wallearn",
   walrusAccountId: process.env.WALRUS_ACCOUNT_ID || "0x75a533d83e9fee09e36b29b14e8b093862042ee92b188e5122338da7118be140",

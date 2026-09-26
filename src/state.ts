@@ -22,10 +22,17 @@ export interface QuizSession {
 
 export interface UserProfile {
   subjectCode: string; // e.g. "pcl301", "bch201" for Walrus namespace
-  subjectDisplay: string; // e.g. "PCL301 - Clinical Pharmacokinetics"
+  subjectDisplay: string; // e.g. "PCL301 - Evaluation of Drug Toxicity"
+}
+
+export interface PendingSlide {
+  text: string;
+  fileName: string;
+  courseCode: string;
 }
 
 const PROFILES_FILE = path.resolve(process.cwd(), "data/user-profiles.json");
+const LEDGER_FILE = path.resolve(process.cwd(), "data/mistakes-ledger.json");
 
 function loadProfiles(): Map<number, UserProfile> {
   try {
@@ -52,15 +59,30 @@ function saveProfiles(profiles: Map<number, UserProfile>) {
   }
 }
 
-export interface PendingSlide {
-  text: string;
-  fileName: string;
-}
-
 export const sessions = new Map<number, QuizSession>();
 export const pendingSlides = new Map<number, PendingSlide>();
 const userProfiles = loadProfiles();
 export const awaitingSubject = new Set<number>();
+
+export function getPastCourseCodesForUser(chatId: number): string[] {
+  try {
+    if (fs.existsSync(LEDGER_FILE)) {
+      const records: Array<{ chatId?: number; namespace?: string }> = JSON.parse(
+        fs.readFileSync(LEDGER_FILE, "utf8")
+      );
+      const codes = new Set<string>();
+      for (const r of records) {
+        if (r.chatId === chatId && r.namespace && /^[a-z]{2,5}\d{2,4}$/i.test(r.namespace)) {
+          codes.add(r.namespace.toLowerCase());
+        }
+      }
+      return Array.from(codes);
+    }
+  } catch (e) {
+    // ignore
+  }
+  return [];
+}
 
 export function hasUserSubject(chatId: number): boolean {
   return userProfiles.has(chatId);
@@ -77,19 +99,23 @@ export function getUserSubjectDisplay(chatId: number): string {
 }
 
 export function parseSubjectInput(input: string): { code: string; display: string } {
-  const trimmed = input.trim();
-  // Match "CODE - Title" or "CODE: Title" or "CODE Title"
+  let trimmed = input.trim();
+  // Strip duplicate course codes like "PCL 301 - PCL 301 Evaluation..."
+  trimmed = trimmed.replace(/^([a-zA-Z]{2,5}\s*\d{2,4})[\s:\-–—]+([a-zA-Z]{2,5}\s*\d{2,4})[\s:\-–—]*/i, "$1 - ");
+
+  // 1. Match standard format: "CODE - Title" or "CODE: Title" or "CODE Title"
   const match = trimmed.match(/^([a-zA-Z]{2,5}\s*\d{2,4})[\s:\-–—]+(.*)$/i);
   if (match) {
     const rawCode = match[1].replace(/\s+/g, "").toLowerCase();
-    const title = match[2].trim();
+    let title = match[2].trim();
+    title = title.replace(/^([a-zA-Z]{2,5}\s*\d{2,4})[\s:\-–—]*/i, "").trim();
     return {
       code: rawCode,
-      display: `${match[1].toUpperCase().replace(/\s+/g, "")} - ${title}`,
+      display: title ? `${match[1].toUpperCase().replace(/\s+/g, "")} - ${title}` : match[1].toUpperCase().replace(/\s+/g, ""),
     };
   }
 
-  // Standalone code like "PCL301" or "BIO101"
+  // 2. Standalone code like "PCL301" or "BIO101"
   const codeMatch = trimmed.match(/^([a-zA-Z]{2,5}\s*\d{2,4})$/i);
   if (codeMatch) {
     const code = codeMatch[1].replace(/\s+/g, "").toLowerCase();
@@ -99,7 +125,19 @@ export function parseSubjectInput(input: string): { code: string; display: strin
     };
   }
 
-  // Fallback slug for general names
+  // 3. Check if course code appears anywhere inside the text (e.g. "drill on PCL301" or "Toxicity in PCL 301")
+  const anyCode = trimmed.match(/\b([a-zA-Z]{2,5}\s*\d{2,4})\b/i);
+  if (anyCode) {
+    const rawCode = anyCode[1].replace(/\s+/g, "").toLowerCase();
+    const cleanCode = anyCode[1].toUpperCase().replace(/\s+/g, "");
+    let title = trimmed.replace(anyCode[0], "").replace(/^[\s:\-–—]+|[\s:\-–—]+$/g, "").trim();
+    return {
+      code: rawCode,
+      display: title ? `${cleanCode} - ${title}` : cleanCode,
+    };
+  }
+
+  // 4. Fallback slug for freeform topic names
   const cleanSlug = trimmed.toLowerCase().replace(/[^a-z0-9_-]/g, "-").slice(0, 24);
   return {
     code: cleanSlug || "general",
@@ -108,11 +146,32 @@ export function parseSubjectInput(input: string): { code: string; display: strin
 }
 
 export function setUserSubject(chatId: number, rawInput: string): UserProfile {
-  const parsed = parseSubjectInput(rawInput);
+  let parsed = parseSubjectInput(rawInput);
+  const isGenericCode = parsed.code === "general" || !/^[a-z]{2,5}\d{2,4}$/i.test(parsed.code);
+
+  // If the user's input was just a topic without a course code, inherit from current active session
+  if (isGenericCode) {
+    const existing = userProfiles.get(chatId);
+    if (existing && /^[a-z]{2,5}\d{2,4}$/i.test(existing.subjectCode)) {
+      parsed = {
+        code: existing.subjectCode,
+        display: `${existing.subjectCode.toUpperCase()} - ${parsed.display}`,
+      };
+    }
+  }
+
+  // If changing to a different course code, purge cached slides and active quiz sessions
+  const oldProfile = userProfiles.get(chatId);
+  if (oldProfile && oldProfile.subjectCode.toLowerCase() !== parsed.code.toLowerCase()) {
+    pendingSlides.delete(chatId);
+    sessions.delete(chatId);
+  }
+
   const profile: UserProfile = {
     subjectCode: parsed.code,
     subjectDisplay: parsed.display,
   };
+
   userProfiles.set(chatId, profile);
   saveProfiles(userProfiles);
   awaitingSubject.delete(chatId);
@@ -125,5 +184,52 @@ export function clearUserProfile(chatId: number) {
   sessions.delete(chatId);
   pendingSlides.delete(chatId);
   awaitingSubject.add(chatId);
+}
+
+// Restore & Analyze flow states
+export const awaitingRestoreCourse = new Set<number>();
+export const awaitingAnalyzeCourse = new Set<number>();
+export const awaitingPastQuestions = new Map<number, string>(); // chatId -> courseCode
+
+const EXAM_STYLES_FILE = path.resolve(process.cwd(), "data/exam-styles.json");
+
+function loadExamStyles(): Record<string, string> {
+  try {
+    if (fs.existsSync(EXAM_STYLES_FILE)) {
+      return JSON.parse(fs.readFileSync(EXAM_STYLES_FILE, "utf8"));
+    }
+  } catch (e) {
+    // ignore
+  }
+  return {};
+}
+
+function saveExamStyles(data: Record<string, string>) {
+  try {
+    fs.mkdirSync(path.dirname(EXAM_STYLES_FILE), { recursive: true });
+    fs.writeFileSync(EXAM_STYLES_FILE, JSON.stringify(data, null, 2));
+  } catch (e) {
+    console.error("Failed to save exam styles:", e);
+  }
+}
+
+export function getExamStyle(courseCode: string, chatId?: number): string | null {
+  const styles = loadExamStyles();
+  const cleanCode = courseCode.toLowerCase().replace(/[^a-z0-9]/g, "");
+  // Try user-specific first
+  if (chatId) {
+    const userKey = `u${chatId}_${cleanCode}`;
+    if (styles[userKey]) return styles[userKey];
+  }
+  return styles[cleanCode] || null;
+}
+
+export function setExamStyle(courseCode: string, styleText: string, chatId?: number): void {
+  const styles = loadExamStyles();
+  const cleanCode = courseCode.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const key = chatId ? `u${chatId}_${cleanCode}` : cleanCode;
+  styles[key] = styleText;
+  styles[cleanCode] = styleText;
+  saveExamStyles(styles);
 }
 

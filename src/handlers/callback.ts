@@ -11,6 +11,55 @@ export async function handleCallback(ctx: Context) {
 
   await ctx.answerCallbackQuery().catch(() => {});
 
+  if (data === "analyze_past_q") {
+    const { handleAnalyze } = await import("./analyze.js");
+    return handleAnalyze(ctx);
+  }
+
+  if (data === "upload_slides_direct") {
+    const { awaitingSubject, hasUserSubject, getUserSubjectDisplay } = await import("../state.js");
+    if (!hasUserSubject(chatId)) {
+      awaitingSubject.add(chatId);
+      await ctx.reply(
+        `Please reply with your *Course Code & Title* (e.g. \`PCL301 - Evaluation of Drug Toxicity\`)`,
+        { parse_mode: "Markdown" }
+      );
+    } else {
+      await ctx.reply(
+        `📂 *Lecture Slides for ${getUserSubjectDisplay(chatId)}*\n\nDo you have lecture slides for this course?\n• *If yes:* Upload your slide file (PDF, PPTX, Word) now to quiz directly from your material!\n• *If no:* Select an option below to start drilling immediately!`,
+        {
+          parse_mode: "Markdown",
+          reply_markup: new InlineKeyboard()
+            .text("⚡ 5 Questions", "start_quiz_5")
+            .text("🎯 10 Questions", "start_quiz_10")
+            .row()
+            .text("🔥 20 Questions", "start_quiz_20"),
+        }
+      );
+    }
+    return;
+  }
+
+  if (data === "restore_prompt") {
+    const { handleRestore } = await import("./restore.js");
+    return handleRestore(ctx);
+  }
+
+  if (data === "restore_course_prompt") {
+    const { awaitingRestoreCourse } = await import("../state.js");
+    awaitingRestoreCourse.add(chatId);
+    await ctx.reply(
+      `📚 *Restore Specific Course*\n\nPlease reply with the course code you want to restore from Walrus (e.g. \`PCL301\`, \`CHM211\`, \`BIO101\`):`,
+      { parse_mode: "Markdown" }
+    );
+    return;
+  }
+
+  if (data === "restore_all") {
+    const { executeRestoreAll } = await import("./restore.js");
+    return executeRestoreAll(ctx);
+  }
+
   if (data.startsWith("start_quiz_")) {
     const count = parseInt(data.replace("start_quiz_", ""), 10) || 5;
     const { startQuizWithCount } = await import("./study.js");
@@ -107,9 +156,21 @@ export async function evaluateAndRespondAnswer(
 
   if (isCorrect) {
     session.score++;
+    const activeChatId = ctx.chat?.id;
+    const recovery = await walrus.recordCorrectAnswer(q.topic, session.subject, activeChatId);
+
     let text = `✅ *CORRECT!*\n\n`;
     text += `*Your choice:* ${selectedOpt}. ${q.options[selectedOpt] || ""}\n\n`;
     text += `💡 *Key Concept:* ${q.fact}\n`;
+
+    if (recovery.newlyMastered) {
+      text += `\n━━━━━━━━━━━━━━━━━━━\n🏆 *TOPIC FULLY MASTERED (3/3 Passes)!* ⛓️\n`;
+      text += `You have passed questions on \`${q.topic}\` 3 times in a row! This weakness is now officially resolved and graduated to your Mastered list on Walrus.\n`;
+    } else if (recovery.streak > 0) {
+      const remaining = 3 - recovery.streak;
+      text += `\n━━━━━━━━━━━━━━━━━━━\n📈 *RECOVERY IN PROGRESS (${recovery.streak}/3 Passes)* 🎯\n`;
+      text += `Great progress! You previously struggled with \`${q.topic}\`. Pass this topic ${remaining} more time${remaining > 1 ? "s" : ""} in future drills to achieve full mastery!\n`;
+    }
 
     const keyboard = new InlineKeyboard().text("Next Question ➡️", "next_q");
 
@@ -150,7 +211,8 @@ export async function evaluateAndRespondAnswer(
       }).catch(() => {});
     }
 
-    // Commit to Walrus Protocol concurrently in the background
+    // Commit to Walrus Protocol concurrently in the background (user-isolated)
+    const activeChatId = ctx.chat?.id;
     walrus.remember(
       {
         topic: q.topic,
@@ -159,8 +221,10 @@ export async function evaluateAndRespondAnswer(
         correct: `${q.correct}. ${q.options[q.correct] || ""} — ${q.fact}`,
         severity: "high",
         misses: 1,
+        chatId: activeChatId,
       },
-      session.subject
+      session.subject,
+      activeChatId
     ).then((res) => {
       if (res.jobId) {
         const updatedText = text.replace(

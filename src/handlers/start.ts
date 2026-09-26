@@ -19,38 +19,36 @@ export async function handleStart(ctx: Context) {
   const accountShort = `${config.walrusAccountId.slice(0, 10)}...${config.walrusAccountId.slice(-8)}`;
 
   const welcomeMessage = `🎓 *Welcome to WalLearn!*
-_The study chatbot that never lets you fail the same question twice._
+_The decentralized study assistant with permanent memory on Walrus Protocol._
 
-Most AI study tools suffer from amnesia. WalLearn gives your study prep *permanent memory on Walrus Protocol*. Every mistake you make is diagnosed and written to Walrus Mainnet, so future sessions drill your weakest points first.
-
-━━━━━━━━━━━━━━━━━━━
-⛓️ *Permanent Memory Engine:*
-• *Storage:* Walrus Protocol (Mainnet)
-• *On-Chain Account:* \`${accountShort}\`
-• *Active Subject:* *Not Set Yet ⚠️*
-• *Model:* \`${config.aiModel}\`
-━━━━━━━━━━━━━━━━━━━
-
-🚀 *How to use:*
-1️⃣ *Upload Lecture Slides:* Send any PDF or notes file directly into this chat to generate a personalized CBT quiz.
-2️⃣ *Cold Drill:* Type \`/study\` to recall your past mistakes and drill your weakest topics.
-3️⃣ *Check Memory:* Type \`/briefing\` to view your top unresolved misconceptions.
-4️⃣ *Verify On-Chain:* Type \`/ledger\` to see all blobs persisted to Walrus.
-5️⃣ *Switch Subject:* Type \`/subject <code - title>\` (e.g., \`/subject BCH201 - Biochemistry\` or \`/subject CSC302 - OS\`).
+Most AI study tools suffer from amnesia. WalLearn permanently records your exam mistakes and misconceptions onto **Walrus Protocol Mainnet**, enforcing a strict **3-consecutive-pass rule** before any topic is marked as mastered.
 
 ━━━━━━━━━━━━━━━━━━━
-📚 *Step 1: Set your active course/subject*
-Please reply to this message with your *Course Code* and *Course Title by the side*, for example:
-👉 \`BCH201 - General Biochemistry\`
-👉 \`CSC302 - Operating Systems\`
-👉 \`PCL301 - Clinical Pharmacokinetics\`
+🎯 *How would you like to start?*
 
-• Attach a lecture slide PDF anytime to generate a quiz specifically from your lecture notes!
+*Option A: Got Department Past Questions?* 📝
+Send your department past MCQ questions (text or file: PDF, Word, TXT). WalLearn will use **MemWal** to analyze your lecturer's question patterns (traps, scenario depth, high-yield topics) and store them on-chain. Once analyzed, you can upload your slides to quiz matching that exact style!
+
+*Option B: Ready to Study Directly?* 📂
+If you don't have past questions, proceed directly by entering your **Course Code & Title**. You can then upload your lecture slides or begin drilling right away!
+
+*Option C: Returning Student?* 🔄
+Did you clear your chat history or switch devices? Your past mistakes and 3-pass streaks are permanently preserved on Walrus Protocol. Restore them anytime!
 ━━━━━━━━━━━━━━━━━━━
 
-_Reply with your course code & title or drop your slide PDF to begin!_`;
+_Choose an option below to begin:_`;
 
-  await ctx.reply(welcomeMessage, { parse_mode: "Markdown" });
+  const keyboard = new InlineKeyboard()
+    .text("📝 Analyze Past Questions", "analyze_past_q")
+    .text("📂 Upload Lecture Slides", "upload_slides_direct")
+    .row()
+    .text("🔄 Restore Past Mistakes", "restore_prompt")
+    .text("📊 Briefing", "view_briefing");
+
+  await ctx.reply(welcomeMessage, {
+    parse_mode: "Markdown",
+    reply_markup: keyboard,
+  });
 }
 
 export async function handleMenu(ctx: Context) {

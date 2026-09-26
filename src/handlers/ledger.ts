@@ -3,7 +3,8 @@ import { config } from "../config.js";
 import { walrus } from "../walrus/client.js";
 
 export async function handleLedger(ctx: Context) {
-  const ledger = await walrus.getLedger();
+  const chatId = ctx.chat?.id;
+  const ledger = await walrus.getLedger(chatId);
   const health = await walrus.getHealth();
 
   const explorerLink = `https://suiscan.xyz/mainnet/object/${config.walrusAccountId}`;
@@ -14,6 +15,9 @@ export async function handleLedger(ctx: Context) {
   msg += `• *Network:* Walrus Mainnet / Sui Mainnet\n`;
   msg += `• *Account ID:* \`${health.accountId}\`\n`;
   msg += `• *Dedicated Wallet:* \`${health.walletAddress}\`\n`;
+  if (chatId) {
+    msg += `• *Your Isolated Namespace:* \`${walrus.getUserNamespace("pcl301", chatId).split("_")[0]}\`\n`;
+  }
   msg += `• *Explorer Link:* [View on Suiscan](${explorerLink})\n`;
   msg += `• *Total Tracked Mistake Blobs:* *${ledger.length}*\n`;
   msg += `━━━━━━━━━━━━━━━━━━━\n\n`;

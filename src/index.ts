@@ -3,6 +3,9 @@ import { config } from "./config.js";
 import { handleStart, handleMenu, handleSubject } from "./handlers/start.js";
 import { handleBriefing } from "./handlers/briefing.js";
 import { handleLedger } from "./handlers/ledger.js";
+import { handleRestore } from "./handlers/restore.js";
+import { handleAnalyze } from "./handlers/analyze.js";
+import { handleHealth } from "./handlers/health.js";
 import { handleStudy } from "./handlers/study.js";
 import { handleDocument } from "./handlers/document.js";
 import { handleCallback } from "./handlers/callback.js";
@@ -18,20 +21,65 @@ async function main() {
 
   const bot = new Bot(config.telegramBotToken);
 
+  // Global Logging Middleware
+  bot.use(async (ctx, next) => {
+    const updateType = Object.keys(ctx.update).filter((k) => k !== "update_id")[0];
+    const fromUser = ctx.from?.username ? `@${ctx.from.username}` : (ctx.from?.first_name || `user:${ctx.from?.id}`);
+    const chatId = ctx.chat?.id;
+
+    if (ctx.message?.document) {
+      console.log(`📥 [${fromUser} | chat:${chatId}] Uploaded Document: "${ctx.message.document.file_name}" (${ctx.message.document.mime_type}, ${ctx.message.document.file_size} bytes)`);
+    } else if (ctx.message?.photo) {
+      console.log(`🖼️ [${fromUser} | chat:${chatId}] Uploaded Photo`);
+    } else if (ctx.message?.text) {
+      console.log(`💬 [${fromUser} | chat:${chatId}] Text: "${ctx.message.text.substring(0, 80)}"`);
+    } else if (ctx.callbackQuery) {
+      console.log(`🔘 [${fromUser} | chat:${chatId}] Callback: "${ctx.callbackQuery.data}"`);
+    } else {
+      console.log(`🔔 [${fromUser} | chat:${chatId}] Update: ${updateType}`);
+    }
+
+    await next();
+  });
+
   // Commands
   bot.command("start", handleStart);
   bot.command("help", handleStart);
   bot.command("menu", handleMenu);
   bot.command("study", handleStudy);
   bot.command("prep", handleStudy);
+  bot.command("analyze", handleAnalyze);
+  bot.command("restore", handleRestore);
+  bot.command("mistakes", handleRestore);
   bot.command("briefing", handleBriefing);
-  bot.command("ledger", handleLedger);
+  bot.command("ledger", handleRestore);
   bot.command("proof", handleLedger);
+  bot.command("health", handleHealth);
+  bot.command("status", handleHealth);
   bot.command("subject", handleSubject);
 
   // Handlers
   bot.on("callback_query:data", handleCallback);
   bot.on("message:document", handleDocument);
+
+  // Photo / Image Guidance
+  bot.on("message:photo", async (ctx) => {
+    await ctx.reply(
+      "📸 *Received Image / Screenshot*\n\n" +
+      "To extract text and generate CBT questions from your slides, please send the file as an **uncompressed Document** (select 📎 *Paperclip ➔ File/Document* and choose your PDF, Word, PowerPoint, or Notes file).\n\n" +
+      "💡 *Tip:* If you have presentation slides, you can also export them as PDF (File ➔ Export as PDF) for instant question generation!",
+      { parse_mode: "Markdown" }
+    );
+  });
+
+  // Media Fallback
+  bot.on(["message:audio", "message:video", "message:voice"], async (ctx) => {
+    await ctx.reply(
+      "📄 Please upload your course materials or slides as a **PDF**, **Word (.docx)**, **PowerPoint (.pptx)**, or **Text** document to generate a personalized CBT quiz."
+    );
+  });
+
+  // Text message handler (chat, answers, course setup)
   bot.on("message:text", handleChatMessage);
 
   // Global Error Handler
@@ -44,15 +92,18 @@ async function main() {
 
   // Register native command menu in Telegram UI
   bot.api.setMyCommands([
-    { command: "start", description: "Start fresh onboarding & set course" },
-    { command: "study", description: "Start CBT study drill (5, 10, or 20 Qs)" },
-    { command: "briefing", description: "View top weaknesses from Walrus" },
-    { command: "ledger", description: "View Walrus on-chain mistake records" },
+    { command: "start", description: "Start fresh onboarding & setup" },
+    { command: "study", description: "Start CBT study drill" },
+    { command: "analyze", description: "Analyze department past MCQ questions" },
+    { command: "restore", description: "Restore past mistakes from Walrus Mainnet" },
+    { command: "briefing", description: "View top weaknesses & mastery streaks" },
+    { command: "health", description: "System health & Walrus connectivity" },
     { command: "subject", description: "Set or switch active course" },
-    { command: "menu", description: "View active course menu" },
+    { command: "menu", description: "View active session menu" },
   ]).catch(() => {});
 
   await bot.start({
+    allowed_updates: ["message", "callback_query"],
     onStart: (botInfo) => {
       console.log(`✅ Logged in as @${botInfo.username} (${botInfo.id})`);
     },

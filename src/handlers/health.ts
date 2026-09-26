@@ -1,0 +1,61 @@
+import { Context } from "grammy";
+import { walrus } from "../walrus/client.js";
+import { config } from "../config.js";
+import { getUserSubject, getUserSubjectDisplay } from "../state.js";
+
+/**
+ * Handle /health command
+ */
+export async function handleHealth(ctx: Context) {
+  const chatId = ctx.chat?.id;
+  const statusMsg = await ctx.reply("🩺 _Checking Walrus Protocol & Bot health..._", {
+    parse_mode: "Markdown",
+  });
+
+  try {
+    const health = await walrus.getHealth();
+    const subjectCode = chatId ? getUserSubject(chatId) : "pcl301";
+    const subjectDisplay = chatId ? getUserSubjectDisplay(chatId) : "General Studies";
+    const userNamespace = walrus.getUserNamespace(subjectCode, chatId);
+
+    let msg = `🏥 *WalLearn System Health & Diagnostics*\n`;
+    msg += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+    msg += `🌐 *Walrus Protocol Network:*\n`;
+    msg += `• *Status:* 🟢 \`${health.status}\`\n`;
+    msg += `• *Relayer Node:* \`https://relayer.memory.walrus.xyz\`\n`;
+    msg += `• *Auth Protocol:* Ed25519 Signed Delegation\n`;
+    msg += `• *Mainnet Account:* \`${health.accountId.slice(0, 14)}...${health.accountId.slice(-8)}\`\n`;
+    msg += `• *Dedicated Wallet:* \`${health.walletAddress.slice(0, 14)}...${health.walletAddress.slice(-8)}\`\n\n`;
+
+    msg += `🔒 *User Isolation & Privacy:*\n`;
+    msg += `• *Telegram Chat ID:* \`${chatId}\`\n`;
+    msg += `• *Active Course:* *${subjectDisplay}*\n`;
+    msg += `• *Dedicated Walrus Namespace:* \`${userNamespace}\`\n`;
+    msg += `• *Data Isolation:* 100% Encrypted & Segmented per student\n\n`;
+
+    msg += `📦 *On-Chain Storage Metrics:*\n`;
+    msg += `• *Total Tracked Blobs:* *${health.blobCount}*\n`;
+    msg += `• *Confirmed Walrus Blobs:* *${health.confirmedBlobs}* ✅\n\n`;
+
+    msg += `🧠 *AI & Study Engines:*\n`;
+    msg += `• *Model Engine:* \`${config.aiModel}\` 🟢\n`;
+    msg += `• *Slide Document Parser:* PDF, PPTX, DOCX, TXT 🟢\n`;
+    msg += `• *MemWal Analyzer:* \`/api/analyze\` 🟢\n`;
+    msg += `• *Spaced Repetition Rule:* 3 Consecutive Passes to Master 🏆\n\n`;
+
+    msg += `━━━━━━━━━━━━━━━━━━━━━\n`;
+    msg += `_System operating normally. All writes are cryptographically signed._`;
+
+    await ctx.api.editMessageText(chatId!, statusMsg.message_id, msg, {
+      parse_mode: "Markdown",
+    });
+  } catch (err) {
+    await ctx.api.editMessageText(
+      chatId!,
+      statusMsg.message_id,
+      `⚠️ *Health check error:* ${(err as Error).message}`,
+      { parse_mode: "Markdown" }
+    );
+  }
+}

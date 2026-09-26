@@ -11,7 +11,7 @@ export async function handleBriefing(ctx: Context) {
   const statusMsg = await ctx.reply(`🔍 _Querying Walrus Memory for ${subjectDisplay}..._`, { parse_mode: "Markdown" });
 
   try {
-    const briefing = await walrus.getWeaknessBriefing(subjectCode);
+    const briefing = await walrus.getWeaknessBriefing(subjectCode, chatId);
 
     if (briefing.weaknesses.length === 0) {
       await ctx.api.editMessageText(
@@ -32,6 +32,13 @@ export async function handleBriefing(ctx: Context) {
       const severityEmoji = w.severity === "high" ? "🔴" : w.severity === "medium" ? "🟡" : "🟢";
       report += `\n*${idx + 1}. ${w.topic}* ${severityEmoji}\n`;
       report += `• *Miss Count:* ${w.misses}x | *Severity:* ${w.severity.toUpperCase()}\n`;
+      if (w.streak === 2) {
+        report += `• *Mastery Status:* 🟢 2/3 Passes (1 more pass needed to master!)\n`;
+      } else if (w.streak === 1) {
+        report += `• *Mastery Status:* 🟡 1/3 Passes (2 more passes needed)\n`;
+      } else {
+        report += `• *Mastery Status:* 🔴 0/3 Passes\n`;
+      }
       if (w.misconception) {
         report += `• *Past Error:* _"${w.misconception}"_\n`;
       }
@@ -42,7 +49,7 @@ export async function handleBriefing(ctx: Context) {
 
     if (briefing.mastered.length > 0) {
       report += `\n━━━━━━━━━━━━━━━━━━━\n`;
-      report += `🏆 *Mastered Topics (3+ Correct Streaks):*\n`;
+      report += `🏆 *Mastered Topics (3/3 Passes Confirmed):*\n`;
       briefing.mastered.forEach((m) => {
         report += `• ${m} ✅\n`;
       });

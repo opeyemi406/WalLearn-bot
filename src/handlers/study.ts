@@ -13,6 +13,8 @@ import {
 import { askAi } from "../ai/client.js";
 import { buildQuizGeneratorPrompt } from "../ai/prompts.js";
 import { sendQuestion } from "./quiz-helper.js";
+import { cleanAndParseQuizJson } from "../ai/json-cleaner.js";
+import { config } from "../config.js";
 
 export async function handleStudy(ctx: Context) {
   const chatId = ctx.chat?.id;
@@ -45,7 +47,9 @@ Before we begin your drill, please reply with your *Course Code* and *Course Tit
   }
 
   const subjectDisplay = getUserSubjectDisplay(chatId);
-  const pending = pendingSlides.get(chatId);
+  const currentSubjectCode = getUserSubject(chatId);
+  const rawPending = pendingSlides.get(chatId);
+  const pending = rawPending && rawPending.courseCode?.toLowerCase() === currentSubjectCode.toLowerCase() ? rawPending : null;
 
   const keyboard = new InlineKeyboard()
     .text("⚡ 5 Questions (Sprint)", "start_quiz_5")
@@ -55,7 +59,8 @@ Before we begin your drill, please reply with your *Course Code* and *Course Tit
 
   let msg = `📚 *Course:* *${subjectDisplay}*\n`;
   if (pending) {
-    msg += `📎 *Attached Slide:* _"${pending.fileName}"_\n`;
+    const cleanFileName = pending.fileName.replace(/[`]/g, "");
+    msg += `📎 *Attached Slide:* \`${cleanFileName}\`\n`;
   }
   msg += `\n🎯 *How many questions would you like to drill?*\n`;
   msg += `Select an option below or type e.g. \`/study 10\`:\n\n`;
@@ -75,7 +80,8 @@ export async function startQuizWithCount(ctx: Context, count: number) {
 
   const subjectCode = getUserSubject(chatId);
   const subjectDisplay = getUserSubjectDisplay(chatId);
-  const pending = pendingSlides.get(chatId);
+  const rawPending = pendingSlides.get(chatId);
+  const pending = rawPending && rawPending.courseCode?.toLowerCase() === subjectCode.toLowerCase() ? rawPending : null;
 
   let materialDesc = pending
     ? `lecture slides "${pending.fileName}"`
@@ -87,12 +93,13 @@ export async function startQuizWithCount(ctx: Context, count: number) {
   );
 
   try {
-    // 1. Cold recall weakness briefing from Walrus
-    const briefing = await walrus.getWeaknessBriefing(subjectCode);
+    // 1. Cold recall weakness briefing from Walrus (user-isolated)
+    const briefing = await walrus.getWeaknessBriefing(subjectCode, chatId);
 
     let briefingNotice = `🎯 *Starting ${count}-Question Drill: ${subjectDisplay}*\n`;
     if (pending) {
-      briefingNotice += `📎 *Source:* _"${pending.fileName}"_\n`;
+      const cleanFileName = pending.fileName.replace(/[`]/g, "");
+      briefingNotice += `📎 *Source:* \`${cleanFileName}\`\n`;
     }
     if (briefing.weaknesses.length > 0) {
       briefingNotice += `_Recalled ${briefing.weaknesses.length} active weak topics from Walrus Mainnet. Applying 60/30/10 drill ratio..._\n`;
@@ -100,10 +107,14 @@ export async function startQuizWithCount(ctx: Context, count: number) {
       briefingNotice += `_No prior mistakes found on Walrus. Generating foundational high-yield CBT questions..._\n`;
     }
 
+    const modelDisplayName = config.aiModel.includes("gemini-2.5-flash")
+      ? "Gemini 2.5 Flash"
+      : config.aiModel.split("/").pop() || "Gemini 2.5 Flash";
+
     await ctx.api.editMessageText(
       chatId,
       statusMsg.message_id,
-      briefingNotice + `\n⏳ _Generating ${count} questions via Gemini 3.5 Flash..._`,
+      briefingNotice + `\n⏳ _Generating ${count} questions via ${modelDisplayName}..._`,
       { parse_mode: "Markdown" }
     );
 
@@ -112,19 +123,42 @@ export async function startQuizWithCount(ctx: Context, count: number) {
       ? pending.text
       : `Core curriculum and past question benchmarks for university level ${subjectDisplay} (Code: ${subjectCode.toUpperCase()}).`;
 
-    const prompt = buildQuizGeneratorPrompt(materialSource, briefing, count);
+    const { getExamStyle } = await import("../state.js");
+    const examBlueprint = getExamStyle(subjectCode, chatId);
+    if (examBlueprint) {
+      briefingNotice += `🏛 *Department Exam Pattern Active:* Questions calibrated to your lecturer's style!\n`;
+    }
 
-    const rawResponse = await askAi([
-      {
-        role: "system",
-        content: "You are an expert exam question generator that outputs strict, valid JSON only.",
-      },
-      { role: "user", content: prompt },
-    ]);
+    const isSlideUpload = !!pending;
+    const prompt = buildQuizGeneratorPrompt(materialSource, briefing, count, isSlideUpload, examBlueprint);
 
-    // Clean JSON response (strip markdown wrappers if present)
-    const cleanedJson = rawResponse.replace(/```json/gi, "").replace(/```/g, "").trim();
-    const parsed = JSON.parse(cleanedJson);
+    let rawResponse = await askAi(
+      [
+        {
+          role: "system",
+          content: "You are an expert exam question generator that outputs strict, valid JSON only.",
+        },
+        { role: "user", content: prompt },
+      ],
+      0.4,
+      true
+    );
+
+    let parsed: { questions: Question[] };
+    try {
+      parsed = cleanAndParseQuizJson(rawResponse);
+    } catch (parseErr) {
+      console.warn("Notice: First quiz parse attempt failed, triggering AI repair pass:", (parseErr as Error).message);
+      const retryRaw = await askAi(
+        [
+          { role: "system", content: "You output valid JSON with a 'questions' array only. Use plain ASCII text without backslashes." },
+          { role: "user", content: prompt },
+        ],
+        0.2,
+        true
+      );
+      parsed = cleanAndParseQuizJson(retryRaw);
+    }
 
     const questions: Question[] = parsed.questions;
     if (!questions || questions.length === 0) {
@@ -141,8 +175,8 @@ export async function startQuizWithCount(ctx: Context, count: number) {
     };
     sessions.set(chatId, session);
 
-    // Clean up pending slide once used for quiz
-    pendingSlides.delete(chatId);
+    // Keep slide cached in session so student can drill additional rounds without re-uploading
+    // pendingSlides will be updated if a new slide is uploaded or cleared on /start
 
     // 4. Send first question
     await ctx.api.deleteMessage(chatId, statusMsg.message_id).catch(() => {});
