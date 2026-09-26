@@ -38,6 +38,10 @@ export class WalrusClient {
     this.loadCredentials();
   }
 
+  public getAccountId(): string {
+    return this.creds?.accountId || config.walrusAccountId;
+  }
+
   private ensureDataDir() {
     const dir = path.dirname(LEDGER_FILE);
     if (!fs.existsSync(dir)) {

@@ -10,6 +10,7 @@ import { handleStudy } from "./handlers/study.js";
 import { handleDocument } from "./handlers/document.js";
 import { handleCallback } from "./handlers/callback.js";
 import { handleChatMessage } from "./handlers/chat.js";
+import { walrus } from "./walrus/client.js";
 
 async function main() {
   console.log("🚀 Initializing WalLearn Telegram Bot...");
@@ -88,7 +89,7 @@ async function main() {
   });
 
   console.log("🤖 WalLearn Bot is running on Telegram (@WalLearnBot)!");
-  console.log(`⛓️ Connected to Walrus Mainnet Account: ${config.walrusAccountId}`);
+  console.log(`⛓️ Connected to MemWal Account: ${walrus.getAccountId()}`);
 
   // Register native command menu in Telegram UI
   bot.api.setMyCommands([
