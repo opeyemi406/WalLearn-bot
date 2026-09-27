@@ -1,32 +1,38 @@
 /**
  * Normalizes Markdown from AI models and text templates so it renders natively in Telegram.
  * 
+ * - Protects inline code blocks (`...`) so identifiers like `u123_ana204` are never altered
  * - Converts "### Heading" and "## Heading" to bold "*Heading*"
  * - Converts standard markdown bold "**text**" to Telegram's single "*text*"
  * - Converts bold-italic "***text***" to "*_text_*"
- * - Ensures balanced asterisks and underscores so Telegram entity parser never fails
+ * - Fixes unbalanced asterisks so Telegram entity parser never fails
  */
 export function formatTelegramMarkdown(text: string): string {
   if (!text) return "";
 
-  let clean = text;
+  // 1. Temporarily protect code blocks and inline code `...`
+  const codeBlocks: string[] = [];
+  let clean = text.replace(/`[^`]+`/g, (match) => {
+    codeBlocks.push(match);
+    return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
+  });
 
-  // 1. Remove markdown horizontal rules (--- or ***) and replace with clean unicode line
+  // 2. Remove markdown horizontal rules (--- or ***) and replace with clean unicode line
   clean = clean.replace(/^[ \t]*[-*_]{3,}[ \t]*$/gm, "━━━━━━━━━━━━━━━━━━━");
 
-  // 2. Convert markdown headings: "# Title", "## Title", "### Title" -> "*Title*"
+  // 3. Convert markdown headings: "# Title", "## Title", "### Title" -> "*Title*"
   clean = clean.replace(/^[ \t]*#{1,6}[ \t]+([^\n]+)/gm, "*$1*");
 
-  // 3. Convert bold-italic "***text***" -> "*_text_*"
+  // 4. Convert bold-italic "***text***" -> "*_$1_*"
   clean = clean.replace(/\*\*\*([^*]+)\*\*\*/g, "*_$1_*");
 
-  // 4. Convert double asterisks "**text**" -> "*text*"
+  // 5. Convert double asterisks "**text**" -> "*text*"
   clean = clean.replace(/\*\*([^*]+)\*\*/g, "*$1*");
 
-  // 5. Clean up any lingering double asterisks
+  // 6. Clean up any lingering double asterisks
   clean = clean.replace(/\*\*/g, "*");
 
-  // 6. Fix unescaped stray asterisks if unbalanced
+  // 7. Fix unescaped stray asterisks if unbalanced
   const stars = (clean.match(/(?<!\\)\*/g) || []).length;
   if (stars % 2 !== 0) {
     const lastStarIndex = clean.lastIndexOf("*");
@@ -35,14 +41,10 @@ export function formatTelegramMarkdown(text: string): string {
     }
   }
 
-  // 7. Fix unescaped stray underscores if unbalanced
-  const underscores = (clean.match(/(?<!\\)_/g) || []).length;
-  if (underscores % 2 !== 0) {
-    const lastUnderIndex = clean.lastIndexOf("_");
-    if (lastUnderIndex !== -1) {
-      clean = clean.slice(0, lastUnderIndex) + clean.slice(lastUnderIndex + 1);
-    }
-  }
+  // 8. Restore protected code blocks verbatim (preserving underscores and namespaces)
+  clean = clean.replace(/__CODE_BLOCK_(\d+)__/g, (_, idx) => {
+    return codeBlocks[Number(idx)] || "";
+  });
 
   return clean;
 }
