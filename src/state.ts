@@ -152,6 +152,19 @@ export function parseSubjectInput(input: string): { code: string; display: strin
   };
 }
 
+export function isValidCourseInput(input: string): boolean {
+  const trimmed = input.trim();
+  if (trimmed.length < 2) return false;
+  // Reject menu selection attempts like A, B, C, D or 1, 2, 3
+  if (/^(?:option\s*)?[a-d]$/i.test(trimmed) || /^[0-9]$/.test(trimmed)) return false;
+  // Reject conversational greetings or commands
+  if (/^(hi|hello|hey|start|help|menu|clear|reset|study|prep|yes|no|ok|sure|option)$/i.test(trimmed)) return false;
+
+  const hasCoursePattern = /[a-zA-Z]{2,5}\s*\d{2,4}/i.test(trimmed);
+  const isMeaningfulTitle = trimmed.length >= 4 && /[a-zA-Z]/.test(trimmed);
+  return hasCoursePattern || isMeaningfulTitle;
+}
+
 export function setUserSubject(chatId: number, rawInput: string): UserProfile {
   let parsed = parseSubjectInput(rawInput);
   const isGenericCode = parsed.code === "general" || !/^[a-z]{2,5}\d{2,4}$/i.test(parsed.code);

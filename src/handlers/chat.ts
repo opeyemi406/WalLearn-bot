@@ -5,6 +5,7 @@ import {
   getUserSubjectDisplay,
   hasUserSubject,
   setUserSubject,
+  isValidCourseInput,
   awaitingSubject,
   sessions,
 } from "../state.js";
@@ -51,12 +52,47 @@ export async function handleChatMessage(ctx: Context) {
     return processPastQuestionsAnalysis(ctx, rawText, courseCode);
   }
 
+  // 4.5 Check if user is replying to the /start onboarding menu with an option (A, B, C or 1, 2, 3)
+  const isStartMenuSelection = /^(?:option\s*)?([a-c]|1|2|3)$/i.test(rawText);
+  if (!hasUserSubject(chatId) && isStartMenuSelection) {
+    const opt = rawText.replace(/option\s*/i, "").trim().toUpperCase();
+    if (opt === "A" || opt === "1") {
+      const { handleAnalyze } = await import("./analyze.js");
+      return handleAnalyze(ctx);
+    }
+    if (opt === "B" || opt === "2") {
+      awaitingSubject.add(chatId);
+      await ctx.reply(
+        `📚 *Ready to Study Directly!*\n\n` +
+        `Please reply with your *Course Code & Title* (e.g. \`PCL301 - Evaluation of Drug Toxicity\` or \`BIO101\`):\n\n` +
+        `_You can also attach your lecture slides (PDF, PPTX, Word) directly!_`,
+        { parse_mode: "Markdown" }
+      );
+      return;
+    }
+    if (opt === "C" || opt === "3") {
+      const { handleRestore } = await import("./restore.js");
+      return handleRestore(ctx);
+    }
+  }
+
   // 5. Check if we are waiting for the user to set their course or if they typed a course format
   const isAwaiting = awaitingSubject.has(chatId) || !hasUserSubject(chatId);
   const looksLikeCourse = /^[a-zA-Z]{2,5}\s*\d{2,4}/i.test(rawText);
 
   if (isAwaiting || looksLikeCourse) {
+    if (!isValidCourseInput(rawText)) {
+      await ctx.reply(
+        `⚠️ *Invalid Course Input: "${rawText}"*\n\n` +
+        `Please reply with a valid *Course Code & Title* (e.g. \`PCL301 - Evaluation of Drug Toxicity\` or \`BIO101 - General Biology\`) to begin studying.\n\n` +
+        `_Tip: You can also upload your slide file (PDF/PPTX) directly!_`,
+        { parse_mode: "Markdown" }
+      );
+      return;
+    }
+
     const profile = setUserSubject(chatId, rawText);
+    awaitingSubject.delete(chatId);
 
     const keyboard = new InlineKeyboard()
       .text("⚡ 5 Questions", "start_quiz_5")

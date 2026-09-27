@@ -39,6 +39,10 @@ The student uploaded their official lecture slides / notes for this quiz.
   return `
 You are generating a ${count}-question multiple-choice practice quiz (CBT format) for a student studying "${briefing.subject}".
 
+CRITICAL INSTRUCTION:
+"Walrus Protocol" is the decentralized blockchain storage layer powering this application. You must NEVER generate questions about marine biology, arctic walruses, tusks, or blubber unless the course is explicitly about marine zoology!
+All questions must strictly test the academic curriculum, concepts, and principles of "${briefing.subject}".
+
 ${examBlueprint ? `## DEPARTMENT PAST QUESTION EXAM PATTERN (MIMIC THIS LECTURER STYLE):
 ${examBlueprint}
 Ensure questions strictly mimic the lecturer's distractor style, scenario depth, and trap construction described above!
