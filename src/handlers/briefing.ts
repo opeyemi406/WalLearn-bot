@@ -6,18 +6,45 @@ export async function handleBriefing(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  const subjectCode = getUserSubject(chatId);
-  const subjectDisplay = getUserSubjectDisplay(chatId);
-  const statusMsg = await ctx.reply(`🔍 _Querying Walrus Memory for ${subjectDisplay}..._`, { parse_mode: "Markdown" });
+  const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
+
+  const text = ctx.message?.text?.trim() || "";
+  const parts = text.split(/\s+/);
+  const explicitCourse = parts.length > 1 ? parts[1].trim() : null;
+
+  const subjectCode = explicitCourse
+    ? explicitCourse.toUpperCase().replace(/[^A-Z0-9]/g, "")
+    : getUserSubject(chatId);
+  const subjectDisplay = explicitCourse
+    ? explicitCourse.toUpperCase()
+    : getUserSubjectDisplay(chatId);
+
+  const statusMsg = await ctx.reply(
+    formatTelegramMarkdown(`🔍 _Querying Walrus Memory for ${subjectDisplay}..._`),
+    { parse_mode: "Markdown" }
+  );
 
   try {
     const briefing = await walrus.getWeaknessBriefing(subjectCode, chatId);
+    const ledger = await walrus.getLedger(chatId);
+    const factCount = ledger.filter(
+      (r) =>
+        r.chatId === chatId &&
+        r.namespace?.toLowerCase() === subjectCode.toLowerCase() &&
+        (r.recordType === "fact" || (r.misses || 0) === 0)
+    ).length;
 
     if (briefing.weaknesses.length === 0) {
+      let noMistakesMsg = `📊 *WalLearn Weakness Briefing*\nCourse: *${subjectDisplay}*\n\n✅ *Zero unresolved mistakes found on Walrus!* You haven't missed any questions in this course yet.\n`;
+      if (factCount > 0) {
+        noMistakesMsg += `\n📚 *${factCount} Department Exam Facts* are saved on Walrus from your past question analysis, ready for your drills!\n`;
+      }
+      noMistakesMsg += `\nSend your lecture slides/images or type /study to test yourself.`;
+
       await ctx.api.editMessageText(
         chatId,
         statusMsg.message_id,
-        `📊 *WalLearn Weakness Briefing*\nCourse: *${subjectDisplay}*\n\n✅ *Zero unresolved mistakes found on Walrus!* You either haven't missed any questions yet, or you've mastered them all.\n\nSend a lecture slide PDF or type /study to test yourself.`,
+        formatTelegramMarkdown(noMistakesMsg),
         { parse_mode: "Markdown" }
       );
       return;
@@ -57,7 +84,7 @@ export async function handleBriefing(ctx: Context) {
 
     report += `\n_Type /study to drill your weakest topics now!_`;
 
-    await ctx.api.editMessageText(chatId, statusMsg.message_id, report, { parse_mode: "Markdown" });
+    await ctx.api.editMessageText(chatId, statusMsg.message_id, formatTelegramMarkdown(report), { parse_mode: "Markdown" });
   } catch (error) {
     console.error("Error in handleBriefing:", error);
     await ctx.api.editMessageText(chatId, statusMsg.message_id, "⚠️ Failed to fetch briefing from Walrus. Please try again in a moment.");
