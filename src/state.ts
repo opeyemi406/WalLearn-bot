@@ -97,12 +97,12 @@ export function hasUserSubject(chatId: number): boolean {
 
 export function getUserSubject(chatId: number): string {
   const profile = userProfiles.get(chatId);
-  return profile?.subjectCode || "general";
+  return profile?.subjectCode || "";
 }
 
 export function getUserSubjectDisplay(chatId: number): string {
   const profile = userProfiles.get(chatId);
-  return profile?.subjectDisplay || "General Studies";
+  return profile?.subjectDisplay || "None (Not set yet)";
 }
 
 export function parseSubjectInput(input: string): { code: string; display: string } {

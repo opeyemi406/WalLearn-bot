@@ -1,22 +1,25 @@
 import { Context } from "grammy";
 import { walrus } from "../walrus/client.js";
 import { config } from "../config.js";
-import { getUserSubject, getUserSubjectDisplay } from "../state.js";
+import { getUserSubject, getUserSubjectDisplay, hasUserSubject } from "../state.js";
 
 /**
  * Handle /health command
  */
 export async function handleHealth(ctx: Context) {
   const chatId = ctx.chat?.id;
+  if (!chatId) return;
+
   const statusMsg = await ctx.reply("🩺 _Checking Walrus Protocol & Bot health..._", {
     parse_mode: "Markdown",
   });
 
   try {
     const health = await walrus.getHealth(chatId);
-    const subjectCode = chatId ? getUserSubject(chatId) : "pcl301";
-    const subjectDisplay = chatId ? getUserSubjectDisplay(chatId) : "General Studies";
-    const userNamespace = walrus.getUserNamespace(subjectCode, chatId);
+    const hasActiveCourse = hasUserSubject(chatId);
+    const subjectCode = hasActiveCourse ? getUserSubject(chatId) : null;
+    const subjectDisplay = hasActiveCourse ? getUserSubjectDisplay(chatId) : "None (Not set yet)";
+    const userNamespace = walrus.getUserNamespace(subjectCode || "unassigned", chatId);
 
     let msg = `🏥 *WalLearn System Health & Diagnostics*\n`;
     msg += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
@@ -30,7 +33,7 @@ export async function handleHealth(ctx: Context) {
 
     msg += `🔒 *User Isolation & Privacy:*\n`;
     msg += `• *Telegram Chat ID:* \`${chatId}\`\n`;
-    msg += `• *Active Course:* *${subjectDisplay}*\n`;
+    msg += `• *Active Course:* ${hasActiveCourse ? `*${subjectDisplay}*` : `_None (Not set yet)_`}\n`;
     msg += `• *Dedicated Walrus Namespace:* \`${userNamespace}\`\n`;
     msg += `• *Data Isolation:* 100% Encrypted & Segmented per student\n\n`;
 
