@@ -121,48 +121,46 @@ export async function handleChatMessage(ctx: Context) {
     return processPastQuestionsAnalysis(ctx, rawText, courseCode);
   }
 
-  // 4.5 Check if user is replying to the /start welcome menu
-  const { awaitingStartChoice } = await import("../state.js");
-  if (awaitingStartChoice.has(chatId)) {
+  // 4.5 Check if user is replying to onboarding / session menu choices (when no course is active)
+  if (!hasUserSubject(chatId)) {
     const trimmed = rawText.trim().toLowerCase();
 
-    // 1 / A / Analyze
-    if (/^(?:option\s*)?(1|a)$/i.test(trimmed) || /^(analyze|past\s*questions?|mcq|past)$/i.test(trimmed)) {
-      awaitingStartChoice.delete(chatId);
-      const { handleAnalyze } = await import("./analyze.js");
-      return handleAnalyze(ctx);
-    }
-
-    // 2 / B / Study / Slides
-    if (/^(?:option\s*)?(2|b)$/i.test(trimmed) || /^(study|slides?|direct|prep)$/i.test(trimmed)) {
-      awaitingStartChoice.delete(chatId);
+    // 1 / A / Study Directly / Set Course
+    if (/^(?:option\s*)?(1|a)$/i.test(trimmed) || /^(study|slides?|direct|prep|course|set\s*course|start\s*studying)$/i.test(trimmed)) {
+      const { clearAwaitingStates } = await import("../state.js");
+      clearAwaitingStates(chatId);
       awaitingSubject.add(chatId);
       await ctx.reply(
         `📚 *Ready to Study Directly!*\n\n` +
-        `Please reply with your *Course Code & Title* (e.g. \`PCL301 - Evaluation of Drug Toxicity\` or \`BIO101\`):\n\n` +
+        `Please reply with your *Course Code & Title* (e.g. \`ANA201 - Human Anatomy\` or \`BIO101\`):\n\n` +
         `_You can also attach your lecture slides (PDF, PPTX, Word) or images directly!_`,
         { parse_mode: "Markdown" }
       );
       return;
     }
 
-    // 3 / C / Restore
+    // 2 / B / Analyze Past Questions
+    if (/^(?:option\s*)?(2|b)$/i.test(trimmed) || /^(analyze|past\s*questions?|mcq|past|past\s*papers?)$/i.test(trimmed)) {
+      const { clearAwaitingStates } = await import("../state.js");
+      clearAwaitingStates(chatId);
+      const { handleAnalyze } = await import("./analyze.js");
+      return handleAnalyze(ctx);
+    }
+
+    // 3 / C / Restore Past Mistakes
     if (/^(?:option\s*)?(3|c)$/i.test(trimmed) || /^(restore|mistakes|returning|recover)$/i.test(trimmed)) {
-      awaitingStartChoice.delete(chatId);
+      const { clearAwaitingStates } = await import("../state.js");
+      clearAwaitingStates(chatId);
       const { handleRestore } = await import("./restore.js");
       return handleRestore(ctx);
     }
 
-    // 4 / D / Briefing
+    // 4 / D / Weakness Briefing
     if (/^(?:option\s*)?(4|d)$/i.test(trimmed) || /^(briefing|weakness|report)$/i.test(trimmed)) {
-      awaitingStartChoice.delete(chatId);
+      const { clearAwaitingStates } = await import("../state.js");
+      clearAwaitingStates(chatId);
       const { handleBriefing } = await import("./briefing.js");
       return handleBriefing(ctx);
-    }
-
-    // If user directly typed a course code (e.g. ANA201 or PCL301), clear awaitingStartChoice and proceed to set course
-    if (isValidCourseInput(rawText)) {
-      awaitingStartChoice.delete(chatId);
     }
   }
 
@@ -298,23 +296,24 @@ export async function handleChatMessage(ctx: Context) {
   }
 
   // 5. Check if we are waiting for the user to set their course or if they typed a course format
-  const isAwaiting = awaitingSubject.has(chatId) || !hasUserSubject(chatId);
+  const isAwaiting = awaitingSubject.has(chatId);
   const looksLikeCourse = /^[a-zA-Z]{2,5}\s*\d{2,4}/i.test(rawText);
 
   if (isAwaiting || looksLikeCourse) {
     if (!isValidCourseInput(rawText)) {
-      await ctx.reply(
-        `⚠️ *Invalid Course Input: "${rawText}"*\n\n` +
-        `Please reply with a valid *Course Code & Title* (e.g. \`PCL301 - Evaluation of Drug Toxicity\` or \`BIO101 - General Biology\`) to begin studying.\n\n` +
-        `_Tip: You can also upload your slide file (PDF/PPTX) directly!_`,
-        { parse_mode: "Markdown" }
-      );
-      return;
-    }
-
-    const profile = setUserSubject(chatId, rawText);
-    awaitingSubject.delete(chatId);
-    awaitingStudyTopic.set(chatId, profile.subjectCode);
+      if (isAwaiting) {
+        await ctx.reply(
+          `⚠️ *Invalid Course Input: "${rawText}"*\n\n` +
+          `Please reply with a valid *Course Code & Title* (e.g. \`PCL301 - Evaluation of Drug Toxicity\` or \`BIO101 - General Biology\`) to begin studying.\n\n` +
+          `_Tip: You can also upload your slide file (PDF/PPTX) directly!_`,
+          { parse_mode: "Markdown" }
+        );
+        return;
+      }
+    } else {
+      const profile = setUserSubject(chatId, rawText);
+      awaitingSubject.delete(chatId);
+      awaitingStudyTopic.set(chatId, profile.subjectCode);
 
     const keyboard = new InlineKeyboard()
       .text("📎 Attach Slides/Images Guide", "upload_guide");
@@ -327,11 +326,12 @@ export async function handleChatMessage(ctx: Context) {
     response += `2️⃣ 💬 *Or Reply with the Topic:*\n`;
     response += `Reply with any topic in ${profile.subjectCode.toUpperCase()} (e.g. \`Introduction & Core Concepts\`) and I will generate questions specifically on that topic!`;
 
-    await ctx.reply(formatTelegramMarkdown(response), {
-      parse_mode: "Markdown",
-      reply_markup: keyboard,
-    });
-    return;
+      await ctx.reply(formatTelegramMarkdown(response), {
+        parse_mode: "Markdown",
+        reply_markup: keyboard,
+      });
+      return;
+    }
   }
 
   // 3. Check if user expressed intent to study or take a quiz, or indicated no slides

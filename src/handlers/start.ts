@@ -60,11 +60,11 @@ Most AI study tools suffer from amnesia. WalLearn permanently records your exam 
 ━━━━━━━━━━━━━━━━━━━
 🎯 *How would you like to start?*
 
-*1️⃣ Got Department Past Questions?* 📝
-Send your past MCQ questions (text, documents: PDF/Word, or images: PNG/JPG). WalLearn analyzes your lecturer's question patterns (traps, scenario depth, high-yield topics) to mimic their exact style.
+*1️⃣ Ready to Study Directly?* 📂
+Proceed directly by entering your *Course Code & Title* (e.g. \`ANA201 - Human Anatomy\` or \`BIO101\`). You can upload lecture slides/images or begin instant CBT drills immediately!
 
-*2️⃣ Ready to Study Directly?* 📂
-Proceed directly by entering your *Course Code & Title* (e.g. \`PCL301 - Evaluation of Drug Toxicity\` or \`BIO101\`). You can upload lecture slides/images or begin instant CBT drills immediately!
+*2️⃣ Got Department Past Questions?* 📝
+Send your past MCQ questions (text, documents: PDF/Word, or images: PNG/JPG). WalLearn analyzes your lecturer's question patterns (traps, scenario depth, high-yield topics) to mimic their exact style.
 
 *3️⃣ Returning Student?* 🔄
 Did you clear your chat history or switch devices? Restore your past on-chain mistakes and 3-pass streaks anytime from Walrus Protocol!
@@ -73,8 +73,8 @@ Did you clear your chat history or switch devices? Restore your past on-chain mi
 _Choose an option below (tap a button or reply 1, 2, or 3):_`;
 
   const keyboard = new InlineKeyboard()
-    .text("1️⃣ Analyze Past Questions", "analyze_past_q")
-    .text("2️⃣ Study Directly / Slides", "upload_slides_direct")
+    .text("1️⃣ Set Course / Study", "upload_slides_direct")
+    .text("2️⃣ Analyze Past Questions", "analyze_past_q")
     .row()
     .text("3️⃣ Restore Past Mistakes", "restore_prompt")
     .text("📊 Weakness Briefing", "view_briefing");
