@@ -100,7 +100,8 @@ async function main() {
     { command: "briefing", description: "View top weaknesses & mastery streaks" },
     { command: "health", description: "System health & Walrus connectivity" },
     { command: "subject", description: "Set or switch active course" },
-    { command: "menu", description: "View active session menu" },
+    { command: "menu", description: "View active session dashboard" },
+    { command: "reset", description: "Reset active session to start fresh" },
   ]).catch(() => {});
 
   await bot.start({
