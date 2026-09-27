@@ -27,7 +27,9 @@ export async function sendQuestion(ctx: Context, session: QuizSession) {
     .text("C", `ans_${session.currentIndex}_C`)
     .text("D", `ans_${session.currentIndex}_D`);
 
-  const sent = await ctx.reply(text, {
+  const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
+
+  const sent = await ctx.reply(formatTelegramMarkdown(text), {
     parse_mode: "Markdown",
     reply_markup: keyboard,
   });

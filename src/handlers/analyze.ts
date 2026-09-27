@@ -98,13 +98,16 @@ Extract a concise, highly actionable "Department Exam Blueprint" covering:
 3. High-Yield Tested Themes: List the top 3-5 recurring themes.
 4. Key Extracted Facts: 5-8 bulleted atomic, high-yield facts directly tested in these past questions.
 
-Respond in clean, well-formatted Markdown.
+CRITICAL TELEGRAM FORMATTING:
+- DO NOT use markdown hashtags like ## or ### for titles or sections.
+- DO NOT use ** double asterisks.
+- Use single asterisks *bold* for headings and bold words (e.g. *Question Style:*, *Recurring Traps:*).
 `;
 
     const blueprint = await askAi([
       {
         role: "system",
-        content: "You are an expert university exam analyst and psychometrician.",
+        content: "You are an expert university exam analyst and psychometrician. Never use ## or ** in your response. Use *bold* for bold text.",
       },
       {
         role: "user",
@@ -137,43 +140,40 @@ Respond in clean, well-formatted Markdown.
     awaitingStudyTopic.set(chatId, courseCode);
 
     const keyboard = new InlineKeyboard()
-      .text("⚡ 5 Questions (All Topics)", "start_quiz_5")
-      .text("🎯 10 Questions", "start_quiz_10")
-      .row()
-      .text("🔥 20 Questions (Exam Mode)", "start_quiz_20")
-      .text("📎 Attach Slides/Images", "upload_guide");
+      .text("📎 Attach Slides/Images Guide", "upload_guide");
 
     // 5. Send rich confirmation and guide user to upload lecture slides or pick a topic
-    let profileSnippet = blueprint.trim();
+    const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
+    let profileSnippet = formatTelegramMarkdown(blueprint.trim());
     if (profileSnippet.length > 900) {
       const lastNewline = profileSnippet.lastIndexOf("\n", 900);
       profileSnippet = (lastNewline > 400 ? profileSnippet.slice(0, lastNewline) : profileSnippet.slice(0, 900)) + "\n\n_...[Full Blueprint saved to Walrus Memory]_";
     }
 
     let reply = `🎯 *Department Exam Blueprint Analyzed & Stored!*\n\n`;
-    reply += `🏛 *Course:* \`${courseCode}\`\n\n`;
+    reply += `🏛 *Course:* *${courseCode}*\n\n`;
     reply += `📋 *Lecturer Exam Profile:*\n${profileSnippet}\n\n`;
     reply += `🧠 *Walrus Memory Storage:*\n`;
     reply += `• *Atomic Facts Extracted:* ${factLines.length + (analyzeRes.facts?.length || 0)} facts\n`;
     reply += `• *Network:* Walrus Protocol Mainnet\n`;
     reply += `• *Status:* 🟢 Stored in isolated namespace \`${walrus.getUserNamespace(courseCode, chatId)}\`\n\n`;
     reply += `━━━━━━━━━━━━━━━━━━━\n`;
-    reply += `🚀 *How would you like to drill ${courseCode}?*\n\n`;
+    reply += `🚀 *Next Step:*\n\n`;
     reply += `1️⃣ 📄 *Upload Lecture Slides or Images:*\n`;
     reply += `Send your slide file (PDF, Word, PPTX) or images now to quiz directly from your material!\n\n`;
-    reply += `2️⃣ 💬 *Or Tell Me the Topic:*\n`;
-    reply += `Reply with any topic in ${courseCode} (e.g. \`Thorax & Mediastinum\`) and I will generate questions specifically on that topic!\n\n`;
-    reply += `3️⃣ ⚡ *Or Practice All Topics:*\n`;
-    reply += `Choose an option below to start drilling immediately:`;
+    reply += `2️⃣ 💬 *Or Reply with the Topic:*\n`;
+    reply += `Tell me the topic in ${courseCode} you want to study (e.g. \`Thorax & Mediastinum\`), and I will generate questions on that topic!`;
+
+    const formattedReply = formatTelegramMarkdown(reply);
 
     try {
-      await ctx.api.editMessageText(chatId, statusMsg.message_id, reply, {
+      await ctx.api.editMessageText(chatId, statusMsg.message_id, formattedReply, {
         parse_mode: "Markdown",
         reply_markup: keyboard,
       });
     } catch (parseErr) {
       console.warn("Markdown parse failed for blueprint, falling back to clean text:", parseErr);
-      const cleanReply = reply.replace(/[*_`]/g, "");
+      const cleanReply = formattedReply.replace(/[*_`]/g, "");
       await ctx.api.editMessageText(chatId, statusMsg.message_id, cleanReply, {
         reply_markup: keyboard,
       });

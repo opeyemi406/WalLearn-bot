@@ -25,15 +25,19 @@ export async function handleCallback(ctx: Context) {
         { parse_mode: "Markdown" }
       );
     } else {
+      const { awaitingStudyTopic, getUserSubject } = await import("../state.js");
+      awaitingStudyTopic.set(chatId, getUserSubject(chatId));
+
       await ctx.reply(
-        `📂 *Lecture Materials for ${getUserSubjectDisplay(chatId)}*\n\nDo you have lecture slides or notes for this course?\n• *If yes:* Upload your slide file (PDF, PPTX, Word) or images now to quiz directly from your material!\n• *If no:* Select an option below to start drilling immediately!`,
+        `📂 *Lecture Materials for ${getUserSubjectDisplay(chatId)}*\n\n` +
+        `1️⃣ 📄 *Upload Lecture Slides or Images:*\n` +
+        `Upload your slide file (PDF, PPTX, Word) or images now to quiz directly from your material!\n\n` +
+        `2️⃣ 💬 *Or Reply with a Topic:*\n` +
+        `Reply with the specific topic in this course you want to drill!`,
         {
           parse_mode: "Markdown",
           reply_markup: new InlineKeyboard()
-            .text("⚡ 5 Questions", "start_quiz_5")
-            .text("🎯 10 Questions", "start_quiz_10")
-            .row()
-            .text("🔥 20 Questions", "start_quiz_20"),
+            .text("📎 Attach Slides/Images Guide", "upload_guide"),
         }
       );
     }
@@ -174,10 +178,17 @@ export async function evaluateAndRespondAnswer(
 
     const keyboard = new InlineKeyboard().text("Next Question ➡️", "next_q");
 
+    const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
+    const formattedText = formatTelegramMarkdown(text);
+
     if (isTextReply) {
-      await ctx.reply(text, { parse_mode: "Markdown", reply_markup: keyboard }).catch(() => {});
+      await ctx.reply(formattedText, { parse_mode: "Markdown", reply_markup: keyboard }).catch(() => {
+        ctx.reply(formattedText.replace(/[*_`]/g, ""), { reply_markup: keyboard });
+      });
     } else {
-      await ctx.editMessageText(text, { parse_mode: "Markdown", reply_markup: keyboard }).catch(() => {});
+      await ctx.editMessageText(formattedText, { parse_mode: "Markdown", reply_markup: keyboard }).catch(() => {
+        ctx.editMessageText(formattedText.replace(/[*_`]/g, ""), { reply_markup: keyboard });
+      });
     }
   } else {
     // Incorrect answer — trigger Walrus Memory write
@@ -196,19 +207,26 @@ export async function evaluateAndRespondAnswer(
 
     const keyboard = new InlineKeyboard().text("Next Question ➡️", "next_q");
 
+    const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
+    const formattedText = formatTelegramMarkdown(text);
+
     let sentMsg: any = null;
     if (isTextReply) {
-      sentMsg = await ctx.reply(text, {
+      sentMsg = await ctx.reply(formattedText, {
         parse_mode: "Markdown",
         reply_markup: keyboard,
         link_preview_options: { is_disabled: true },
-      }).catch(() => {});
+      }).catch(() => {
+        return ctx.reply(formattedText.replace(/[*_`]/g, ""), { reply_markup: keyboard });
+      });
     } else {
-      await ctx.editMessageText(text, {
+      await ctx.editMessageText(formattedText, {
         parse_mode: "Markdown",
         reply_markup: keyboard,
         link_preview_options: { is_disabled: true },
-      }).catch(() => {});
+      }).catch(() => {
+        return ctx.editMessageText(formattedText.replace(/[*_`]/g, ""), { reply_markup: keyboard });
+      });
     }
 
     // Commit to Walrus Protocol concurrently in the background (user-isolated)

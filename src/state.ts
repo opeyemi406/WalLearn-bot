@@ -165,6 +165,19 @@ export function isValidCourseInput(input: string): boolean {
   return hasCoursePattern || isMeaningfulTitle;
 }
 
+export function isValidTopicInput(input: string): boolean {
+  const trimmed = input.trim();
+  if (trimmed.length < 3) return false;
+  // Reject menu selection numbers like 1, 2, 3 or option 1/2/3
+  if (/^(?:option\s*)?[1-4]$/i.test(trimmed)) return false;
+  // Reject menu options like A, B, C, D
+  if (/^(?:option\s*)?[a-d]$/i.test(trimmed)) return false;
+  // Reject single words like "topic", "slide", "slides"
+  if (/^(topic|slide|slides|option|select|menu|help|start|quiz|study|yes|no)$/i.test(trimmed)) return false;
+  // Must contain letters
+  return /[a-zA-Z]{2,}/.test(trimmed);
+}
+
 export function setUserSubject(chatId: number, rawInput: string): UserProfile {
   let parsed = parseSubjectInput(rawInput);
   const isGenericCode = parsed.code === "general" || !/^[a-z]{2,5}\d{2,4}$/i.test(parsed.code);

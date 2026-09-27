@@ -53,8 +53,41 @@ export async function handleChatMessage(ctx: Context) {
   }
 
   // 4.6 Check if user is replying with a topic after past questions or course setup
-  const { awaitingStudyTopic, userActiveTopic } = await import("../state.js");
+  const { awaitingStudyTopic, userActiveTopic, getUserSubjectDisplay, isValidTopicInput } = await import("../state.js");
+  const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
+
   if (awaitingStudyTopic.has(chatId) && !rawText.startsWith("/")) {
+    const courseCode = awaitingStudyTopic.get(chatId)!;
+
+    // Check if user selected option 1 ("1", "option 1", "slides", "slide")
+    if (/^(?:option\s*)?1$/i.test(rawText) || /^(slides?|images?|upload)$/i.test(rawText)) {
+      await ctx.reply(
+        `📄 *Upload Your Lecture Slides or Images*\n\n` +
+        `Tap the 📎 attachment icon or 📷 gallery and send your lecture slides (PDF, Word, PPTX) or images to generate questions from your material!`,
+        { parse_mode: "Markdown" }
+      );
+      return;
+    }
+
+    // Check if user selected option 2 ("2", "option 2", "topic")
+    if (/^(?:option\s*)?2$/i.test(rawText) || /^topic$/i.test(rawText)) {
+      await ctx.reply(
+        `💬 *What topic in ${courseCode} would you like to drill?*\n\n` +
+        `Reply with the topic name (e.g. \`Thorax & Mediastinum\`, \`Cardiovascular System\`, \`Histology of Tissues\`):`,
+        { parse_mode: "Markdown" }
+      );
+      return;
+    }
+
+    // If input is an invalid single digit or option command, re-prompt nicely
+    if (!isValidTopicInput(rawText)) {
+      await ctx.reply(
+        `💬 *Please reply with your topic name for ${courseCode}* (e.g. \`Thorax & Mediastinum\` or \`Cardiovascular System\`), or upload your lecture slides/images directly.`,
+        { parse_mode: "Markdown" }
+      );
+      return;
+    }
+
     awaitingStudyTopic.delete(chatId);
     userActiveTopic.set(chatId, rawText);
 
@@ -69,7 +102,7 @@ export async function handleChatMessage(ctx: Context) {
     response += `WalLearn will generate CBT questions specifically focused on *${rawText}* calibrated to your department's exam pattern!\n\n`;
     response += `Select how many questions you want to drill:`;
 
-    await ctx.reply(response, {
+    await ctx.reply(formatTelegramMarkdown(response), {
       parse_mode: "Markdown",
       reply_markup: keyboard,
     });
@@ -80,24 +113,26 @@ export async function handleChatMessage(ctx: Context) {
   const topicMatch = rawText.match(/^(?:quiz\s+me\s+on|generate\s+questions?\s+on|test\s+me\s+on|questions?\s+on|topic[:\s]+)(.+)/i);
   if (topicMatch && hasUserSubject(chatId)) {
     const topic = topicMatch[1].trim();
-    userActiveTopic.set(chatId, topic);
+    if (isValidTopicInput(topic)) {
+      userActiveTopic.set(chatId, topic);
 
-    const keyboard = new InlineKeyboard()
-      .text("⚡ 5 Questions (Sprint)", "start_quiz_5")
-      .text("🎯 10 Questions (Standard)", "start_quiz_10")
-      .row()
-      .text("🔥 20 Questions (Exam Mode)", "start_quiz_20");
+      const keyboard = new InlineKeyboard()
+        .text("⚡ 5 Questions (Sprint)", "start_quiz_5")
+        .text("🎯 10 Questions (Standard)", "start_quiz_10")
+        .row()
+        .text("🔥 20 Questions (Exam Mode)", "start_quiz_20");
 
-    let response = `🎯 *Topic Selected:* *${topic}*\n`;
-    response += `📚 *Course:* *${getUserSubjectDisplay(chatId)}*\n\n`;
-    response += `WalLearn will generate CBT questions specifically focused on *${topic}*!\n\n`;
-    response += `Select how many questions you want to drill:`;
+      let response = `🎯 *Topic Selected:* *${topic}*\n`;
+      response += `📚 *Course:* *${getUserSubjectDisplay(chatId)}*\n\n`;
+      response += `WalLearn will generate CBT questions specifically focused on *${topic}*!\n\n`;
+      response += `Select how many questions you want to drill:`;
 
-    await ctx.reply(response, {
-      parse_mode: "Markdown",
-      reply_markup: keyboard,
-    });
-    return;
+      await ctx.reply(formatTelegramMarkdown(response), {
+        parse_mode: "Markdown",
+        reply_markup: keyboard,
+      });
+      return;
+    }
   }
 
   // 4.8 Check if user is replying to the /start onboarding menu with an option (A, B, C or 1, 2, 3)
@@ -144,22 +179,17 @@ export async function handleChatMessage(ctx: Context) {
     awaitingStudyTopic.set(chatId, profile.subjectCode);
 
     const keyboard = new InlineKeyboard()
-      .text("⚡ 5 Questions", "start_quiz_5")
-      .text("🎯 10 Questions", "start_quiz_10")
-      .row()
-      .text("🔥 20 Questions", "start_quiz_20")
-      .text("📎 Attach Slides/Images", "upload_guide");
+      .text("📎 Attach Slides/Images Guide", "upload_guide");
 
     let response = `✅ *Active Course Set:* *${profile.subjectDisplay}*\n`;
     response += `⛓️ *Walrus Protocol Namespace:* \`${profile.subjectCode}\`\n\n`;
     response += `📂 *How would you like to prepare for ${profile.subjectCode.toUpperCase()}?*\n\n`;
     response += `1️⃣ 📄 *Upload Lecture Slides or Images:*\n`;
     response += `Attach your slide file (PDF, PPTX, Word) or images now to quiz directly from your lecture material.\n\n`;
-    response += `2️⃣ 💬 *Or Tell Me the Topic:*\n`;
-    response += `Reply with any topic in ${profile.subjectCode.toUpperCase()} (e.g. \`Introduction & Definitions\`) to drill questions specifically on that topic!\n\n`;
-    response += `3️⃣ ⚡ *Don't have slides?* Select how many questions below to start drilling all course topics immediately:`;
+    response += `2️⃣ 💬 *Or Reply with the Topic:*\n`;
+    response += `Reply with any topic in ${profile.subjectCode.toUpperCase()} (e.g. \`Introduction & Core Concepts\`) and I will generate questions specifically on that topic!`;
 
-    await ctx.reply(response, {
+    await ctx.reply(formatTelegramMarkdown(response), {
       parse_mode: "Markdown",
       reply_markup: keyboard,
     });
@@ -213,12 +243,14 @@ export async function handleChatMessage(ctx: Context) {
         .text("🎯 Start Interactive CBT Drill (/study)", "start_drill");
     }
 
-    await ctx.reply(response, {
+    const formattedResponse = formatTelegramMarkdown(response);
+
+    await ctx.reply(formattedResponse, {
       parse_mode: "Markdown",
       reply_markup: replyKeyboard,
     }).catch(async () => {
       // Fallback if markdown parsing fails
-      await ctx.reply(response, { reply_markup: replyKeyboard });
+      await ctx.reply(response.replace(/[*_`#]/g, ""), { reply_markup: replyKeyboard });
     });
   } catch (error) {
     console.error("Error in handleChatMessage:", error);

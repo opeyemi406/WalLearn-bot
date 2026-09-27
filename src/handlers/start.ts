@@ -97,15 +97,20 @@ export async function handleSubject(ctx: Context) {
   }
 
   const profile = setUserSubject(chatId, rawArg);
+  const { awaitingStudyTopic } = await import("../state.js");
+  awaitingStudyTopic.set(chatId, profile.subjectCode);
+
   const keyboard = new InlineKeyboard()
-    .text("⚡ 5 Questions", "start_quiz_5")
-    .text("🎯 10 Questions", "start_quiz_10")
-    .row()
-    .text("🔥 20 Questions", "start_quiz_20")
-    .text("📎 Attach Slides/Images", "upload_guide");
+    .text("📎 Attach Slides/Images Guide", "upload_guide");
 
   await ctx.reply(
-    `✅ *Active Course Updated!*\n• *Course:* *${profile.subjectDisplay}*\n• *Walrus Namespace:* \`${profile.subjectCode}\`\n\n• Attach lecture slides or images anytime to quiz directly from your material!\n\n_Choose your drill size below to start immediately:_`,
+    `✅ *Active Course Set:* *${profile.subjectDisplay}*\n` +
+    `⛓️ *Walrus Protocol Namespace:* \`${profile.subjectCode}\`\n\n` +
+    `📂 *How would you like to prepare for ${profile.subjectCode.toUpperCase()}?*\n\n` +
+    `1️⃣ 📄 *Upload Lecture Slides or Images:*\n` +
+    `Attach your slide file (PDF, PPTX, Word) or images now to quiz directly from your lecture material.\n\n` +
+    `2️⃣ 💬 *Or Reply with the Topic:*\n` +
+    `Reply with any topic in ${profile.subjectCode.toUpperCase()} (e.g. \`Introduction & Core Concepts\`) and I will generate questions specifically on that topic!`,
     { parse_mode: "Markdown", reply_markup: keyboard }
   );
 }
