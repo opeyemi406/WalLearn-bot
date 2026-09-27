@@ -18,6 +18,12 @@ export async function parseDocumentBuffer(
 ): Promise<DocumentParseResult> {
   const ext = fileExtension.toLowerCase().replace(/^\./, "");
 
+  // If image format, extract text using Gemini multimodal vision
+  if (["jpg", "jpeg", "png", "webp"].includes(ext)) {
+    const text = await extractTextFromImage(buffer, `image/${ext === "jpg" ? "jpeg" : ext}`);
+    return { text, pages: 1 };
+  }
+
   // If plain text format, decode directly
   if (["txt", "md", "csv", "json"].includes(ext)) {
     const text = buffer.toString("utf-8").trim();
@@ -113,4 +119,36 @@ function runPythonParser(
     proc.stdin.write(buffer);
     proc.stdin.end();
   });
+}
+
+export async function extractTextFromImage(
+  buffer: Buffer,
+  mimeType: string = "image/jpeg"
+): Promise<string> {
+  const { ai } = await import("./client.js");
+  const { config } = await import("../config.js");
+  const base64 = buffer.toString("base64");
+  const dataUrl = `data:${mimeType};base64,${base64}`;
+
+  const response = await ai.chat.completions.create({
+    model: config.aiModel,
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: "Extract all academic lecture text, slide titles, bullet points, formulas, definitions, and questions visible in this image verbatim. Transcribe the contents clearly and thoroughly.",
+          },
+          {
+            type: "image_url",
+            image_url: { url: dataUrl },
+          },
+        ],
+      },
+    ],
+    temperature: 0.1,
+  });
+
+  return response.choices[0]?.message?.content?.trim() || "";
 }

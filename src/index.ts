@@ -8,6 +8,7 @@ import { handleAnalyze } from "./handlers/analyze.js";
 import { handleHealth } from "./handlers/health.js";
 import { handleStudy } from "./handlers/study.js";
 import { handleDocument } from "./handlers/document.js";
+import { handlePhoto } from "./handlers/photo.js";
 import { handleCallback } from "./handlers/callback.js";
 import { handleChatMessage } from "./handlers/chat.js";
 import { walrus } from "./walrus/client.js";
@@ -63,15 +64,8 @@ async function main() {
   bot.on("callback_query:data", handleCallback);
   bot.on("message:document", handleDocument);
 
-  // Photo / Image Guidance
-  bot.on("message:photo", async (ctx) => {
-    await ctx.reply(
-      "📸 *Received Image / Screenshot*\n\n" +
-      "To extract text and generate CBT questions from your slides, please send the file as an **uncompressed Document** (select 📎 *Paperclip ➔ File/Document* and choose your PDF, Word, PowerPoint, or Notes file).\n\n" +
-      "💡 *Tip:* If you have presentation slides, you can also export them as PDF (File ➔ Export as PDF) for instant question generation!",
-      { parse_mode: "Markdown" }
-    );
-  });
+  // Photo / Image Handler (Gemini Multimodal Vision)
+  bot.on("message:photo", handlePhoto);
 
   // Media Fallback
   bot.on(["message:audio", "message:video", "message:voice"], async (ctx) => {
