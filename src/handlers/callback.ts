@@ -26,7 +26,7 @@ export async function handleCallback(ctx: Context) {
       );
     } else {
       await ctx.reply(
-        `📂 *Lecture Materials for ${getUserSubjectDisplay(chatId)}*\n\nDo you have lecture slides or notes for this course?\n• *If yes:* Upload your slide file (PDF, PPTX, Word) or snap a photo of your notes/slides now to quiz directly from your material!\n• *If no:* Select an option below to start drilling immediately!`,
+        `📂 *Lecture Materials for ${getUserSubjectDisplay(chatId)}*\n\nDo you have lecture slides or notes for this course?\n• *If yes:* Upload your slide file (PDF, PPTX, Word) or images now to quiz directly from your material!\n• *If no:* Select an option below to start drilling immediately!`,
         {
           parse_mode: "Markdown",
           reply_markup: new InlineKeyboard()
@@ -80,7 +80,7 @@ export async function handleCallback(ctx: Context) {
     const { awaitingSubject } = await import("../state.js");
     awaitingSubject.add(chatId);
     await ctx.reply(
-      `📚 Please reply with your new *Course Code* and *Course Title by the side*, for example:\n👉 \`BCH201 - General Biochemistry\`\n👉 \`CSC302 - Operating Systems\`\n👉 \`PCL301 - Clinical Pharmacokinetics\`\n\n• Attach a lecture slide (PDF/Word) or snap a photo of your notes/slides anytime to generate a quiz specifically from your lecture notes!`,
+      `📚 Please reply with your new *Course Code* and *Course Title by the side*, for example:\n👉 \`BCH201 - General Biochemistry\`\n👉 \`CSC302 - Operating Systems\`\n👉 \`PCL301 - Clinical Pharmacokinetics\`\n\n• Attach lecture slides or images anytime to generate a quiz specifically from your lecture notes!`,
       { parse_mode: "Markdown" }
     );
     return;
@@ -88,7 +88,7 @@ export async function handleCallback(ctx: Context) {
 
   if (data === "upload_guide") {
     await ctx.reply(
-      `📎 *How to Quiz from Your Slides or Photos:*\n\n1️⃣ Tap the 📎 attachment icon or 📷 camera in Telegram.\n2️⃣ Select your lecture slides (PDF, Word, PPTX) or **snap a photo** of your notes, whiteboard, or textbook!\n3️⃣ Send it to this chat!\n\nWalLearn will use Gemini Vision to transcribe the concepts and blend them with your Walrus mistake history to build a personalized exam drill.`,
+      `📎 *How to Quiz from Your Slides or Images:*\n\n1️⃣ Tap the 📎 attachment icon in Telegram.\n2️⃣ Select your lecture slides (PDF, Word, PPTX) or **images** (JPEG, PNG).\n3️⃣ Send it to this chat!\n\nWalLearn will use Gemini Vision to transcribe the concepts and blend them with your Walrus mistake history to build a personalized exam drill.`,
       { parse_mode: "Markdown" }
     );
     return;

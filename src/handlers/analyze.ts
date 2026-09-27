@@ -51,7 +51,7 @@ export async function promptForQuestions(ctx: Context, courseCode: string) {
     `Please send your past MCQ questions or past exam papers for *${cleanCode}*:\n` +
     `• 💬 *Paste questions as a text message* directly here\n` +
     `• 📄 *Upload a document* (PDF, Word, TXT, PPTX)\n` +
-    `• 📸 *Or snap a photo/screenshot* of your question paper or textbook!\n\n` +
+    `• 🖼️ *Or upload images* (JPEG, PNG)\n\n` +
     `WalLearn will use *MemWal* to analyze:\n` +
     `1. Your lecturer's exact question-setting pattern & traps\n` +
     `2. High-yield syllabus facts to store on Walrus Protocol\n` +

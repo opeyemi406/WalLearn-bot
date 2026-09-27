@@ -16,11 +16,11 @@ export async function handlePhoto(ctx: Context) {
 
   let statusMsg;
   try {
-    statusMsg = await ctx.reply("📸 _Analyzing lecture slide photo with Gemini Vision..._", {
+    statusMsg = await ctx.reply("🖼️ _Analyzing lecture material image with Gemini Vision..._", {
       parse_mode: "Markdown",
     });
   } catch {
-    statusMsg = await ctx.reply("📸 Analyzing lecture slide photo...");
+    statusMsg = await ctx.reply("🖼️ Analyzing lecture material image...");
   }
 
   try {
@@ -38,7 +38,7 @@ export async function handlePhoto(ctx: Context) {
     const buffer = Buffer.from(arrayBuffer);
 
     try {
-      await ctx.api.editMessageText(chatId, statusMsg.message_id, "📖 _Transcribing concepts and definitions from photo..._", {
+      await ctx.api.editMessageText(chatId, statusMsg.message_id, "📖 _Transcribing concepts and definitions from image..._", {
         parse_mode: "Markdown",
       });
     } catch {}
@@ -49,7 +49,7 @@ export async function handlePhoto(ctx: Context) {
       await ctx.api.editMessageText(
         chatId,
         statusMsg.message_id,
-        "⚠️ Could not extract readable lecture text from this photo. Please ensure good lighting and clear text."
+        "⚠️ Could not extract readable lecture text from this image. Please ensure clear text."
       );
       return;
     }
@@ -64,7 +64,7 @@ export async function handlePhoto(ctx: Context) {
       return processPastQuestionsAnalysis(ctx, slideText, courseCode);
     }
 
-    // 2. Intelligent Course & Topic Detection from photo or caption
+    // 2. Intelligent Course & Topic Detection from image or caption
     const caption = ctx.message?.caption?.trim();
     if (caption) {
       setUserSubject(chatId, caption);
@@ -83,7 +83,7 @@ export async function handlePhoto(ctx: Context) {
     // 3. Store in pendingSlides state
     pendingSlides.set(chatId, {
       text: slideText,
-      fileName: "Lecture_Slide_Photo.jpg",
+      fileName: "Lecture_Material_Image.jpg",
       courseCode: getUserSubject(chatId),
     });
 
@@ -96,7 +96,7 @@ export async function handlePhoto(ctx: Context) {
       .row()
       .text("🔥 20 Questions (Exam Mode)", "start_quiz_20");
 
-    let promptMsg = `📸 *Transcribed Lecture Slide Photo!*\n`;
+    let promptMsg = `🖼️ *Transcribed Lecture Material Image!*\n`;
     promptMsg += `📚 *Course:* *${getUserSubjectDisplay(chatId)}*\n`;
     promptMsg += `📝 *Extracted Content:* _"${slideText.slice(0, 180).replace(/\n/g, " ")}..."_\n\n`;
     promptMsg += `Select how many CBT questions you want to generate:`;

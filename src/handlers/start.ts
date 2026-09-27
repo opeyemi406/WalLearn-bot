@@ -27,10 +27,10 @@ Most AI study tools suffer from amnesia. WalLearn permanently records your exam 
 🎯 *How would you like to start?*
 
 *1️⃣ Got Department Past Questions?* 📝
-Send your past MCQ questions (text, file: PDF/Word, or snap a photo 📸). WalLearn analyzes your lecturer's question patterns (traps, scenario depth, high-yield topics) to mimic their exact style.
+Send your past MCQ questions (text, documents: PDF/Word, or images: PNG/JPG). WalLearn analyzes your lecturer's question patterns (traps, scenario depth, high-yield topics) to mimic their exact style.
 
 *2️⃣ Ready to Study Directly?* 📂
-Proceed directly by entering your **Course Code & Title** (e.g. \`PCL301 - Evaluation of Drug Toxicity\` or \`BIO101\`). You can upload lecture slides, snap photos of notes, or begin instant CBT drills immediately!
+Proceed directly by entering your **Course Code & Title** (e.g. \`PCL301 - Evaluation of Drug Toxicity\` or \`BIO101\`). You can upload lecture slides/images or begin instant CBT drills immediately!
 
 *3️⃣ Returning Student?* 🔄
 Did you clear your chat history or switch devices? Restore your past on-chain mistakes and 3-pass streaks anytime from Walrus Protocol!
@@ -90,7 +90,7 @@ export async function handleSubject(ctx: Context) {
     awaitingSubject.add(chatId);
     const current = getUserSubjectDisplay(chatId);
     await ctx.reply(
-      `📚 *Active Course:* *${current}*\n\nTo set or switch your course, please reply with your *Course Code* and *Course Title by the side*, for example:\n👉 \`BCH201 - General Biochemistry\`\n👉 \`CSC302 - Operating Systems\`\n👉 \`PCL301 - Clinical Pharmacokinetics\`\n\n• Attach a lecture slide (PDF/Word) or snap a photo of your notes/slides anytime to quiz directly from your material!`,
+      `📚 *Active Course:* *${current}*\n\nTo set or switch your course, please reply with your *Course Code* and *Course Title by the side*, for example:\n👉 \`BCH201 - General Biochemistry\`\n👉 \`CSC302 - Operating Systems\`\n👉 \`PCL301 - Clinical Pharmacokinetics\`\n\n• Attach lecture slides or images anytime to quiz directly from your material!`,
       { parse_mode: "Markdown" }
     );
     return;
@@ -102,10 +102,10 @@ export async function handleSubject(ctx: Context) {
     .text("🎯 10 Questions", "start_quiz_10")
     .row()
     .text("🔥 20 Questions", "start_quiz_20")
-    .text("📎 Attach Slides/Photos", "upload_guide");
+    .text("📎 Attach Slides/Images", "upload_guide");
 
   await ctx.reply(
-    `✅ *Active Course Updated!*\n• *Course:* *${profile.subjectDisplay}*\n• *Walrus Namespace:* \`${profile.subjectCode}\`\n\n• Attach a lecture slide (PDF/Word) or snap a photo of your notes/slides anytime to quiz directly from your material!\n\n_Choose your drill size below to start immediately:_`,
+    `✅ *Active Course Updated!*\n• *Course:* *${profile.subjectDisplay}*\n• *Walrus Namespace:* \`${profile.subjectCode}\`\n\n• Attach lecture slides or images anytime to quiz directly from your material!\n\n_Choose your drill size below to start immediately:_`,
     { parse_mode: "Markdown", reply_markup: keyboard }
   );
 }
