@@ -129,27 +129,46 @@ Respond in clean, well-formatted Markdown.
     awaitingPastQuestions.delete(chatId);
 
     // 5. Send rich confirmation and guide user to upload lecture slides
+    let profileSnippet = blueprint.trim();
+    if (profileSnippet.length > 900) {
+      const lastNewline = profileSnippet.lastIndexOf("\n", 900);
+      profileSnippet = (lastNewline > 400 ? profileSnippet.slice(0, lastNewline) : profileSnippet.slice(0, 900)) + "\n\n_...[Full Blueprint saved to Walrus Memory]_";
+    }
+
     let reply = `🎯 *Department Exam Blueprint Analyzed & Stored!*\n\n`;
     reply += `🏛 *Course:* \`${courseCode}\`\n\n`;
-    reply += `📋 *Lecturer Exam Profile:*\n${blueprint.slice(0, 900)}...\n\n`;
+    reply += `📋 *Lecturer Exam Profile:*\n${profileSnippet}\n\n`;
     reply += `🧠 *Walrus Memory Storage:*\n`;
     reply += `• *Atomic Facts Extracted:* ${factLines.length + (analyzeRes.facts?.length || 0)} facts\n`;
     reply += `• *Network:* Walrus Protocol Mainnet\n`;
     reply += `• *Status:* 🟢 Stored in isolated namespace \`${walrus.getUserNamespace(courseCode, chatId)}\`\n\n`;
     reply += `━━━━━━━━━━━━━━━━━━━\n`;
-    reply += `🚀 *Next Step:* Now upload your *Lecture Slides* (or type a topic) to generate quiz questions matching this *exact department exam pattern*!`;
+    reply += `🚀 *Next Step:* Now upload your *Lecture Slides* or images (or type a topic) to generate quiz questions matching this *exact department exam pattern*!`;
 
-    await ctx.api.editMessageText(chatId, statusMsg.message_id, reply, {
-      parse_mode: "Markdown",
-    });
+    try {
+      await ctx.api.editMessageText(chatId, statusMsg.message_id, reply, {
+        parse_mode: "Markdown",
+      });
+    } catch (parseErr) {
+      console.warn("Markdown parse failed for blueprint, falling back to clean text:", parseErr);
+      const cleanReply = reply.replace(/[*_`]/g, "");
+      await ctx.api.editMessageText(chatId, statusMsg.message_id, cleanReply);
+    }
   } catch (err) {
     console.error("Past question analysis error:", err);
-    await ctx.api.editMessageText(
-      chatId,
-      statusMsg.message_id,
-      `⚠️ *Analysis encountered an error:* ${(err as Error).message}\n` +
-      `You can still upload your lecture slides to proceed with studying.`,
-      { parse_mode: "Markdown" }
-    );
+    try {
+      await ctx.api.editMessageText(
+        chatId,
+        statusMsg.message_id,
+        `⚠️ *Analysis encountered an issue:* ${(err as Error).message}\n\nYou can still upload your lecture slides or images to proceed with studying.`,
+        { parse_mode: "Markdown" }
+      );
+    } catch {
+      await ctx.api.editMessageText(
+        chatId,
+        statusMsg.message_id,
+        `⚠️ Analysis encountered an issue: ${(err as Error).message}\n\nYou can still upload your lecture slides or images to proceed with studying.`
+      );
+    }
   }
 }
