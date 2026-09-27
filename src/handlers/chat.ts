@@ -33,6 +33,10 @@ export async function handleChatMessage(ctx: Context) {
   const { awaitingRestoreCourse } = await import("../state.js");
   if (awaitingRestoreCourse.has(chatId)) {
     awaitingRestoreCourse.delete(chatId);
+    if (/^(all|all\s+courses?|everything|🌐)$/i.test(rawText.trim())) {
+      const { executeRestoreAll } = await import("./restore.js");
+      return executeRestoreAll(ctx);
+    }
     const { executeRestoreCourse } = await import("./restore.js");
     return executeRestoreCourse(ctx, rawText);
   }

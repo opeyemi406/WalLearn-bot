@@ -19,6 +19,9 @@ export async function handleRestore(ctx: Context) {
     return;
   }
 
+  // Pre-arm awaitingRestoreCourse so typing the course code directly without pressing the button works instantly
+  awaitingRestoreCourse.add(chatId);
+
   const keyboard = new InlineKeyboard()
     .text("📚 Specific Course Code", "restore_course_prompt")
     .text("🌐 All Course Codes", "restore_all");
@@ -28,9 +31,11 @@ export async function handleRestore(ctx: Context) {
     `_Decentralized memory blobs stored on Walrus are permanent and immutable. ` +
     `Even if your Telegram chat history was cleared, your past missed questions, misconceptions, ` +
     `and 3-pass mastery streaks remain safely stored on-chain._\n\n` +
-    `Select what you want to restore:`;
+    `Select what you want to restore, or reply directly with your *Course Code* (e.g. \`ANA201\` or \`PCL301\`):`;
 
-  await ctx.reply(msg, {
+  const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
+
+  await ctx.reply(formatTelegramMarkdown(msg), {
     parse_mode: "Markdown",
     reply_markup: keyboard,
   });
