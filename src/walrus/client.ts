@@ -81,6 +81,25 @@ export class WalrusClient {
         this.localLedger = [...SEED_MISTAKES];
         this.saveLedger();
       }
+
+      // Auto-migrate & normalize existing records to strictly separate exam facts from quiz mistakes
+      if (Array.isArray(this.localLedger)) {
+        this.localLedger = this.localLedger.map((r) => {
+          const isFact =
+            r.recordType === "fact" ||
+            r.topic === "Exam Syllabus Fact" ||
+            r.topic === "Syllabus Concept" ||
+            r.question === "MemWal Ingestion" ||
+            r.question === "Extracted via MemWal" ||
+            (!r.misconception && (r.misses === 0 || !r.misses));
+
+          return {
+            ...r,
+            recordType: isFact ? "fact" : "mistake",
+            misses: isFact ? 0 : (r.misses || 1),
+          };
+        });
+      }
     } catch (e) {
       this.localLedger = [...SEED_MISTAKES];
     }
@@ -238,6 +257,7 @@ export class WalrusClient {
     this.localLedger.push({
       jobId,
       blobId,
+      recordType: "mistake",
       topic: mistake.topic,
       question: mistake.question,
       misconception: mistake.my_error,
@@ -294,6 +314,7 @@ export class WalrusClient {
 
           this.localLedger.push({
             jobId: jId,
+            recordType: "fact",
             topic: `Syllabus Concept`,
             question: "Extracted via MemWal",
             misconception: "",
@@ -372,6 +393,7 @@ export class WalrusClient {
           const jId = f.job_id || f.id;
           this.localLedger.push({
             jobId: jId,
+            recordType: "fact",
             topic: "Exam Syllabus Fact",
             question: "MemWal Ingestion",
             misconception: "",
@@ -477,12 +499,37 @@ export class WalrusClient {
                 );
                 if (!exists) {
                   this.localLedger.push({
+                    recordType: "mistake",
                     topic,
                     question: questionMatch ? questionMatch[1].trim() : "What is the key principle of this concept?",
                     misconception: errorMatch ? errorMatch[1].trim() : "Missed core distinction",
                     correctFact: factMatch ? factMatch[1].trim() : "",
                     severity: (severityMatch?.[1].trim().toLowerCase() as any) || "high",
                     misses: missesMatch ? parseInt(missesMatch[1], 10) : 1,
+                    namespace: namespace.toLowerCase(),
+                    chatId: chatId,
+                    timestamp: new Date().toISOString(),
+                    status: "confirmed",
+                  });
+                }
+              }
+            } else if (line.includes("[EXAM_FACT]")) {
+              const factMatch = line.match(/Fact:\s*([^\n]+)/i) || line.match(/\[EXAM_FACT\]\s*(?:Course:\s*[^|]+\|\s*)?([^\n]+)/i);
+              if (factMatch) {
+                const factText = factMatch[1].trim();
+                const exists = this.localLedger.some(
+                  (r) => (!chatId || r.chatId === chatId) && r.correctFact === factText
+                );
+                if (!exists) {
+                  this.localLedger.push({
+                    recordType: "fact",
+                    topic: "Exam Syllabus Fact",
+                    question: "MemWal Ingestion",
+                    misconception: "",
+                    correctFact: factText,
+                    severity: "low",
+                    misses: 0,
+                    correctStreak: 0,
                     namespace: namespace.toLowerCase(),
                     chatId: chatId,
                     timestamp: new Date().toISOString(),
@@ -621,6 +668,13 @@ export class WalrusClient {
     });
 
     for (const entry of localMatches) {
+      if (entry.recordType === "fact" || (entry.misses === 0 && !entry.misconception)) {
+        const factLine = `[EXAM_FACT] Topic: ${entry.topic} | Fact: ${entry.correctFact || ""}`;
+        if (!recalledTexts.includes(factLine)) {
+          recalledTexts.push(factLine);
+        }
+        continue;
+      }
       if (entry.status === "mastered") {
         const masteredLine = `[MASTERED] Topic: ${entry.topic}`;
         if (!recalledTexts.includes(masteredLine)) {
@@ -649,7 +703,9 @@ export class WalrusClient {
         (!chatId || r.chatId === chatId) &&
         (r.namespace || "").toLowerCase().replace(/[^a-z0-9]/g, "") === cleanNs &&
         (r.topic.toLowerCase().includes(cleanTopic) || cleanTopic.includes(r.topic.toLowerCase())) &&
-        r.status !== "mastered"
+        r.status !== "mastered" &&
+        r.recordType !== "fact" &&
+        (r.misses || 0) > 0
     );
   }
 
@@ -731,7 +787,11 @@ export class WalrusClient {
     this.loadLedger();
     const cleanSubject = subject.toLowerCase().replace(/[^a-z0-9]/g, "");
     const existingForSubject = this.localLedger.filter(
-      (r) => r.chatId === chatId && (r.namespace || "").toLowerCase().replace(/[^a-z0-9]/g, "") === cleanSubject
+      (r) =>
+        r.chatId === chatId &&
+        (r.namespace || "").toLowerCase().replace(/[^a-z0-9]/g, "") === cleanSubject &&
+        r.recordType !== "fact" &&
+        (r.misses || 0) > 0
     );
     if (existingForSubject.length === 0 && chatId) {
       // Auto-restore silently from Walrus Protocol Mainnet if user has 0 records locally

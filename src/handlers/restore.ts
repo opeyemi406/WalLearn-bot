@@ -58,23 +58,50 @@ export async function executeRestoreCourse(ctx: Context, courseCode: string) {
         r.namespace?.toLowerCase() === cleanCode.toLowerCase()
     );
 
+    const mistakeRecords = courseRecords.filter(
+      (r) =>
+        r.recordType !== "fact" &&
+        (r.misses || 0) > 0 &&
+        r.topic !== "Exam Syllabus Fact" &&
+        r.topic !== "Syllabus Concept"
+    );
+
+    const factRecords = courseRecords.filter(
+      (r) =>
+        r.recordType === "fact" ||
+        (r.misses || 0) === 0 ||
+        r.topic === "Exam Syllabus Fact" ||
+        r.topic === "Syllabus Concept"
+    );
+
     let msg = `⛓️ *Walrus On-Chain Recovery Complete: ${cleanCode}*\n\n`;
     msg += `• *Walrus Mainnet Status:* ${restoreResult.success ? "🟢 Synchronized" : "⚠️ Offline"}\n`;
     msg += `• *Permanent Blobs On-Chain:* *${restoreResult.total}*\n`;
-    msg += `• *Tracked Weaknesses:* *${courseRecords.length}*\n`;
+    msg += `• *Tracked Weaknesses (Mistakes):* *${mistakeRecords.length}*\n`;
+    if (factRecords.length > 0) {
+      msg += `• *Verified Exam Facts:* *${factRecords.length}*\n`;
+    }
     msg += `━━━━━━━━━━━━━━━━━━━\n\n`;
 
-    if (courseRecords.length === 0) {
-      if (restoreResult.total === 0) {
+    if (mistakeRecords.length === 0) {
+      if (factRecords.length === 0) {
         msg += `✨ *Fresh Course Record!* No past mistakes exist for *${cleanCode}* on Walrus.\n`;
         msg += `You are studying this course for the first time. Start a study session with /study to begin!`;
       } else {
-        msg += `Found ${restoreResult.total} storage blobs on Walrus for ${cleanCode}.\n`;
-        msg += `Take a quiz with /study or view your /briefing!`;
+        msg += `✨ *Zero Recorded Exam Mistakes!* You haven't made any mistakes in *${cleanCode}* yet.\n\n`;
+        msg += `📚 *Department Exam Facts on Walrus (${factRecords.length} stored):*\n`;
+        factRecords.slice(0, 5).forEach((f) => {
+          const cleanF = f.correctFact ? (f.correctFact.length > 140 ? `${f.correctFact.slice(0, 140)}...` : f.correctFact) : f.topic;
+          msg += `• ${cleanF.replace(/^\[(?:FACT|EXAM_FACT)\]\s*/i, "")}\n`;
+        });
+        if (factRecords.length > 5) {
+          msg += `_...and ${factRecords.length - 5} more facts saved on-chain._\n`;
+        }
+        msg += `\n🎯 _Start an exam drill calibrated to your lecturer's style with /study!_`;
       }
     } else {
       msg += `📋 *Restored Mistakes & Streaks:*\n`;
-      courseRecords.forEach((item, i) => {
+      mistakeRecords.forEach((item, i) => {
         const streak = item.correctStreak || 0;
         let streakBadge = "⏳ 0/3 (Needs Drill)";
         if (streak === 1) streakBadge = "🔄 1/3 (Pass 1 Confirmed)";
@@ -105,7 +132,12 @@ export async function executeRestoreCourse(ctx: Context, courseCode: string) {
         }
       });
 
-      msg += `\n🎯 _To drill these specific past mistakes, type /drill or upload your lecture slides!_`;
+      if (factRecords.length > 0) {
+        msg += `\n━━━━━━━━━━━━━━━━━━━\n`;
+        msg += `📚 *Plus ${factRecords.length} Department Exam Facts* extracted from your past question analysis!\n`;
+      }
+
+      msg += `\n🎯 _To drill these specific past mistakes, type /study or upload your lecture slides!_`;
     }
 
     await replySafeChunks(ctx, statusMsg.message_id, msg);
@@ -215,14 +247,33 @@ export async function executeRestoreAll(ctx: Context) {
     const ledger = await walrus.getLedger(chatId);
     const userRecords = ledger.filter((r) => r.chatId === chatId);
 
+    const userMistakes = userRecords.filter(
+      (r) =>
+        r.recordType !== "fact" &&
+        (r.misses || 0) > 0 &&
+        r.topic !== "Exam Syllabus Fact" &&
+        r.topic !== "Syllabus Concept"
+    );
+
+    const userFacts = userRecords.filter(
+      (r) =>
+        r.recordType === "fact" ||
+        (r.misses || 0) === 0 ||
+        r.topic === "Exam Syllabus Fact" ||
+        r.topic === "Syllabus Concept"
+    );
+
     let msg = `⛓️ *Walrus On-Chain Global Recovery Report*\n\n`;
     msg += `• *Permanent Blobs On-Chain:* *${totalBlobsFound}*\n`;
-    msg += `• *Total Tracked Weaknesses Across All Courses:* *${userRecords.length}*\n`;
+    msg += `• *Total Tracked Weaknesses (Mistakes):* *${userMistakes.length}*\n`;
+    if (userFacts.length > 0) {
+      msg += `• *Total Verified Exam Facts:* *${userFacts.length}*\n`;
+    }
     msg += `• *Courses Detected:* ${pastCodes.map((c) => `\`${c.toUpperCase()}\``).join(", ")}\n`;
     msg += `━━━━━━━━━━━━━━━━━━━\n\n`;
 
-    if (userRecords.length === 0) {
-      msg += `_No mistakes recorded across any course code yet._\nStart studying with /study or upload slides to begin tracking!`;
+    if (userMistakes.length === 0 && userFacts.length === 0) {
+      msg += `_No mistakes or facts recorded across any course code yet._\nStart studying with /study or upload slides to begin tracking!`;
     } else {
       // Group by course code
       const byCourse = new Map<string, typeof userRecords>();
@@ -233,19 +284,26 @@ export async function executeRestoreAll(ctx: Context) {
       }
 
       for (const [course, items] of byCourse.entries()) {
-        msg += `📚 *${course} (${items.length} records):*\n`;
-        items.slice(0, 4).forEach((item, i) => {
-          const streak = item.correctStreak || 0;
-          const badge = streak >= 3 ? "🏆 3/3" : `${streak}/3`;
-          msg += `  ${i + 1}. *${item.topic}* [${badge}]\n`;
-          if (item.blobId) {
-            msg += `     [Walrusscan Blob](https://walruscan.com/mainnet/blob/${item.blobId})\n`;
+        const mistakes = items.filter((r) => r.recordType !== "fact" && (r.misses || 0) > 0);
+        const facts = items.filter((r) => r.recordType === "fact" || (r.misses || 0) === 0);
+
+        if (mistakes.length === 0) {
+          msg += `📚 *${course}:* ✨ Zero mistakes recorded (${facts.length} exam facts stored)\n\n`;
+        } else {
+          msg += `📚 *${course} (${mistakes.length} mistakes${facts.length > 0 ? `, ${facts.length} exam facts` : ""}):*\n`;
+          mistakes.slice(0, 4).forEach((item, i) => {
+            const streak = item.correctStreak || 0;
+            const badge = streak >= 3 ? "🏆 3/3" : `${streak}/3`;
+            msg += `  ${i + 1}. *${item.topic}* [${badge}]\n`;
+            if (item.blobId) {
+              msg += `     [Walrusscan Blob](https://walruscan.com/mainnet/blob/${item.blobId})\n`;
+            }
+          });
+          if (mistakes.length > 4) {
+            msg += `  _...and ${mistakes.length - 4} more topics_\n`;
           }
-        });
-        if (items.length > 4) {
-          msg += `  _...and ${items.length - 4} more topics_\n`;
+          msg += `\n`;
         }
-        msg += `\n`;
       }
 
       msg += `🎯 _Run /restore <courseCode> to see full details for any specific course._`;

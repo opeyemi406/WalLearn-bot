@@ -29,6 +29,7 @@ export interface WeaknessBriefing {
 export interface StoredBlobRecord {
   jobId?: string;
   blobId?: string;
+  recordType?: "mistake" | "fact";
   topic: string;
   question?: string;
   misconception?: string;

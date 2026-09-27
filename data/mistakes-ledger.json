@@ -10,7 +10,8 @@
     "misses": 1,
     "namespace": "pcl301",
     "timestamp": "2026-09-25T16:03:25.000Z",
-    "status": "confirmed"
+    "status": "confirmed",
+    "recordType": "mistake"
   },
   {
     "topic": "Receptor Classifications",
@@ -21,7 +22,8 @@
     "misses": 1,
     "namespace": "pcl301",
     "timestamp": "2026-09-25T16:53:23.459Z",
-    "status": "confirmed"
+    "status": "confirmed",
+    "recordType": "mistake"
   },
   {
     "jobId": "7cedb590-1177-43cc-98f7-6fb22345d06c",
@@ -34,7 +36,8 @@
     "misses": 1,
     "namespace": "pcl301",
     "timestamp": "2026-09-25T17:08:55.724Z",
-    "status": "confirmed"
+    "status": "confirmed",
+    "recordType": "mistake"
   },
   {
     "jobId": "4eabf5b2-e21b-43d4-bd5f-919473879e68",
@@ -48,7 +51,8 @@
     "namespace": "pcl301",
     "chatId": 6878463854,
     "timestamp": "2026-09-25T22:50:54.928Z",
-    "status": "mastered"
+    "status": "mastered",
+    "recordType": "mistake"
   },
   {
     "jobId": "caa9b82e-b3b8-45a6-a75b-29c33fa21b5a",
@@ -63,7 +67,8 @@
     "namespace": "pcl301",
     "chatId": 6878463854,
     "timestamp": "2026-09-25T22:51:43.671Z",
-    "status": "recovering"
+    "status": "recovering",
+    "recordType": "mistake"
   },
   {
     "jobId": "d3104df7-17c2-4f85-bf18-f50f3e3dda86",
@@ -78,7 +83,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-25T22:53:35.572Z",
     "status": "confirmed",
-    "blobId": "5hpdTHZ38fdFbd066ZBaiaN8Q3vhugeI8D1KuhtkyCU"
+    "blobId": "5hpdTHZ38fdFbd066ZBaiaN8Q3vhugeI8D1KuhtkyCU",
+    "recordType": "mistake"
   },
   {
     "jobId": "455033f0-fd48-4320-b8b6-2efb34412cc3",
@@ -93,7 +99,8 @@
     "namespace": "pcl301",
     "chatId": 6878463854,
     "timestamp": "2026-09-25T22:54:26.646Z",
-    "status": "recovering"
+    "status": "recovering",
+    "recordType": "mistake"
   },
   {
     "jobId": "712b1d50-564d-4567-a1b9-544e4d350f6b",
@@ -108,7 +115,8 @@
     "namespace": "pcl301",
     "chatId": 6878463854,
     "timestamp": "2026-09-25T22:55:04.499Z",
-    "status": "recovering"
+    "status": "recovering",
+    "recordType": "mistake"
   },
   {
     "jobId": "1572bc8d-90ce-4615-9bb6-48a8b50297f3",
@@ -123,7 +131,8 @@
     "namespace": "pcl301",
     "chatId": 6878463854,
     "timestamp": "2026-09-25T22:55:21.439Z",
-    "status": "mastered"
+    "status": "mastered",
+    "recordType": "mistake"
   },
   {
     "jobId": "3aff6e55-ac85-47ce-b41c-b6a6c7d8b350",
@@ -138,7 +147,8 @@
     "namespace": "pcl301",
     "chatId": 6878463854,
     "timestamp": "2026-09-25T22:56:14.112Z",
-    "status": "confirmed"
+    "status": "confirmed",
+    "recordType": "mistake"
   },
   {
     "jobId": "1f129dab-f2b0-4710-8081-325b8cab7aab",
@@ -153,7 +163,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-25T22:59:09.684Z",
     "status": "confirmed",
-    "blobId": "ji3AhZvzsfyJUV78MPtdIoWGVzMzfSZ9CcVq-6Giz_U"
+    "blobId": "ji3AhZvzsfyJUV78MPtdIoWGVzMzfSZ9CcVq-6Giz_U",
+    "recordType": "mistake"
   },
   {
     "jobId": "74826ef0-673e-4c5f-aa71-92b324573c5d",
@@ -168,7 +179,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-25T23:01:06.048Z",
     "status": "recovering",
-    "blobId": "3jp1L4eKeGTxWPWAmn9b0f03CQv8hKagg_2DaGUtv1M"
+    "blobId": "3jp1L4eKeGTxWPWAmn9b0f03CQv8hKagg_2DaGUtv1M",
+    "recordType": "mistake"
   },
   {
     "jobId": "3e9c4faf-6e12-4fdf-8571-135e78ad5ecc",
@@ -183,7 +195,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-25T23:01:19.218Z",
     "status": "confirmed",
-    "blobId": "EdW4DnJ4REcorkfkkZT6blGQE2SoDAAzc2_etJEarWc"
+    "blobId": "EdW4DnJ4REcorkfkkZT6blGQE2SoDAAzc2_etJEarWc",
+    "recordType": "mistake"
   },
   {
     "jobId": "72ca656b-af83-4727-ab12-3ab7b7f1a490",
@@ -198,7 +211,8 @@
     "namespace": "pcl301",
     "chatId": 6878463854,
     "timestamp": "2026-09-25T23:03:34.137Z",
-    "status": "mastered"
+    "status": "mastered",
+    "recordType": "mistake"
   },
   {
     "jobId": "f2b3d400-0062-48be-876f-fc1895479696",
@@ -213,7 +227,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:31:43.795Z",
     "status": "confirmed",
-    "blobId": "My2MEKmIxh3JXUM8UHZYAT_GMx5V8bvHLkwIkmDiEHE"
+    "blobId": "My2MEKmIxh3JXUM8UHZYAT_GMx5V8bvHLkwIkmDiEHE",
+    "recordType": "fact"
   },
   {
     "jobId": "a2c7bcbc-715c-4570-85f2-827b8dfe41b6",
@@ -228,7 +243,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:31:43.795Z",
     "status": "confirmed",
-    "blobId": "4QW6mckuf7ZpHasBKzlsaqPY6-ZTQxdvux4aoTQ2Egw"
+    "blobId": "4QW6mckuf7ZpHasBKzlsaqPY6-ZTQxdvux4aoTQ2Egw",
+    "recordType": "fact"
   },
   {
     "jobId": "26ee7dea-ceb8-44c3-a574-486c40464366",
@@ -243,7 +259,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:31:43.795Z",
     "status": "confirmed",
-    "blobId": "Jjm1v73_rtqMtsEAFoOzqOxyxmzJh0HGJrmb5sbnMGw"
+    "blobId": "Jjm1v73_rtqMtsEAFoOzqOxyxmzJh0HGJrmb5sbnMGw",
+    "recordType": "fact"
   },
   {
     "jobId": "6e193790-e8ea-4125-9ed6-5327e973cb82",
@@ -258,7 +275,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:31:43.795Z",
     "status": "confirmed",
-    "blobId": "n2HjLeJ6lzXczQzXolSxDOwDGK2SW1Zeec58Ly22j9o"
+    "blobId": "n2HjLeJ6lzXczQzXolSxDOwDGK2SW1Zeec58Ly22j9o",
+    "recordType": "fact"
   },
   {
     "jobId": "8b5df9fb-b5c2-4bda-86f5-39cd1bd2b442",
@@ -273,7 +291,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:31:43.795Z",
     "status": "confirmed",
-    "blobId": "k4OMqlMkyjnvGfPwe8yIST6tiyCQLiyXE4jA6RsqmuQ"
+    "blobId": "k4OMqlMkyjnvGfPwe8yIST6tiyCQLiyXE4jA6RsqmuQ",
+    "recordType": "fact"
   },
   {
     "jobId": "9fca464b-9b10-452b-9045-9be4b3d61d90",
@@ -288,7 +307,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:31:43.795Z",
     "status": "confirmed",
-    "blobId": "tH_hoQfKVsU_jv7HZvbjkSAbzNBrn1j-99m9wYWzi0U"
+    "blobId": "tH_hoQfKVsU_jv7HZvbjkSAbzNBrn1j-99m9wYWzi0U",
+    "recordType": "fact"
   },
   {
     "jobId": "01906219-c39f-42f3-b154-815bc8f9b0be",
@@ -303,7 +323,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:31:43.795Z",
     "status": "confirmed",
-    "blobId": "O7A0rwFBsU4lgd4n-1qDU28ydJFQ4Sb_lJhbzay-qbA"
+    "blobId": "O7A0rwFBsU4lgd4n-1qDU28ydJFQ4Sb_lJhbzay-qbA",
+    "recordType": "fact"
   },
   {
     "jobId": "f797a5cb-712f-46f9-8261-0dd0191b7134",
@@ -318,7 +339,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:31:43.795Z",
     "status": "confirmed",
-    "blobId": "_uMsHuwb_Rt0anJ4cSpOj_xurKILjan8ENg0ZF1we4E"
+    "blobId": "_uMsHuwb_Rt0anJ4cSpOj_xurKILjan8ENg0ZF1we4E",
+    "recordType": "fact"
   },
   {
     "jobId": "603d4fbf-1bd5-4a27-8e74-883f4677560a",
@@ -333,7 +355,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:31:43.795Z",
     "status": "confirmed",
-    "blobId": "rvWPE1GDRYKjYqcaXlvkOJc_gGABvm5rylN3DA6jq7I"
+    "blobId": "rvWPE1GDRYKjYqcaXlvkOJc_gGABvm5rylN3DA6jq7I",
+    "recordType": "fact"
   },
   {
     "jobId": "68d93f4c-7907-49d0-bfcd-0dc9bb43ba89",
@@ -348,7 +371,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:31:43.795Z",
     "status": "confirmed",
-    "blobId": "8yyFRo-4oJKrav37sf-F6RGSQQAtmqe-wW6zei1dASw"
+    "blobId": "8yyFRo-4oJKrav37sf-F6RGSQQAtmqe-wW6zei1dASw",
+    "recordType": "fact"
   },
   {
     "jobId": "7d74f0ba-3e71-458b-82cf-e57e193356b1",
@@ -363,7 +387,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:31:43.795Z",
     "status": "confirmed",
-    "blobId": "xOeGtiENbjLym0LN0TRRsG5p1KItIsb0do0sgdJJ7So"
+    "blobId": "xOeGtiENbjLym0LN0TRRsG5p1KItIsb0do0sgdJJ7So",
+    "recordType": "fact"
   },
   {
     "jobId": "44210f1a-a905-4208-841e-8b40bff11669",
@@ -378,7 +403,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:31:43.795Z",
     "status": "confirmed",
-    "blobId": "xYcj23pjxZNmkbYWt3_LZtV5w8SzS1e0a9SjgP-EL9I"
+    "blobId": "xYcj23pjxZNmkbYWt3_LZtV5w8SzS1e0a9SjgP-EL9I",
+    "recordType": "fact"
   },
   {
     "jobId": "2039d3a4-8e10-472a-aa4c-71dccb2d8464",
@@ -393,7 +419,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:31:43.795Z",
     "status": "confirmed",
-    "blobId": "bR-rgQtBPOU2x_Q498-wq9arZl-HFTnxwfBfMTQ8RiY"
+    "blobId": "bR-rgQtBPOU2x_Q498-wq9arZl-HFTnxwfBfMTQ8RiY",
+    "recordType": "fact"
   },
   {
     "jobId": "85474b7d-45e1-49e1-9562-7b02d4b131b4",
@@ -408,7 +435,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:31:43.795Z",
     "status": "confirmed",
-    "blobId": "iuOwcgiiDz-ukL_wbR4I6dsNNyIvNcv2V5UhzNd89h4"
+    "blobId": "iuOwcgiiDz-ukL_wbR4I6dsNNyIvNcv2V5UhzNd89h4",
+    "recordType": "fact"
   },
   {
     "jobId": "4ad1167f-c0ba-4b66-b027-b9b42b741f8e",
@@ -423,7 +451,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:31:43.795Z",
     "status": "confirmed",
-    "blobId": "1Q95Ro7Bn2BSlTOJHS0AtwDim9m5jCy946_MaUQLf0o"
+    "blobId": "1Q95Ro7Bn2BSlTOJHS0AtwDim9m5jCy946_MaUQLf0o",
+    "recordType": "fact"
   },
   {
     "jobId": "dd984151-8981-4e3f-bb92-72018e668acd",
@@ -438,7 +467,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:31:43.795Z",
     "status": "confirmed",
-    "blobId": "iuYVfccB2vQDSVMxyDVdVlpt798WlM1G16FPwEzH4eU"
+    "blobId": "iuYVfccB2vQDSVMxyDVdVlpt798WlM1G16FPwEzH4eU",
+    "recordType": "fact"
   },
   {
     "jobId": "12e3030d-0b05-47c3-bb9d-fe12f4e9af7a",
@@ -453,7 +483,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:31:43.795Z",
     "status": "confirmed",
-    "blobId": "vEnLkT4BNCqakoygil9LB0M7KRX8RNcAQua8_ksQ5tc"
+    "blobId": "vEnLkT4BNCqakoygil9LB0M7KRX8RNcAQua8_ksQ5tc",
+    "recordType": "fact"
   },
   {
     "jobId": "275f391c-7757-4dd7-be8a-ee28bc2d5f3c",
@@ -467,7 +498,8 @@
     "namespace": "PCL301",
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:31:44.077Z",
-    "status": "confirmed"
+    "status": "confirmed",
+    "recordType": "fact"
   },
   {
     "jobId": "a6db93da-c443-4d30-9324-1db40dbdde09",
@@ -481,7 +513,8 @@
     "namespace": "PCL301",
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:31:44.077Z",
-    "status": "confirmed"
+    "status": "confirmed",
+    "recordType": "fact"
   },
   {
     "jobId": "c0094a19-8356-4e13-9017-05389989361d",
@@ -495,7 +528,8 @@
     "namespace": "PCL301",
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:31:44.077Z",
-    "status": "confirmed"
+    "status": "confirmed",
+    "recordType": "fact"
   },
   {
     "topic": "Succinylcholine Phase 1 Block",
@@ -508,7 +542,8 @@
     "namespace": "PCL301",
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:32:19.693Z",
-    "status": "mastered"
+    "status": "mastered",
+    "recordType": "mistake"
   },
   {
     "jobId": "3f698f28-f2b0-4a22-aa88-4e23bff0e6a9",
@@ -523,7 +558,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:45:51.346Z",
     "status": "confirmed",
-    "blobId": "NJ7cKv6CTJgvQnOBTvsbBQpwy8Vlr1PCXPVDewFcHwk"
+    "blobId": "NJ7cKv6CTJgvQnOBTvsbBQpwy8Vlr1PCXPVDewFcHwk",
+    "recordType": "fact"
   },
   {
     "jobId": "e91c0352-2d1e-4838-ac4c-e2462aadf9bd",
@@ -538,7 +574,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:45:51.347Z",
     "status": "confirmed",
-    "blobId": "-7g28ng_a-YMyMzk-lXaUvP57lRT1HRUcnA9P9xnQRg"
+    "blobId": "-7g28ng_a-YMyMzk-lXaUvP57lRT1HRUcnA9P9xnQRg",
+    "recordType": "fact"
   },
   {
     "jobId": "2b3738f8-8a6a-4801-91b1-bb8b4777c21c",
@@ -553,7 +590,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:45:51.347Z",
     "status": "confirmed",
-    "blobId": "_kjLO2lyf1VGLI-toEROVlNXA5eHJnVHl4dafzzhuiU"
+    "blobId": "_kjLO2lyf1VGLI-toEROVlNXA5eHJnVHl4dafzzhuiU",
+    "recordType": "fact"
   },
   {
     "jobId": "78cc14f6-d8ad-4c36-bfde-33ca9ff396e4",
@@ -568,7 +606,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T01:46:03.644Z",
     "status": "mastered",
-    "blobId": "4o1KqD-RhrD0FF3SnPSRVfadNexciSVkgEsWfhO9N9k"
+    "blobId": "4o1KqD-RhrD0FF3SnPSRVfadNexciSVkgEsWfhO9N9k",
+    "recordType": "mistake"
   },
   {
     "jobId": "5e221462-c46f-4397-b3ec-c4c8a756a285",
@@ -583,7 +622,8 @@
     "namespace": "pcl301",
     "chatId": 6878463854,
     "timestamp": "2026-09-26T02:24:50.965Z",
-    "status": "confirmed"
+    "status": "confirmed",
+    "recordType": "mistake"
   },
   {
     "jobId": "d001d0eb-26a4-4953-a8e7-311c48e987ac",
@@ -598,7 +638,8 @@
     "namespace": "pcl301",
     "chatId": 6878463854,
     "timestamp": "2026-09-26T02:26:37.783Z",
-    "status": "confirmed"
+    "status": "confirmed",
+    "recordType": "mistake"
   },
   {
     "jobId": "4999b6ff-995c-48fa-a446-dfe891db491e",
@@ -613,7 +654,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T02:28:09.620Z",
     "status": "confirmed",
-    "blobId": "fjkxXvnbaKD-Z3LXIq_8khlxDxnt9q24jgsHdzcW7xo"
+    "blobId": "fjkxXvnbaKD-Z3LXIq_8khlxDxnt9q24jgsHdzcW7xo",
+    "recordType": "mistake"
   },
   {
     "jobId": "6fd52592-9e23-4c7d-b840-1a42ac2ee291",
@@ -628,7 +670,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T02:29:13.407Z",
     "status": "confirmed",
-    "blobId": "b1WzVEDZ6POBMs_aMaEyHUWtv71PP3NaZSrPh8YW3uI"
+    "blobId": "b1WzVEDZ6POBMs_aMaEyHUWtv71PP3NaZSrPh8YW3uI",
+    "recordType": "mistake"
   },
   {
     "jobId": "dc26724d-b884-4656-8940-55ca5a2cc27a",
@@ -643,7 +686,8 @@
     "chatId": 5420044163,
     "timestamp": "2026-09-26T02:31:54.761Z",
     "status": "confirmed",
-    "blobId": "xxqtjDKSTr0BtNAiOoEKbnh2-Zrtlsa2xKhR2yvVey0"
+    "blobId": "xxqtjDKSTr0BtNAiOoEKbnh2-Zrtlsa2xKhR2yvVey0",
+    "recordType": "mistake"
   },
   {
     "jobId": "f4ab5c36-1a10-4b21-b02d-110ace49e8a8",
@@ -658,7 +702,8 @@
     "namespace": "pcl302",
     "chatId": 5420044163,
     "timestamp": "2026-09-26T02:32:29.411Z",
-    "status": "confirmed"
+    "status": "confirmed",
+    "recordType": "mistake"
   },
   {
     "jobId": "9b84e48c-bd0b-458f-aa9a-de4bd9e31209",
@@ -673,7 +718,8 @@
     "chatId": 5420044163,
     "timestamp": "2026-09-26T02:33:00.698Z",
     "status": "confirmed",
-    "blobId": "XOLjVe3ebg0rZqQ-i1GW75lqtfiyjsXOw2recIbf9RY"
+    "blobId": "XOLjVe3ebg0rZqQ-i1GW75lqtfiyjsXOw2recIbf9RY",
+    "recordType": "mistake"
   },
   {
     "jobId": "76284580-4c9d-4c3d-ac55-977abc856903",
@@ -688,7 +734,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T02:41:28.317Z",
     "status": "confirmed",
-    "blobId": "HvhwHLlDCoTiUNKBsNIZ2eB9sk_VHTyNPk3viGT7N9E"
+    "blobId": "HvhwHLlDCoTiUNKBsNIZ2eB9sk_VHTyNPk3viGT7N9E",
+    "recordType": "mistake"
   },
   {
     "jobId": "25b5102d-0380-45f7-b907-f8947a0daf09",
@@ -703,7 +750,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T02:41:40.115Z",
     "status": "confirmed",
-    "blobId": "9aZ3sbFE1jZg91iUEsRQ9qPIYqyyhR0uyXUMdVsynh8"
+    "blobId": "9aZ3sbFE1jZg91iUEsRQ9qPIYqyyhR0uyXUMdVsynh8",
+    "recordType": "mistake"
   },
   {
     "jobId": "cb3c41f2-4303-4cf7-9034-a4899fd96520",
@@ -718,7 +766,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T02:43:28.842Z",
     "status": "confirmed",
-    "blobId": "vrgp9Ef9-WLYGcw0DzBSeeFQdXNfRmTsoID3EUR0zzw"
+    "blobId": "vrgp9Ef9-WLYGcw0DzBSeeFQdXNfRmTsoID3EUR0zzw",
+    "recordType": "mistake"
   },
   {
     "jobId": "5b2bf438-6740-4dc8-9533-15324e8e7087",
@@ -733,7 +782,8 @@
     "namespace": "pcl302",
     "chatId": 5420044163,
     "timestamp": "2026-09-26T02:46:34.764Z",
-    "status": "confirmed"
+    "status": "confirmed",
+    "recordType": "mistake"
   },
   {
     "jobId": "09c12efa-063a-4c91-9737-dcf173de5865",
@@ -748,7 +798,8 @@
     "namespace": "pcl302",
     "chatId": 5420044163,
     "timestamp": "2026-09-26T02:46:54.345Z",
-    "status": "confirmed"
+    "status": "confirmed",
+    "recordType": "mistake"
   },
   {
     "jobId": "4eda25e6-9456-49ce-b2cd-318e647b1dbd",
@@ -763,7 +814,8 @@
     "namespace": "pcl302",
     "chatId": 5420044163,
     "timestamp": "2026-09-26T02:47:10.471Z",
-    "status": "confirmed"
+    "status": "confirmed",
+    "recordType": "mistake"
   },
   {
     "jobId": "028bf51b-3375-47cf-9275-bef91fabbe46",
@@ -778,7 +830,8 @@
     "chatId": 5420044163,
     "timestamp": "2026-09-26T02:47:25.074Z",
     "status": "confirmed",
-    "blobId": "ANLFQFfrtYu9mXBHhnQ9CeTq0bNmsybDkWqBf-bxrM0"
+    "blobId": "ANLFQFfrtYu9mXBHhnQ9CeTq0bNmsybDkWqBf-bxrM0",
+    "recordType": "mistake"
   },
   {
     "jobId": "64c622eb-0ceb-4e1d-a579-d3fdb14c071b",
@@ -793,7 +846,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T03:24:35.173Z",
     "status": "confirmed",
-    "blobId": "5BTSt6okVpuhzpzS1wcmFvh5Kx863nki2avsXIKzt7U"
+    "blobId": "5BTSt6okVpuhzpzS1wcmFvh5Kx863nki2avsXIKzt7U",
+    "recordType": "fact"
   },
   {
     "jobId": "9947c826-a45c-4e3a-8537-deee0e1e3bf7",
@@ -808,7 +862,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T03:24:35.175Z",
     "status": "confirmed",
-    "blobId": "qSrxQx_AHWUZTZ4C1DtG-zSrQZxDC_nXhAqaL53y--4"
+    "blobId": "qSrxQx_AHWUZTZ4C1DtG-zSrQZxDC_nXhAqaL53y--4",
+    "recordType": "fact"
   },
   {
     "jobId": "0ae04009-bc51-4f4c-be70-9dcea9e3e193",
@@ -823,7 +878,8 @@
     "chatId": 6878463854,
     "timestamp": "2026-09-26T03:24:35.175Z",
     "status": "confirmed",
-    "blobId": "to7chW9wB9LxvfREEC9gct6CE1xdqdfBYW_MjNZMX94"
+    "blobId": "to7chW9wB9LxvfREEC9gct6CE1xdqdfBYW_MjNZMX94",
+    "recordType": "fact"
   },
   {
     "jobId": "874fad9d-e0a6-448c-9bd2-be19fea5996b",
@@ -837,6 +893,7 @@
     "namespace": "PCL301",
     "chatId": 6878463854,
     "timestamp": "2026-09-26T03:24:50.172Z",
-    "status": "mastered"
+    "status": "mastered",
+    "recordType": "mistake"
   }
 ]
