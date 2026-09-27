@@ -203,6 +203,8 @@ export function clearUserProfile(chatId: number) {
   saveProfiles(userProfiles);
   sessions.delete(chatId);
   pendingSlides.delete(chatId);
+  awaitingStudyTopic.delete(chatId);
+  userActiveTopic.delete(chatId);
   awaitingSubject.add(chatId);
 }
 
@@ -210,6 +212,8 @@ export function clearUserProfile(chatId: number) {
 export const awaitingRestoreCourse = new Set<number>();
 export const awaitingAnalyzeCourse = new Set<number>();
 export const awaitingPastQuestions = new Map<number, string>(); // chatId -> courseCode
+export const awaitingStudyTopic = new Map<number, string>(); // chatId -> courseCode
+export const userActiveTopic = new Map<number, string>(); // chatId -> topicName
 
 const EXAM_STYLES_FILE = path.resolve(process.cwd(), "data/exam-styles.json");
 

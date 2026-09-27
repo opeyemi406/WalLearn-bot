@@ -96,10 +96,15 @@ export async function startQuizWithCount(ctx: Context, count: number) {
     // 1. Cold recall weakness briefing from Walrus (user-isolated)
     const briefing = await walrus.getWeaknessBriefing(subjectCode, chatId);
 
+    const { getExamStyle, userActiveTopic } = await import("../state.js");
+    const activeTopic = userActiveTopic.get(chatId);
+
     let briefingNotice = `🎯 *Starting ${count}-Question Drill: ${subjectDisplay}*\n`;
     if (pending) {
       const cleanFileName = pending.fileName.replace(/[`]/g, "");
       briefingNotice += `📎 *Source:* \`${cleanFileName}\`\n`;
+    } else if (activeTopic) {
+      briefingNotice += `📌 *Topic Focus:* *${activeTopic}*\n`;
     }
     if (briefing.weaknesses.length > 0) {
       briefingNotice += `_Recalled ${briefing.weaknesses.length} active weak topics from Walrus Mainnet. Applying 60/30/10 drill ratio..._\n`;
@@ -118,12 +123,16 @@ export async function startQuizWithCount(ctx: Context, count: number) {
       { parse_mode: "Markdown" }
     );
 
-    // 2. Build prompt with slide text or course description
-    const materialSource = pending
-      ? pending.text
-      : `Core curriculum and past question benchmarks for university level ${subjectDisplay} (Code: ${subjectCode.toUpperCase()}).`;
+    // 2. Build prompt with slide text, active topic, or course description
+    let materialSource: string;
+    if (pending) {
+      materialSource = pending.text;
+    } else if (activeTopic) {
+      materialSource = `Specific Academic Topic: "${activeTopic}" for course ${subjectDisplay} (Code: ${subjectCode.toUpperCase()}). Generate questions specifically testing concepts, structures, mechanisms, and definitions in this topic.`;
+    } else {
+      materialSource = `Core curriculum and past question benchmarks for university level ${subjectDisplay} (Code: ${subjectCode.toUpperCase()}).`;
+    }
 
-    const { getExamStyle } = await import("../state.js");
     const examBlueprint = getExamStyle(subjectCode, chatId);
     if (examBlueprint) {
       briefingNotice += `🏛 *Department Exam Pattern Active:* Questions calibrated to your lecturer's style!\n`;

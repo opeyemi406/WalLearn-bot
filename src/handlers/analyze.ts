@@ -1,8 +1,15 @@
-import { Context } from "grammy";
+import { Context, InlineKeyboard } from "grammy";
 import { askAi } from "../ai/client.js";
 import { config } from "../config.js";
 import { walrus } from "../walrus/client.js";
-import { awaitingAnalyzeCourse, awaitingPastQuestions, getUserSubject, setExamStyle, setUserSubject } from "../state.js";
+import {
+  awaitingAnalyzeCourse,
+  awaitingPastQuestions,
+  awaitingStudyTopic,
+  getUserSubject,
+  setExamStyle,
+  setUserSubject,
+} from "../state.js";
 
 /**
  * Entrypoint for /analyze command or button
@@ -125,10 +132,18 @@ Respond in clean, well-formatted Markdown.
       await walrus.rememberBulk(factLines.slice(0, 10), courseCode, chatId);
     }
 
-    // Clear awaiting state
+    // Clear awaiting state and prompt for slides or topic
     awaitingPastQuestions.delete(chatId);
+    awaitingStudyTopic.set(chatId, courseCode);
 
-    // 5. Send rich confirmation and guide user to upload lecture slides
+    const keyboard = new InlineKeyboard()
+      .text("⚡ 5 Questions (All Topics)", "start_quiz_5")
+      .text("🎯 10 Questions", "start_quiz_10")
+      .row()
+      .text("🔥 20 Questions (Exam Mode)", "start_quiz_20")
+      .text("📎 Attach Slides/Images", "upload_guide");
+
+    // 5. Send rich confirmation and guide user to upload lecture slides or pick a topic
     let profileSnippet = blueprint.trim();
     if (profileSnippet.length > 900) {
       const lastNewline = profileSnippet.lastIndexOf("\n", 900);
@@ -143,16 +158,25 @@ Respond in clean, well-formatted Markdown.
     reply += `• *Network:* Walrus Protocol Mainnet\n`;
     reply += `• *Status:* 🟢 Stored in isolated namespace \`${walrus.getUserNamespace(courseCode, chatId)}\`\n\n`;
     reply += `━━━━━━━━━━━━━━━━━━━\n`;
-    reply += `🚀 *Next Step:* Now upload your *Lecture Slides* or images (or type a topic) to generate quiz questions matching this *exact department exam pattern*!`;
+    reply += `🚀 *How would you like to drill ${courseCode}?*\n\n`;
+    reply += `1️⃣ 📄 *Upload Lecture Slides or Images:*\n`;
+    reply += `Send your slide file (PDF, Word, PPTX) or images now to quiz directly from your material!\n\n`;
+    reply += `2️⃣ 💬 *Or Tell Me the Topic:*\n`;
+    reply += `Reply with any topic in ${courseCode} (e.g. \`Thorax & Mediastinum\`) and I will generate questions specifically on that topic!\n\n`;
+    reply += `3️⃣ ⚡ *Or Practice All Topics:*\n`;
+    reply += `Choose an option below to start drilling immediately:`;
 
     try {
       await ctx.api.editMessageText(chatId, statusMsg.message_id, reply, {
         parse_mode: "Markdown",
+        reply_markup: keyboard,
       });
     } catch (parseErr) {
       console.warn("Markdown parse failed for blueprint, falling back to clean text:", parseErr);
       const cleanReply = reply.replace(/[*_`]/g, "");
-      await ctx.api.editMessageText(chatId, statusMsg.message_id, cleanReply);
+      await ctx.api.editMessageText(chatId, statusMsg.message_id, cleanReply, {
+        reply_markup: keyboard,
+      });
     }
   } catch (err) {
     console.error("Past question analysis error:", err);

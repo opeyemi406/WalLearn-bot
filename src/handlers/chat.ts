@@ -52,7 +52,55 @@ export async function handleChatMessage(ctx: Context) {
     return processPastQuestionsAnalysis(ctx, rawText, courseCode);
   }
 
-  // 4.5 Check if user is replying to the /start onboarding menu with an option (A, B, C or 1, 2, 3)
+  // 4.6 Check if user is replying with a topic after past questions or course setup
+  const { awaitingStudyTopic, userActiveTopic } = await import("../state.js");
+  if (awaitingStudyTopic.has(chatId) && !rawText.startsWith("/")) {
+    awaitingStudyTopic.delete(chatId);
+    userActiveTopic.set(chatId, rawText);
+
+    const keyboard = new InlineKeyboard()
+      .text("⚡ 5 Questions (Sprint)", "start_quiz_5")
+      .text("🎯 10 Questions (Standard)", "start_quiz_10")
+      .row()
+      .text("🔥 20 Questions (Exam Mode)", "start_quiz_20");
+
+    let response = `🎯 *Topic Selected:* *${rawText}*\n`;
+    response += `📚 *Course:* *${getUserSubjectDisplay(chatId)}*\n\n`;
+    response += `WalLearn will generate CBT questions specifically focused on *${rawText}* calibrated to your department's exam pattern!\n\n`;
+    response += `Select how many questions you want to drill:`;
+
+    await ctx.reply(response, {
+      parse_mode: "Markdown",
+      reply_markup: keyboard,
+    });
+    return;
+  }
+
+  // 4.7 Check if user typed an explicit topic request e.g. "quiz me on X", "questions on X", "topic: X"
+  const topicMatch = rawText.match(/^(?:quiz\s+me\s+on|generate\s+questions?\s+on|test\s+me\s+on|questions?\s+on|topic[:\s]+)(.+)/i);
+  if (topicMatch && hasUserSubject(chatId)) {
+    const topic = topicMatch[1].trim();
+    userActiveTopic.set(chatId, topic);
+
+    const keyboard = new InlineKeyboard()
+      .text("⚡ 5 Questions (Sprint)", "start_quiz_5")
+      .text("🎯 10 Questions (Standard)", "start_quiz_10")
+      .row()
+      .text("🔥 20 Questions (Exam Mode)", "start_quiz_20");
+
+    let response = `🎯 *Topic Selected:* *${topic}*\n`;
+    response += `📚 *Course:* *${getUserSubjectDisplay(chatId)}*\n\n`;
+    response += `WalLearn will generate CBT questions specifically focused on *${topic}*!\n\n`;
+    response += `Select how many questions you want to drill:`;
+
+    await ctx.reply(response, {
+      parse_mode: "Markdown",
+      reply_markup: keyboard,
+    });
+    return;
+  }
+
+  // 4.8 Check if user is replying to the /start onboarding menu with an option (A, B, C or 1, 2, 3)
   const isStartMenuSelection = /^(?:option\s*)?([a-c]|1|2|3)$/i.test(rawText);
   if (!hasUserSubject(chatId) && isStartMenuSelection) {
     const opt = rawText.replace(/option\s*/i, "").trim().toUpperCase();
@@ -65,7 +113,7 @@ export async function handleChatMessage(ctx: Context) {
       await ctx.reply(
         `📚 *Ready to Study Directly!*\n\n` +
         `Please reply with your *Course Code & Title* (e.g. \`PCL301 - Evaluation of Drug Toxicity\` or \`BIO101\`):\n\n` +
-        `_You can also attach your lecture slides (PDF, PPTX, Word) directly!_`,
+        `_You can also attach your lecture slides (PDF, PPTX, Word) or images directly!_`,
         { parse_mode: "Markdown" }
       );
       return;
@@ -93,18 +141,23 @@ export async function handleChatMessage(ctx: Context) {
 
     const profile = setUserSubject(chatId, rawText);
     awaitingSubject.delete(chatId);
+    awaitingStudyTopic.set(chatId, profile.subjectCode);
 
     const keyboard = new InlineKeyboard()
       .text("⚡ 5 Questions", "start_quiz_5")
       .text("🎯 10 Questions", "start_quiz_10")
       .row()
-      .text("🔥 20 Questions", "start_quiz_20");
+      .text("🔥 20 Questions", "start_quiz_20")
+      .text("📎 Attach Slides/Images", "upload_guide");
 
     let response = `✅ *Active Course Set:* *${profile.subjectDisplay}*\n`;
     response += `⛓️ *Walrus Protocol Namespace:* \`${profile.subjectCode}\`\n\n`;
-    response += `📂 *Upload Lecture Slides (Optional)*\n`;
-    response += `If you have lecture slides for this course, upload your slide file now (PDF, PPTX, Word) to quiz directly from your material.\n\n`;
-    response += `🚀 *Don't have slides?* No problem! Select how many questions below and let's start drilling immediately:`;
+    response += `📂 *How would you like to prepare for ${profile.subjectCode.toUpperCase()}?*\n\n`;
+    response += `1️⃣ 📄 *Upload Lecture Slides or Images:*\n`;
+    response += `Attach your slide file (PDF, PPTX, Word) or images now to quiz directly from your lecture material.\n\n`;
+    response += `2️⃣ 💬 *Or Tell Me the Topic:*\n`;
+    response += `Reply with any topic in ${profile.subjectCode.toUpperCase()} (e.g. \`Introduction & Definitions\`) to drill questions specifically on that topic!\n\n`;
+    response += `3️⃣ ⚡ *Don't have slides?* Select how many questions below to start drilling all course topics immediately:`;
 
     await ctx.reply(response, {
       parse_mode: "Markdown",
