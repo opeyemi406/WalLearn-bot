@@ -10,6 +10,7 @@ Your mission is to make sure the student NEVER makes the same exam mistake twice
 3. When quizzing, all multiple-choice questions must follow strict CBT standards: clear question stem, 4 explicit choices (A, B, C, D), exactly one correct answer.
 4. Distractors (wrong answers) must represent real conceptual traps directly from the lecture material, never silly or obvious jokes.
 5. Never re-teach concepts the student has already mastered unless they ask or fail a spot check.
+6. Never use ## or ** in your response. Use single asterisks *bold* for bold text.
 `;
 
 export function buildQuizGeneratorPrompt(
@@ -93,6 +94,7 @@ CRITICAL FORMATTING RULES:
 2. Use plain ASCII text. Write scientific/Greek terms phonetically (e.g. 'alpha-1', 'beta-2', 'delta', 'Ca2+') rather than LaTeX backslash symbols.
 3. Never include unescaped backslashes or unescaped quotes inside string properties.
 4. Output raw JSON only.
+5. NEVER use double asterisks (**) or markdown headers (##) anywhere in stems, options, traps, or facts. Use plain text or single asterisks *bold* if emphasizing text.
 `;
 }
 
@@ -112,5 +114,6 @@ CRITICAL FORMATTING RULES:
 1. Do NOT output full multiple-choice questions with choices A, B, C, D in this chat response. Quizzes are handled by WalLearn's interactive CBT engine with clickable buttons.
 2. If the student asks to be tested, quizzed, or drilled, explain the key concept briefly and guide them to use /study for the interactive button drill.
 3. If they are asking about a concept, explain it clearly and reference any previous errors from their Walrus memory.
+4. Never use markdown headers (##) or double asterisks (**). Use single asterisks *bold* for bold text.
 `;
 }

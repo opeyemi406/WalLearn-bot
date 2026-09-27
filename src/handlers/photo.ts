@@ -163,12 +163,21 @@ export async function handlePhoto(ctx: Context) {
       .row()
       .text("🔥 20 Questions (Exam Mode)", "start_quiz_20");
 
+    const cleanSnippet = slideText
+      .replace(/^(?:Here(?:'s| is) [^\n]*\n*)/i, "")
+      .replace(/[*_`#]/g, "")
+      .slice(0, 180)
+      .replace(/\s+/g, " ")
+      .trim();
+
     let promptMsg = `🖼️ *Transcribed Lecture Material Image!*\n`;
     promptMsg += `📚 *Course:* *${getUserSubjectDisplay(chatId)}*\n`;
-    promptMsg += `📝 *Extracted Content:* _"${slideText.slice(0, 180).replace(/\n/g, " ")}..."_\n\n`;
+    promptMsg += `📝 *Extracted Content:* _"${cleanSnippet}..."_\n\n`;
     promptMsg += `Select how many CBT questions you want to generate:`;
 
-    await ctx.reply(promptMsg, {
+    const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
+
+    await ctx.reply(formatTelegramMarkdown(promptMsg), {
       parse_mode: "Markdown",
       reply_markup: keyboard,
     });
@@ -265,12 +274,21 @@ async function processMediaGroup(ctx: Context, mediaGroupId: string) {
     .row()
     .text("🔥 20 Questions (Exam Mode)", "start_quiz_20");
 
+  const cleanSnippet = combinedText
+    .replace(/^(?:Here(?:'s| is) [^\n]*\n*)/i, "")
+    .replace(/[*_`#]/g, "")
+    .slice(0, 180)
+    .replace(/\s+/g, " ")
+    .trim();
+
   let promptMsg = `🖼️ *Transcribed ${buffers.length} Lecture Material Images!*\n`;
   promptMsg += `📚 *Course:* *${getUserSubjectDisplay(chatId)}*\n`;
-  promptMsg += `📝 *Extracted Content:* _"${combinedText.slice(0, 180).replace(/\n/g, " ")}..."_\n\n`;
+  promptMsg += `📝 *Extracted Content:* _"${cleanSnippet}..."_\n\n`;
   promptMsg += `Select how many CBT questions you want to generate:`;
 
-  await ctx.reply(promptMsg, {
+  const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
+
+  await ctx.reply(formatTelegramMarkdown(promptMsg), {
     parse_mode: "Markdown",
     reply_markup: keyboard,
   });

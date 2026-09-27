@@ -91,8 +91,11 @@ export async function handleCallback(ctx: Context) {
   }
 
   if (data === "upload_guide") {
+    const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
     await ctx.reply(
-      `📎 *How to Quiz from Your Slides or Images:*\n\n1️⃣ Tap the 📎 attachment icon in Telegram.\n2️⃣ Select your lecture slides (PDF, Word, PPTX) or **images** (JPEG, PNG).\n3️⃣ Send it to this chat!\n\nWalLearn will use Gemini Vision to transcribe the concepts and blend them with your Walrus mistake history to build a personalized exam drill.`,
+      formatTelegramMarkdown(
+        `📎 *How to Quiz from Your Slides or Images:*\n\n1️⃣ Tap the 📎 attachment icon in Telegram.\n2️⃣ Select your lecture slides (PDF, Word, PPTX) or *images* (JPEG, PNG).\n3️⃣ Send it to this chat!\n\nWalLearn will use Gemini Vision to transcribe the concepts and blend them with your Walrus mistake history to build a personalized exam drill.`
+      ),
       { parse_mode: "Markdown" }
     );
     return;

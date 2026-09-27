@@ -32,7 +32,7 @@ export function cleanAndParseQuizJson(raw: string): { questions: Question[] } {
   try {
     const parsed = JSON.parse(str);
     if (Array.isArray(parsed.questions) && parsed.questions.length > 0) {
-      return parsed;
+      return { questions: sanitizeQuizQuestions(parsed.questions) };
     }
   } catch {
     // Proceed to repair
@@ -50,7 +50,7 @@ export function cleanAndParseQuizJson(raw: string): { questions: Question[] } {
   try {
     const parsed = JSON.parse(repaired);
     if (Array.isArray(parsed.questions) && parsed.questions.length > 0) {
-      return parsed;
+      return { questions: sanitizeQuizQuestions(parsed.questions) };
     }
   } catch {
     // Proceed to more aggressive repair
@@ -67,7 +67,7 @@ export function cleanAndParseQuizJson(raw: string): { questions: Question[] } {
   try {
     const parsed = JSON.parse(repaired);
     if (Array.isArray(parsed.questions) && parsed.questions.length > 0) {
-      return parsed;
+      return { questions: sanitizeQuizQuestions(parsed.questions) };
     }
   } catch {
     // Fall back to regex parser
@@ -78,10 +78,40 @@ export function cleanAndParseQuizJson(raw: string): { questions: Question[] } {
   const questions = extractQuestionsWithRegex(raw);
   if (questions.length > 0) {
     console.log(`✅ Regex recovery salvaged ${questions.length} questions from malformed JSON!`);
-    return { questions };
+    return { questions: sanitizeQuizQuestions(questions) };
   }
 
   throw new Error("Unable to parse or salvage questions from AI output.");
+}
+
+function sanitizeQuizQuestions(questions: Question[]): Question[] {
+  return questions.map((q) => {
+    const sanitizeStr = (s: string) =>
+      (s || "")
+        .replace(/\*\*([^*]+)\*\*/g, "*$1*")
+        .replace(/\*\*/g, "*")
+        .replace(/^[ \t]*#{1,6}[ \t]+/gm, "")
+        .trim();
+
+    const sanitizedOptions: Record<string, string> = {};
+    for (const [k, v] of Object.entries(q.options || {})) {
+      sanitizedOptions[k] = sanitizeStr(v);
+    }
+
+    const sanitizedTraps: Record<string, string> = {};
+    for (const [k, v] of Object.entries(q.traps || {})) {
+      sanitizedTraps[k] = sanitizeStr(v);
+    }
+
+    return {
+      ...q,
+      stem: sanitizeStr(q.stem),
+      topic: (q.topic || "").replace(/[*_`#]/g, "").trim(),
+      options: sanitizedOptions,
+      traps: sanitizedTraps,
+      fact: sanitizeStr(q.fact),
+    };
+  });
 }
 
 /**

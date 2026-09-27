@@ -22,6 +22,8 @@ export function formatTelegramMarkdown(text: string): string {
 
   // 3. Convert markdown headings: "# Title", "## Title", "### Title" -> "*Title*"
   clean = clean.replace(/^[ \t]*#{1,6}[ \t]+([^\n]+)/gm, "*$1*");
+  // Remove any remaining inline "##" or "###"
+  clean = clean.replace(/#{2,6}\s*/g, "");
 
   // 4. Convert bold-italic "***text***" -> "*_$1_*"
   clean = clean.replace(/\*\*\*([^*]+)\*\*\*/g, "*_$1_*");

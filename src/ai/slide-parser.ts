@@ -138,7 +138,7 @@ export async function extractTextFromImage(
         content: [
           {
             type: "text",
-            text: "Extract all academic lecture text, slide titles, bullet points, formulas, definitions, and questions visible in this image verbatim. Transcribe the contents clearly and thoroughly.",
+            text: "Extract all academic lecture text, slide titles, bullet points, formulas, definitions, and questions visible in this image verbatim. Transcribe the contents clearly and thoroughly. Do NOT include any conversational preamble (e.g. do not say 'Here is the transcription...'). Output ONLY the raw transcribed content. Never use double asterisks (**). Use single asterisks *bold* if emphasizing text.",
           },
           {
             type: "image_url",
@@ -150,5 +150,15 @@ export async function extractTextFromImage(
     temperature: 0.1,
   });
 
-  return response.choices[0]?.message?.content?.trim() || "";
+  let content = response.choices[0]?.message?.content?.trim() || "";
+
+  // Strip conversational AI introductory preamble
+  content = content.replace(/^(?:Here(?:'s| is) (?:the )?(?:verbatim )?transcription[^\n]*\n*)/i, "");
+  content = content.replace(/^(?:The (?:provided )?image (?:contains|shows|transcribes)[^\n]*\n*)/i, "");
+
+  // Normalize any double asterisks to single asterisk bold
+  content = content.replace(/\*\*([^*]+)\*\*/g, "*$1*").replace(/\*\*/g, "*");
+
+  return content.trim();
 }
+

@@ -69,8 +69,12 @@ async function main() {
 
   // Media Fallback
   bot.on(["message:audio", "message:video", "message:voice"], async (ctx) => {
+    const { formatTelegramMarkdown } = await import("./utils/telegram-format.js");
     await ctx.reply(
-      "📄 Please upload your course materials as a **Document** (PDF, Word, PPTX), **Photo / Screenshot** (JPEG, PNG), or **Text message** to generate a personalized CBT quiz."
+      formatTelegramMarkdown(
+        "📄 Please upload your course materials as a *Document* (PDF, Word, PPTX), *Image* (JPEG, PNG), or *Text message* to generate a personalized CBT quiz."
+      ),
+      { parse_mode: "Markdown" }
     );
   });
 
