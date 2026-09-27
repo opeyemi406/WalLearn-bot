@@ -1,6 +1,6 @@
 import { Bot } from "grammy";
 import { config } from "./config.js";
-import { handleStart, handleMenu, handleSubject } from "./handlers/start.js";
+import { handleStart, handleMenu, handleSubject, handleReset } from "./handlers/start.js";
 import { handleBriefing } from "./handlers/briefing.js";
 import { handleLedger } from "./handlers/ledger.js";
 import { handleRestore } from "./handlers/restore.js";
@@ -59,6 +59,8 @@ async function main() {
   bot.command("health", handleHealth);
   bot.command("status", handleHealth);
   bot.command("subject", handleSubject);
+  bot.command("reset", handleReset);
+  bot.command("clear", handleReset);
 
   // Handlers
   bot.on("callback_query:data", handleCallback);

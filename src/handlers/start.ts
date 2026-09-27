@@ -7,20 +7,51 @@ import {
   setUserSubject,
   awaitingSubject,
   clearUserProfile,
+  userActiveTopic,
 } from "../state.js";
 
+/**
+ * Handle /start command
+ */
 export async function handleStart(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  // Always reset to a fresh slate on /start (e.g. when user clears history and starts)
-  clearUserProfile(chatId);
   const { awaitingStartChoice, clearAwaitingStates } = await import("../state.js");
   clearAwaitingStates(chatId);
   awaitingStartChoice.add(chatId);
 
-  const accountShort = `${config.walrusAccountId.slice(0, 10)}...${config.walrusAccountId.slice(-8)}`;
+  const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
 
+  // If user already has an active course profile, welcome them back without wiping their session
+  if (hasUserSubject(chatId)) {
+    const currentSubjectDisplay = getUserSubjectDisplay(chatId);
+    const currentSubjectCode = getUserSubject(chatId);
+    const activeTopic = userActiveTopic.get(chatId);
+
+    const keyboard = new InlineKeyboard()
+      .text(`🎯 Study ${currentSubjectCode.toUpperCase()} (/study)`, "start_drill")
+      .text("📊 Briefing (/briefing)", "view_briefing")
+      .row()
+      .text("📝 Analyze Past Questions", "analyze_past_q")
+      .text("🔄 Switch Course", "change_subject");
+
+    let msg = `🎓 *Welcome Back to WalLearn!*\n\n`;
+    msg += `📚 *Active Course:* *${currentSubjectDisplay}*\n`;
+    msg += `⛓️ *Walrus Protocol Namespace:* \`${currentSubjectCode}\`\n`;
+    if (activeTopic) {
+      msg += `🎯 *Focus Topic:* *${activeTopic}*\n`;
+    }
+    msg += `\n_Choose an option below, or reply directly with a new course code or topic:_`;
+
+    await ctx.reply(formatTelegramMarkdown(msg), {
+      parse_mode: "Markdown",
+      reply_markup: keyboard,
+    });
+    return;
+  }
+
+  // Fresh user onboarding
   const welcomeMessage = `🎓 *Welcome to WalLearn!*
 _The decentralized study assistant with permanent memory on Walrus Protocol._
 
@@ -48,39 +79,70 @@ _Choose an option below (tap a button or reply 1, 2, or 3):_`;
     .text("3️⃣ Restore Past Mistakes", "restore_prompt")
     .text("📊 Weakness Briefing", "view_briefing");
 
-  const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
-
   await ctx.reply(formatTelegramMarkdown(welcomeMessage), {
     parse_mode: "Markdown",
     reply_markup: keyboard,
   });
 }
 
+/**
+ * Handle /menu command (Active Session Dashboard)
+ */
 export async function handleMenu(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  if (!hasUserSubject(chatId)) {
-    return handleStart(ctx);
+  const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
+  const { awaitingMenuChoice, awaitingStartChoice, clearAwaitingStates } = await import("../state.js");
+  clearAwaitingStates(chatId);
+
+  // If user has an active session, display active course dashboard
+  if (hasUserSubject(chatId)) {
+    awaitingMenuChoice.add(chatId);
+
+    const currentSubjectDisplay = getUserSubjectDisplay(chatId);
+    const currentSubjectCode = getUserSubject(chatId);
+    const activeTopic = userActiveTopic.get(chatId);
+
+    const keyboard = new InlineKeyboard()
+      .text("🎯 Start Drill (/study)", "start_drill")
+      .text("📊 Briefing (/briefing)", "view_briefing")
+      .row()
+      .text("🔄 Change Course", "change_subject")
+      .text("📎 Attach Slides Guide", "upload_guide");
+
+    let msg = `🎓 *WalLearn Active Session Dashboard*\n\n`;
+    msg += `📚 *Active Course:* *${currentSubjectDisplay}*\n`;
+    msg += `⛓️ *Walrus Protocol Namespace:* \`${currentSubjectCode}\`\n`;
+    if (activeTopic) {
+      msg += `🎯 *Focus Topic:* *${activeTopic}*\n`;
+    } else {
+      msg += `🎯 *Focus Topic:* _All Course Topics (Full Scope)_\n`;
+    }
+    msg += `\n_What would you like to do? Choose an option below or reply directly:_`;
+
+    await ctx.reply(formatTelegramMarkdown(msg), {
+      parse_mode: "Markdown",
+      reply_markup: keyboard,
+    });
+    return;
   }
 
-  const { awaitingMenuChoice, clearAwaitingStates } = await import("../state.js");
-  clearAwaitingStates(chatId);
-  awaitingMenuChoice.add(chatId);
-
-  const currentSubjectDisplay = getUserSubjectDisplay(chatId);
-  const currentSubjectCode = getUserSubject(chatId);
+  // If user has NO active session yet, display session status clearly instead of duplicating /start
+  awaitingStartChoice.add(chatId);
 
   const keyboard = new InlineKeyboard()
-    .text("🎯 Start Drill (/study)", "start_drill")
-    .text("📊 Briefing", "view_briefing")
+    .text("1️⃣ Set Course / Study", "upload_slides_direct")
+    .text("2️⃣ Analyze Past Questions", "analyze_past_q")
     .row()
-    .text("🔄 Change Course", "change_subject")
-    .text("📎 Attach Slides Guide", "upload_guide");
+    .text("3️⃣ Restore Mistakes", "restore_prompt")
+    .text("📊 Weakness Briefing", "view_briefing");
 
-  const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
-
-  const msg = `🎓 *WalLearn Active Session*\n\n📚 *Active Course:* *${currentSubjectDisplay}*\n⛓️ *Walrus Namespace:* \`${currentSubjectCode}\`\n\n_What would you like to do?_`;
+  let msg = `🎓 *WalLearn Session Dashboard*\n\n`;
+  msg += `📚 *Active Course:* _None (No active course selected yet)_\n`;
+  msg += `⛓️ *Walrus Namespace:* \`u${chatId}_unassigned\`\n\n`;
+  msg += `_You do not have an active course session right now._\n\n`;
+  msg += `To get started, choose an option below or reply directly with your *Course Code* (e.g. \`ANA201\` or \`PCL301\`):`;
 
   await ctx.reply(formatTelegramMarkdown(msg), {
     parse_mode: "Markdown",
@@ -88,6 +150,9 @@ export async function handleMenu(ctx: Context) {
   });
 }
 
+/**
+ * Handle /subject command
+ */
 export async function handleSubject(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
@@ -95,7 +160,6 @@ export async function handleSubject(ctx: Context) {
   const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
 
   const text = ctx.message?.text || "";
-  // Strip command name
   const match = text.match(/^\/subject\s*(.*)$/i);
   const rawArg = match ? match[1].trim() : "";
 
@@ -129,5 +193,25 @@ export async function handleSubject(ctx: Context) {
       `Reply with any topic in ${profile.subjectCode.toUpperCase()} (e.g. \`Introduction & Core Concepts\`) and I will generate questions specifically on that topic!`
     ),
     { parse_mode: "Markdown", reply_markup: keyboard }
+  );
+}
+
+/**
+ * Handle /reset or /clear command to explicitly start completely fresh
+ */
+export async function handleReset(ctx: Context) {
+  const chatId = ctx.chat?.id;
+  if (!chatId) return;
+
+  clearUserProfile(chatId);
+  const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
+
+  await ctx.reply(
+    formatTelegramMarkdown(
+      `🔄 *Session Reset Successful*\n\n` +
+      `Your active course profile and local session have been cleared. Past memory blobs permanently stored on Walrus Protocol Mainnet remain intact.\n\n` +
+      `Type /start or reply directly with a *Course Code* (e.g. \`ANA201\`) to begin fresh!`
+    ),
+    { parse_mode: "Markdown" }
   );
 }
