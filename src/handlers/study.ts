@@ -31,7 +31,7 @@ Before we begin your drill, please reply with your *Course Code* and *Course Tit
 👉 \`CSC302 - Operating Systems\`
 👉 \`PCL301 - Clinical Pharmacokinetics\`
 
-• Attach a lecture slide PDF anytime to generate a quiz specifically from your lecture notes!`;
+• Attach lecture slides (PDF/Word) or snap a photo of your notes/slides anytime to quiz directly from your material!`;
 
     await ctx.reply(askMsg, { parse_mode: "Markdown" });
     return;
@@ -65,7 +65,7 @@ Before we begin your drill, please reply with your *Course Code* and *Course Tit
   msg += `\n🎯 *How many questions would you like to drill?*\n`;
   msg += `Select an option below or type e.g. \`/study 10\`:\n\n`;
   if (!pending) {
-    msg += `_💡 Optional: You can attach a lecture slide PDF anytime to quiz from specific slide topics!_`;
+    msg += `_💡 Optional: You can attach lecture slides (PDF/Word) or snap a photo of your notes/slides anytime to quiz from specific topics!_`;
   }
 
   await ctx.reply(msg, {

@@ -70,7 +70,7 @@ async function main() {
   // Media Fallback
   bot.on(["message:audio", "message:video", "message:voice"], async (ctx) => {
     await ctx.reply(
-      "📄 Please upload your course materials or slides as a **PDF**, **Word (.docx)**, **PowerPoint (.pptx)**, or **Text** document to generate a personalized CBT quiz."
+      "📄 Please upload your course materials as a **Document** (PDF, Word, PPTX), **Photo / Screenshot** (JPEG, PNG), or **Text message** to generate a personalized CBT quiz."
     );
   });
 
