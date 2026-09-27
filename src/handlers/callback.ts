@@ -75,9 +75,30 @@ export async function handleCallback(ctx: Context) {
     return handleStudy(ctx);
   }
 
-  if (data === "view_briefing") {
+  if (data === "view_briefing" || data === "briefing_prompt") {
     const { handleBriefing } = await import("./briefing.js");
     return handleBriefing(ctx);
+  }
+
+  if (data === "briefing_all") {
+    const { executeBriefingAll } = await import("./briefing.js");
+    return executeBriefingAll(ctx);
+  }
+
+  if (data === "briefing_course_prompt") {
+    const { awaitingBriefingCourse } = await import("../state.js");
+    awaitingBriefingCourse.add(chatId);
+    await ctx.reply(
+      `📚 *Weakness Briefing for Specific Course*\n\nPlease reply directly with the course code you want to review (e.g. \`ANA201\`, \`PCL301\`, \`BIO101\`):`,
+      { parse_mode: "Markdown" }
+    );
+    return;
+  }
+
+  if (data.startsWith("briefing_course_")) {
+    const courseCode = data.replace("briefing_course_", "");
+    const { executeBriefingCourse } = await import("./briefing.js");
+    return executeBriefingCourse(ctx, courseCode);
   }
 
   if (data === "change_subject") {

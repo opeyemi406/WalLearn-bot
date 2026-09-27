@@ -224,6 +224,7 @@ export function clearUserProfile(chatId: number) {
   awaitingQuizCount.delete(chatId);
   awaitingStartChoice.delete(chatId);
   awaitingMenuChoice.delete(chatId);
+  awaitingBriefingCourse.delete(chatId);
   awaitingSubject.add(chatId);
 }
 
@@ -233,6 +234,7 @@ export const awaitingMenuChoice = new Set<number>();
 export const awaitingQuizCount = new Set<number>();
 export const awaitingRestoreCourse = new Set<number>();
 export const awaitingAnalyzeCourse = new Set<number>();
+export const awaitingBriefingCourse = new Set<number>();
 export const awaitingPastQuestions = new Map<number, string>(); // chatId -> courseCode
 export const awaitingStudyTopic = new Map<number, string>(); // chatId -> courseCode
 export const userActiveTopic = new Map<number, string>(); // chatId -> topicName
@@ -243,6 +245,7 @@ export function clearAwaitingStates(chatId: number) {
   awaitingQuizCount.delete(chatId);
   awaitingRestoreCourse.delete(chatId);
   awaitingAnalyzeCourse.delete(chatId);
+  awaitingBriefingCourse.delete(chatId);
 }
 
 const EXAM_STYLES_FILE = path.resolve(process.cwd(), "data/exam-styles.json");

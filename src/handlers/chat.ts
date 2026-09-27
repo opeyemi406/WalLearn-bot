@@ -73,6 +73,27 @@ export async function handleChatMessage(ctx: Context) {
     }
   }
 
+  // 2.7 Check if user is responding with a course code for /briefing
+  const { awaitingBriefingCourse } = await import("../state.js");
+  if (awaitingBriefingCourse.has(chatId)) {
+    const trimmed = rawText.trim();
+    if (/^(2|option\s*2|all|all\s+courses?|everything|🌐)$/i.test(trimmed)) {
+      awaitingBriefingCourse.delete(chatId);
+      const { executeBriefingAll } = await import("./briefing.js");
+      return executeBriefingAll(ctx);
+    }
+    if (/^(1|option\s*1|specific|course)$/i.test(trimmed)) {
+      await ctx.reply(
+        `📚 *Weakness Briefing for Specific Course*\n\nPlease reply directly with your course code (e.g. \`ANA201\`, \`PCL301\`, \`CHM211\`):`,
+        { parse_mode: "Markdown" }
+      );
+      return;
+    }
+    awaitingBriefingCourse.delete(chatId);
+    const { executeBriefingCourse } = await import("./briefing.js");
+    return executeBriefingCourse(ctx, trimmed);
+  }
+
   // 3. Check if user is responding with a course code for /analyze
   const { awaitingAnalyzeCourse, awaitingPastQuestions } = await import("../state.js");
   if (awaitingAnalyzeCourse.has(chatId)) {
