@@ -84,11 +84,34 @@ export async function handleDocument(ctx: Context) {
       return;
     }
 
-    // 2.5 Check if user is in past questions analysis mode
-    const { awaitingPastQuestions, getUserSubject } = await import("../state.js");
-    if (awaitingPastQuestions.has(chatId)) {
-      const courseCode = awaitingPastQuestions.get(chatId)!;
+    // 2.5 Check if user is in past questions analysis mode (course pending OR questions pending OR explicit past paper detected)
+    const { awaitingPastQuestions, awaitingAnalyzeCourse, getUserSubject } = await import("../state.js");
+    const isExplicitPastPaper =
+      /\b(?:past\s+questions?|incourse\s+recall|exam\s+questions?|mcq\s+past\s+questions?)\b/i.test(slideText.slice(0, 1500)) ||
+      /\b(?:past\s+questions?|incourse\s+recall|exam\s+questions?)\b/i.test(fileName);
+
+    if (awaitingPastQuestions.has(chatId) || awaitingAnalyzeCourse.has(chatId) || isExplicitPastPaper) {
+      awaitingAnalyzeCourse.delete(chatId);
+      let courseCode = awaitingPastQuestions.get(chatId);
       awaitingPastQuestions.delete(chatId);
+
+      if (!courseCode) {
+        const caption = ctx.message?.caption?.trim();
+        const codeMatch =
+          caption?.match(/([a-zA-Z]{2,5}\s*\d{2,4})/i) ||
+          fileName.match(/([a-zA-Z]{2,5}\s*\d{2,4})/i) ||
+          slideText.slice(0, 1500).match(/([a-zA-Z]{2,5}\s*\d{2,4})/i);
+
+        if (codeMatch) {
+          courseCode = codeMatch[1].toUpperCase().replace(/\s+/g, "");
+        } else if (hasUserSubject(chatId)) {
+          courseCode = getUserSubject(chatId);
+        } else {
+          courseCode = "General";
+        }
+      }
+
+      setUserSubject(chatId, courseCode);
       const { processPastQuestionsAnalysis } = await import("./analyze.js");
       await ctx.api.deleteMessage(chatId, statusMsg.message_id).catch(() => {});
       return processPastQuestionsAnalysis(ctx, slideText, courseCode);

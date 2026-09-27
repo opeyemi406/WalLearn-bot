@@ -40,6 +40,18 @@ export async function handleChatMessage(ctx: Context) {
   // 3. Check if user is responding with a course code for /analyze
   const { awaitingAnalyzeCourse, awaitingPastQuestions } = await import("../state.js");
   if (awaitingAnalyzeCourse.has(chatId)) {
+    const looksLikeQuestions = /(?:\b[1-9]\d?[\.\)]|\b[A-D][\.\)]|\boption\b)/i.test(rawText) && rawText.length > 50;
+    if (looksLikeQuestions) {
+      awaitingAnalyzeCourse.delete(chatId);
+      const codeMatch = rawText.slice(0, 1000).match(/([a-zA-Z]{2,5}\s*\d{2,4})/i);
+      const courseCode = codeMatch
+        ? codeMatch[1].toUpperCase().replace(/\s+/g, "")
+        : (hasUserSubject(chatId) ? getUserSubject(chatId) : "General");
+      setUserSubject(chatId, courseCode);
+      const { processPastQuestionsAnalysis } = await import("./analyze.js");
+      return processPastQuestionsAnalysis(ctx, rawText, courseCode);
+    }
+
     awaitingAnalyzeCourse.delete(chatId);
     const { promptForQuestions } = await import("./analyze.js");
     return promptForQuestions(ctx, rawText);

@@ -8,6 +8,7 @@ import {
   setUserSubject,
   pendingSlides,
   awaitingPastQuestions,
+  awaitingAnalyzeCourse,
 } from "../state.js";
 
 interface MediaGroupSession {
@@ -33,10 +34,9 @@ export async function handlePhoto(ctx: Context) {
   if (mediaGroupId) {
     let session = mediaGroups.get(mediaGroupId);
     if (!session) {
-      const isPastQuestions = awaitingPastQuestions.has(chatId);
-      const courseCode = isPastQuestions
-        ? awaitingPastQuestions.get(chatId)
-        : (hasUserSubject(chatId) ? getUserSubject(chatId) : undefined);
+      const isPastQuestions = awaitingPastQuestions.has(chatId) || awaitingAnalyzeCourse.has(chatId);
+      const courseCode = awaitingPastQuestions.get(chatId)
+        || (hasUserSubject(chatId) ? getUserSubject(chatId) : undefined);
 
       let statusMsg;
       try {
@@ -122,10 +122,32 @@ export async function handlePhoto(ctx: Context) {
       return;
     }
 
-    // 1. Check if user is in past questions analysis mode
-    if (awaitingPastQuestions.has(chatId)) {
-      const courseCode = awaitingPastQuestions.get(chatId)!;
+    const isExplicitPastPaper =
+      /\b(?:past\s+questions?|incourse\s+recall|exam\s+questions?|mcq\s+past\s+questions?)\b/i.test(slideText.slice(0, 1500));
+
+    // 1. Check if user is in past questions analysis mode (course pending OR questions pending OR explicit past paper detected)
+    if (awaitingPastQuestions.has(chatId) || awaitingAnalyzeCourse.has(chatId) || isExplicitPastPaper) {
+      awaitingAnalyzeCourse.delete(chatId);
+      let courseCode = awaitingPastQuestions.get(chatId);
       awaitingPastQuestions.delete(chatId);
+
+      if (!courseCode) {
+        // Auto-detect course code from caption or image text
+        const caption = ctx.message?.caption?.trim();
+        const codeMatch =
+          caption?.match(/([a-zA-Z]{2,5}\s*\d{2,4})/i) ||
+          slideText.slice(0, 1500).match(/([a-zA-Z]{2,5}\s*\d{2,4})/i);
+
+        if (codeMatch) {
+          courseCode = codeMatch[1].toUpperCase().replace(/\s+/g, "");
+        } else if (hasUserSubject(chatId)) {
+          courseCode = getUserSubject(chatId);
+        } else {
+          courseCode = "General";
+        }
+      }
+
+      setUserSubject(chatId, courseCode);
       const { processPastQuestionsAnalysis } = await import("./analyze.js");
       await ctx.api.deleteMessage(chatId, statusMsg.message_id).catch(() => {});
       return processPastQuestionsAnalysis(ctx, slideText, courseCode);
@@ -232,10 +254,30 @@ async function processMediaGroup(ctx: Context, mediaGroupId: string) {
     return;
   }
 
+  const isExplicitPastPaper =
+    /\b(?:past\s+questions?|incourse\s+recall|exam\s+questions?|mcq\s+past\s+questions?)\b/i.test(combinedText.slice(0, 1500));
+
   // 1. Past questions analysis mode
-  if (isPastQuestions) {
-    const finalCourse = courseCode || awaitingPastQuestions.get(chatId) || "General";
+  if (isPastQuestions || awaitingPastQuestions.has(chatId) || awaitingAnalyzeCourse.has(chatId) || isExplicitPastPaper) {
+    awaitingAnalyzeCourse.delete(chatId);
+    let finalCourse = courseCode || awaitingPastQuestions.get(chatId);
     awaitingPastQuestions.delete(chatId);
+
+    if (!finalCourse) {
+      const codeMatch =
+        caption?.match(/([a-zA-Z]{2,5}\s*\d{2,4})/i) ||
+        combinedText.slice(0, 1500).match(/([a-zA-Z]{2,5}\s*\d{2,4})/i);
+
+      if (codeMatch) {
+        finalCourse = codeMatch[1].toUpperCase().replace(/\s+/g, "");
+      } else if (hasUserSubject(chatId)) {
+        finalCourse = getUserSubject(chatId);
+      } else {
+        finalCourse = "General";
+      }
+    }
+
+    setUserSubject(chatId, finalCourse);
     const { processPastQuestionsAnalysis } = await import("./analyze.js");
     if (statusMsgId) {
       await ctx.api.deleteMessage(chatId, statusMsgId).catch(() => {});
