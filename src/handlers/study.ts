@@ -68,6 +68,11 @@ Before we begin your drill, please reply with your *Course Code* and *Course Tit
     msg += `_💡 Optional: You can attach lecture slides or images anytime to quiz from specific topics!_`;
   }
 
+  // Pre-arm awaitingQuizCount so replying directly with 5, 10, 20 or any number works immediately
+  const { awaitingQuizCount, clearAwaitingStates } = await import("../state.js");
+  clearAwaitingStates(chatId);
+  awaitingQuizCount.add(chatId);
+
   await ctx.reply(msg, {
     parse_mode: "Markdown",
     reply_markup: keyboard,
@@ -77,6 +82,9 @@ Before we begin your drill, please reply with your *Course Code* and *Course Tit
 export async function startQuizWithCount(ctx: Context, count: number) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
+
+  const { awaitingQuizCount } = await import("../state.js");
+  awaitingQuizCount.delete(chatId);
 
   const subjectCode = getUserSubject(chatId);
   const subjectDisplay = getUserSubjectDisplay(chatId);

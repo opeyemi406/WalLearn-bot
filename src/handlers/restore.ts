@@ -9,9 +9,10 @@ export async function handleRestore(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  const text = ctx.message?.text?.trim() || "";
+  const isCommand = !ctx.callbackQuery && (ctx.message?.text?.startsWith("/restore") || ctx.message?.text?.startsWith("/mistakes"));
+  const text = isCommand ? (ctx.message?.text?.trim() || "") : "";
   const parts = text.split(/\s+/);
-  const explicitCourse = parts.length > 1 ? parts[1].trim() : null;
+  const explicitCourse = (isCommand && parts.length > 1) ? parts[1].trim() : null;
 
   if (explicitCourse) {
     // User directly supplied course code: /restore PCL301
@@ -20,6 +21,8 @@ export async function handleRestore(ctx: Context) {
   }
 
   // Pre-arm awaitingRestoreCourse so typing the course code directly without pressing the button works instantly
+  const { clearAwaitingStates } = await import("../state.js");
+  clearAwaitingStates(chatId);
   awaitingRestoreCourse.add(chatId);
 
   const keyboard = new InlineKeyboard()

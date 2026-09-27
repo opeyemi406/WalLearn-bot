@@ -18,9 +18,10 @@ export async function handleAnalyze(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  const text = ctx.message?.text?.trim() || "";
+  const isCommand = !ctx.callbackQuery && ctx.message?.text?.startsWith("/analyze");
+  const text = isCommand ? (ctx.message?.text?.trim() || "") : "";
   const parts = text.split(/\s+/);
-  const explicitCourse = parts.length > 1 ? parts[1].trim() : null;
+  const explicitCourse = (isCommand && parts.length > 1) ? parts[1].trim() : null;
 
   if (explicitCourse) {
     promptForQuestions(ctx, explicitCourse);
@@ -34,7 +35,9 @@ export async function handleAnalyze(ctx: Context) {
     return;
   }
 
-  // Otherwise prompt for course code
+  // Otherwise prompt for course code and arm listener immediately
+  const { clearAwaitingStates } = await import("../state.js");
+  clearAwaitingStates(chatId);
   awaitingAnalyzeCourse.add(chatId);
   await ctx.reply(
     `📝 *Department Past MCQ Questions & Style Analyzer*\n\n` +

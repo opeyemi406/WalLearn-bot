@@ -32,13 +32,45 @@ export async function handleChatMessage(ctx: Context) {
   // 2. Check if user is responding with a course code for /restore
   const { awaitingRestoreCourse } = await import("../state.js");
   if (awaitingRestoreCourse.has(chatId)) {
-    awaitingRestoreCourse.delete(chatId);
-    if (/^(all|all\s+courses?|everything|🌐)$/i.test(rawText.trim())) {
+    const trimmed = rawText.trim();
+    if (/^(2|option\s*2|all|all\s+courses?|everything|🌐)$/i.test(trimmed)) {
+      awaitingRestoreCourse.delete(chatId);
       const { executeRestoreAll } = await import("./restore.js");
       return executeRestoreAll(ctx);
     }
+    if (/^(1|option\s*1|specific|course)$/i.test(trimmed)) {
+      await ctx.reply(
+        `📚 *Restore Specific Course*\n\nPlease reply directly with your course code (e.g. \`ANA201\`, \`PCL301\`, \`CHM211\`):`,
+        { parse_mode: "Markdown" }
+      );
+      return;
+    }
+    awaitingRestoreCourse.delete(chatId);
     const { executeRestoreCourse } = await import("./restore.js");
-    return executeRestoreCourse(ctx, rawText);
+    return executeRestoreCourse(ctx, trimmed);
+  }
+
+  // 2.5 Check if user is replying to quiz count prompt (e.g. 5, 10, 20)
+  const { awaitingQuizCount } = await import("../state.js");
+  if (awaitingQuizCount.has(chatId)) {
+    const trimmed = rawText.trim().toLowerCase();
+    let count: number | null = null;
+    if (/^(1|sprint|5|⚡)/i.test(trimmed)) count = 5;
+    else if (/^(2|standard|10|🎯)/i.test(trimmed)) count = 10;
+    else if (/^(3|exam|20|🔥)/i.test(trimmed)) count = 20;
+    else {
+      const numMatch = trimmed.match(/\b(\d{1,2})\b/);
+      if (numMatch) {
+        const val = parseInt(numMatch[1], 10);
+        if (val >= 3 && val <= 30) count = val;
+      }
+    }
+
+    if (count !== null) {
+      awaitingQuizCount.delete(chatId);
+      const { startQuizWithCount } = await import("./study.js");
+      return startQuizWithCount(ctx, count);
+    }
   }
 
   // 3. Check if user is responding with a course code for /analyze
@@ -68,12 +100,97 @@ export async function handleChatMessage(ctx: Context) {
     return processPastQuestionsAnalysis(ctx, rawText, courseCode);
   }
 
+  // 4.5 Check if user is replying to the /start welcome menu
+  const { awaitingStartChoice } = await import("../state.js");
+  if (awaitingStartChoice.has(chatId)) {
+    const trimmed = rawText.trim().toLowerCase();
+
+    // 1 / A / Analyze
+    if (/^(?:option\s*)?(1|a)$/i.test(trimmed) || /^(analyze|past\s*questions?|mcq|past)$/i.test(trimmed)) {
+      awaitingStartChoice.delete(chatId);
+      const { handleAnalyze } = await import("./analyze.js");
+      return handleAnalyze(ctx);
+    }
+
+    // 2 / B / Study / Slides
+    if (/^(?:option\s*)?(2|b)$/i.test(trimmed) || /^(study|slides?|direct|prep)$/i.test(trimmed)) {
+      awaitingStartChoice.delete(chatId);
+      awaitingSubject.add(chatId);
+      await ctx.reply(
+        `📚 *Ready to Study Directly!*\n\n` +
+        `Please reply with your *Course Code & Title* (e.g. \`PCL301 - Evaluation of Drug Toxicity\` or \`BIO101\`):\n\n` +
+        `_You can also attach your lecture slides (PDF, PPTX, Word) or images directly!_`,
+        { parse_mode: "Markdown" }
+      );
+      return;
+    }
+
+    // 3 / C / Restore
+    if (/^(?:option\s*)?(3|c)$/i.test(trimmed) || /^(restore|mistakes|returning|recover)$/i.test(trimmed)) {
+      awaitingStartChoice.delete(chatId);
+      const { handleRestore } = await import("./restore.js");
+      return handleRestore(ctx);
+    }
+
+    // 4 / D / Briefing
+    if (/^(?:option\s*)?(4|d)$/i.test(trimmed) || /^(briefing|weakness|report)$/i.test(trimmed)) {
+      awaitingStartChoice.delete(chatId);
+      const { handleBriefing } = await import("./briefing.js");
+      return handleBriefing(ctx);
+    }
+
+    // If user directly typed a course code (e.g. ANA201 or PCL301), clear awaitingStartChoice and proceed to set course
+    if (isValidCourseInput(rawText)) {
+      awaitingStartChoice.delete(chatId);
+    }
+  }
+
+  // 4.55 Check if user is replying to the /menu active session menu
+  const { awaitingMenuChoice } = await import("../state.js");
+  if (awaitingMenuChoice.has(chatId)) {
+    const trimmed = rawText.trim().toLowerCase();
+    if (/^(1|drill|study|start|quiz)$/i.test(trimmed)) {
+      awaitingMenuChoice.delete(chatId);
+      const { handleStudy } = await import("./study.js");
+      return handleStudy(ctx);
+    }
+    if (/^(2|briefing|report|weakness)$/i.test(trimmed)) {
+      awaitingMenuChoice.delete(chatId);
+      const { handleBriefing } = await import("./briefing.js");
+      return handleBriefing(ctx);
+    }
+    if (/^(3|change|switch|new\s*course|course)$/i.test(trimmed)) {
+      awaitingMenuChoice.delete(chatId);
+      const { handleSubject } = await import("./start.js");
+      return handleSubject(ctx);
+    }
+    if (/^(4|slides|attach|guide|upload)$/i.test(trimmed)) {
+      awaitingMenuChoice.delete(chatId);
+      const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
+      await ctx.reply(
+        formatTelegramMarkdown(
+          `📎 *How to Quiz from Your Slides or Images:*\n\n1️⃣ Tap the 📎 attachment icon in Telegram.\n2️⃣ Select your lecture slides (PDF, Word, PPTX) or *images* (JPEG, PNG).\n3️⃣ Send it to this chat!\n\nWalLearn will use Gemini Vision to transcribe the concepts and blend them with your Walrus mistake history to build a personalized exam drill.`
+        ),
+        { parse_mode: "Markdown" }
+      );
+      return;
+    }
+    awaitingMenuChoice.delete(chatId);
+  }
+
   // 4.6 Check if user is replying with a topic after past questions or course setup
   const { awaitingStudyTopic, userActiveTopic, getUserSubjectDisplay, isValidTopicInput } = await import("../state.js");
   const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
 
   if (awaitingStudyTopic.has(chatId) && !rawText.startsWith("/")) {
     const courseCode = awaitingStudyTopic.get(chatId)!;
+
+    // Check if user wants to study the whole course without specifying a topic
+    if (/^(quiz|study|start|drill|test|all|practice)$/i.test(rawText.trim())) {
+      awaitingStudyTopic.delete(chatId);
+      const { handleStudy } = await import("./study.js");
+      return handleStudy(ctx);
+    }
 
     // Check if user selected option 1 ("1", "option 1", "slides", "slide")
     if (/^(?:option\s*)?1$/i.test(rawText) || /^(slides?|images?|upload)$/i.test(rawText)) {
@@ -107,6 +224,10 @@ export async function handleChatMessage(ctx: Context) {
     awaitingStudyTopic.delete(chatId);
     userActiveTopic.set(chatId, rawText);
 
+    // Pre-arm awaitingQuizCount so typing 5, 10, 20 starts immediately
+    const { awaitingQuizCount } = await import("../state.js");
+    awaitingQuizCount.add(chatId);
+
     const keyboard = new InlineKeyboard()
       .text("⚡ 5 Questions (Sprint)", "start_quiz_5")
       .text("🎯 10 Questions (Standard)", "start_quiz_10")
@@ -132,6 +253,10 @@ export async function handleChatMessage(ctx: Context) {
     if (isValidTopicInput(topic)) {
       userActiveTopic.set(chatId, topic);
 
+      // Pre-arm awaitingQuizCount
+      const { awaitingQuizCount } = await import("../state.js");
+      awaitingQuizCount.add(chatId);
+
       const keyboard = new InlineKeyboard()
         .text("⚡ 5 Questions (Sprint)", "start_quiz_5")
         .text("🎯 10 Questions (Standard)", "start_quiz_10")
@@ -148,30 +273,6 @@ export async function handleChatMessage(ctx: Context) {
         reply_markup: keyboard,
       });
       return;
-    }
-  }
-
-  // 4.8 Check if user is replying to the /start onboarding menu with an option (A, B, C or 1, 2, 3)
-  const isStartMenuSelection = /^(?:option\s*)?([a-c]|1|2|3)$/i.test(rawText);
-  if (!hasUserSubject(chatId) && isStartMenuSelection) {
-    const opt = rawText.replace(/option\s*/i, "").trim().toUpperCase();
-    if (opt === "A" || opt === "1") {
-      const { handleAnalyze } = await import("./analyze.js");
-      return handleAnalyze(ctx);
-    }
-    if (opt === "B" || opt === "2") {
-      awaitingSubject.add(chatId);
-      await ctx.reply(
-        `📚 *Ready to Study Directly!*\n\n` +
-        `Please reply with your *Course Code & Title* (e.g. \`PCL301 - Evaluation of Drug Toxicity\` or \`BIO101\`):\n\n` +
-        `_You can also attach your lecture slides (PDF, PPTX, Word) or images directly!_`,
-        { parse_mode: "Markdown" }
-      );
-      return;
-    }
-    if (opt === "C" || opt === "3") {
-      const { handleRestore } = await import("./restore.js");
-      return handleRestore(ctx);
     }
   }
 

@@ -8,9 +8,10 @@ export async function handleBriefing(ctx: Context) {
 
   const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
 
-  const text = ctx.message?.text?.trim() || "";
+  const isCommand = !ctx.callbackQuery && ctx.message?.text?.startsWith("/briefing");
+  const text = isCommand ? (ctx.message?.text?.trim() || "") : "";
   const parts = text.split(/\s+/);
-  const explicitCourse = parts.length > 1 ? parts[1].trim() : null;
+  const explicitCourse = (isCommand && parts.length > 1) ? parts[1].trim() : null;
 
   const subjectCode = explicitCourse
     ? explicitCourse.toUpperCase().replace(/[^A-Z0-9]/g, "")

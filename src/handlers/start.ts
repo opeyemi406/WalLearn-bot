@@ -15,6 +15,9 @@ export async function handleStart(ctx: Context) {
 
   // Always reset to a fresh slate on /start (e.g. when user clears history and starts)
   clearUserProfile(chatId);
+  const { awaitingStartChoice, clearAwaitingStates } = await import("../state.js");
+  clearAwaitingStates(chatId);
+  awaitingStartChoice.add(chatId);
 
   const accountShort = `${config.walrusAccountId.slice(0, 10)}...${config.walrusAccountId.slice(-8)}`;
 
@@ -60,6 +63,10 @@ export async function handleMenu(ctx: Context) {
   if (!hasUserSubject(chatId)) {
     return handleStart(ctx);
   }
+
+  const { awaitingMenuChoice, clearAwaitingStates } = await import("../state.js");
+  clearAwaitingStates(chatId);
+  awaitingMenuChoice.add(chatId);
 
   const currentSubjectDisplay = getUserSubjectDisplay(chatId);
   const currentSubjectCode = getUserSubject(chatId);

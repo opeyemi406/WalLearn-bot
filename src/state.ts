@@ -218,15 +218,32 @@ export function clearUserProfile(chatId: number) {
   pendingSlides.delete(chatId);
   awaitingStudyTopic.delete(chatId);
   userActiveTopic.delete(chatId);
+  awaitingRestoreCourse.delete(chatId);
+  awaitingAnalyzeCourse.delete(chatId);
+  awaitingPastQuestions.delete(chatId);
+  awaitingQuizCount.delete(chatId);
+  awaitingStartChoice.delete(chatId);
+  awaitingMenuChoice.delete(chatId);
   awaitingSubject.add(chatId);
 }
 
-// Restore & Analyze flow states
+// Prompt listeners & interactive flow states
+export const awaitingStartChoice = new Set<number>();
+export const awaitingMenuChoice = new Set<number>();
+export const awaitingQuizCount = new Set<number>();
 export const awaitingRestoreCourse = new Set<number>();
 export const awaitingAnalyzeCourse = new Set<number>();
 export const awaitingPastQuestions = new Map<number, string>(); // chatId -> courseCode
 export const awaitingStudyTopic = new Map<number, string>(); // chatId -> courseCode
 export const userActiveTopic = new Map<number, string>(); // chatId -> topicName
+
+export function clearAwaitingStates(chatId: number) {
+  awaitingStartChoice.delete(chatId);
+  awaitingMenuChoice.delete(chatId);
+  awaitingQuizCount.delete(chatId);
+  awaitingRestoreCourse.delete(chatId);
+  awaitingAnalyzeCourse.delete(chatId);
+}
 
 const EXAM_STYLES_FILE = path.resolve(process.cwd(), "data/exam-styles.json");
 
