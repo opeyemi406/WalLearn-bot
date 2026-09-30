@@ -4,40 +4,40 @@
     "blobId": "pMJuaaktunxoPqfTyJICenPQM8NmZFDo7De7wsc-oVw",
     "topic": "Non-linear Pharmacokinetics",
     "question": "What characterizes Michaelis-Menten kinetics?",
-    "misconception": "Chose first-order linear elimination",
+    "misconception": "",
     "correctFact": "In non-linear kinetics, clearance decreases as concentration increases due to enzyme saturation.",
     "severity": "high",
-    "misses": 1,
+    "misses": 0,
     "namespace": "pcl301",
     "timestamp": "2026-09-25T16:03:25.000Z",
     "status": "confirmed",
-    "recordType": "mistake"
+    "recordType": "fact"
   },
   {
     "topic": "Receptor Classifications",
     "question": "Which receptor superfamily uses G-protein coupled cascades?",
-    "misconception": "Chose ligand-gated ion channels",
+    "misconception": "",
     "correctFact": "7-transmembrane domain GPCRs signal via heterotrimeric G-proteins.",
     "severity": "high",
-    "misses": 1,
+    "misses": 0,
     "namespace": "pcl301",
     "timestamp": "2026-09-25T16:53:23.459Z",
     "status": "confirmed",
-    "recordType": "mistake"
+    "recordType": "fact"
   },
   {
     "jobId": "7cedb590-1177-43cc-98f7-6fb22345d06c",
     "blobId": "M6_plOjk92t-qU3fkVGikYxRZL4ziM3zSGPgoajC8dY",
     "topic": "Enzyme Kinetics",
     "question": "What is the unit of Vmax?",
-    "misconception": "Chose mg/mL instead of amount per unit time",
+    "misconception": "",
     "correctFact": "μmol/min or concentration per unit time",
     "severity": "medium",
-    "misses": 1,
+    "misses": 0,
     "namespace": "pcl301",
     "timestamp": "2026-09-25T17:08:55.724Z",
     "status": "confirmed",
-    "recordType": "mistake"
+    "recordType": "fact"
   },
   {
     "jobId": "4eabf5b2-e21b-43d4-bd5f-919473879e68",

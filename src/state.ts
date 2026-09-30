@@ -76,19 +76,12 @@ export function getPastCourseCodesForUser(chatId: number): string[] {
           codes.add(r.namespace.toLowerCase());
         }
       }
-      if (codes.size === 0) {
-        for (const r of records) {
-          if (r.namespace && /^[a-z]{2,5}\d{2,4}$/i.test(r.namespace)) {
-            codes.add(r.namespace.toLowerCase());
-          }
-        }
-      }
       return Array.from(codes);
     }
   } catch (e) {
     // ignore
   }
-  return ["pcl301", "pcl302"];
+  return [];
 }
 
 export function hasUserSubject(chatId: number): boolean {

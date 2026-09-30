@@ -467,20 +467,29 @@ export class WalrusClient {
           namespace: string;
         };
 
-        // Query Walrus Protocol directly to retrieve all stored mistake statements
-        let rawRecall = await this.recall("repeated mistakes, misconceptions, and failed questions", targetNamespace);
-        let count = (rawRecall.match(/\[MISTAKE\]/g) || []).length;
-
-        // If isolated namespace has 0, check the base course namespace on Walrus
-        if (count === 0 && targetNamespace !== namespace.toLowerCase()) {
-          const fallbackRecall = await this.recall("repeated mistakes, misconceptions, and failed questions", namespace);
-          if (fallbackRecall.includes("[MISTAKE]")) {
-            rawRecall = fallbackRecall;
-            count = (rawRecall.match(/\[MISTAKE\]/g) || []).length;
+        // Query Walrus Protocol directly to retrieve stored mistake statements FOR THIS USER ONLY
+        let recalledMemories: string[] = [];
+        try {
+          const recallRes = await this.signedFetch("POST", "/api/recall", JSON.stringify({
+            query: "repeated mistakes, misconceptions, and failed questions",
+            namespace: targetNamespace,
+          }));
+          if (recallRes.ok) {
+            const recallData = (await recallRes.json()) as { results?: Array<{ text?: string }> };
+            if (recallData.results) {
+              for (const item of recallData.results) {
+                if (item.text) recalledMemories.push(item.text);
+              }
+            }
           }
+        } catch (e) {
+          console.warn("Restore recall query failed:", (e as Error).message);
         }
 
-        // Reconstruct ledger records directly from the recalled Walrus blobs
+        const rawRecall = recalledMemories.join("\n");
+        const count = (rawRecall.match(/\[MISTAKE\]/g) || []).length;
+
+        // Reconstruct ledger records directly from this user's recalled Walrus blobs
         if (count > 0) {
           const lines = rawRecall.split("\n");
           for (const line of lines) {
@@ -495,7 +504,10 @@ export class WalrusClient {
               if (topicMatch) {
                 const topic = topicMatch[1].trim();
                 const exists = this.localLedger.some(
-                  (r) => (!chatId || r.chatId === chatId) && r.topic.toLowerCase() === topic.toLowerCase()
+                  (r) =>
+                    r.chatId === chatId &&
+                    r.topic.toLowerCase() === topic.toLowerCase() &&
+                    (r.namespace || "").toLowerCase() === namespace.toLowerCase()
                 );
                 if (!exists) {
                   this.localLedger.push({
@@ -518,7 +530,10 @@ export class WalrusClient {
               if (factMatch) {
                 const factText = factMatch[1].trim();
                 const exists = this.localLedger.some(
-                  (r) => (!chatId || r.chatId === chatId) && r.correctFact === factText
+                  (r) =>
+                    r.chatId === chatId &&
+                    r.correctFact === factText &&
+                    (r.namespace || "").toLowerCase() === namespace.toLowerCase()
                 );
                 if (!exists) {
                   this.localLedger.push({
@@ -543,7 +558,7 @@ export class WalrusClient {
         }
 
         const effectiveTotal = Math.max(data.total, count);
-        console.log(`✅ [Walrus Restore Complete] Total blobs on-chain: ${effectiveTotal} (Recalled: ${count})`);
+        console.log(`✅ [Walrus Restore Complete] Total blobs on-chain for ${targetNamespace}: ${effectiveTotal} (Restored: ${count})`);
         return {
           success: true,
           restored: count,
@@ -551,7 +566,7 @@ export class WalrusClient {
           failed: data.failed,
           total: effectiveTotal,
           namespace: targetNamespace,
-          details: `Found ${effectiveTotal} permanent blobs on Walrus Mainnet`,
+          details: `Found ${effectiveTotal} permanent blobs on Walrus Mainnet for your account`,
         };
       } else if (res.status === 429) {
         console.warn(`Walrus restore hit rate limit (429). Using verified on-chain ledger records.`);
@@ -658,11 +673,16 @@ export class WalrusClient {
       console.warn("Walrus recall query caught:", (err as Error).message);
     }
 
-    // 2. Combine with local ledger entries for this user and subject
+    // 2. Combine with local ledger entries for this user and subject with STRICT tenant isolation
     const cleanNs = namespace.toLowerCase().replace(/[^a-z0-9]/g, "");
     const targetNs = targetNamespace.toLowerCase().replace(/[^a-z0-9]/g, "");
     let localMatches = this.localLedger.filter((entry) => {
-      if (chatId && entry.chatId !== chatId) return false;
+      // STRICT TENANT ISOLATION:
+      if (chatId) {
+        if (entry.chatId !== chatId) return false;
+      } else {
+        if (entry.chatId !== undefined) return false;
+      }
       const entryNs = (entry.namespace || "").toLowerCase().replace(/[^a-z0-9]/g, "");
       return entryNs === cleanNs || entryNs === targetNs;
     });
@@ -847,20 +867,25 @@ export class WalrusClient {
     }
 
     const weaknesses = Array.from(weaknessesMap.values());
-    for (const w of weaknesses) {
+    const activeWeaknesses = weaknesses.filter((w) => {
       const cleanW = w.topic.toLowerCase().trim();
       const rec = this.localLedger.find(
         (r) =>
           r.chatId === chatId &&
-          r.namespace?.toLowerCase() === subject.toLowerCase() &&
+          (r.namespace || "").toLowerCase() === cleanSubject &&
           (r.topic.toLowerCase().includes(cleanW) || cleanW.includes(r.topic.toLowerCase()))
       );
+      if (rec?.status === "mastered") {
+        if (!mastered.includes(w.topic)) mastered.push(w.topic);
+        return false;
+      }
       w.streak = rec?.correctStreak || 0;
-    }
+      return true;
+    });
 
     // Sort weaknesses by misses * severity weight
     const severityWeight: Record<string, number> = { high: 3, medium: 2, low: 1 };
-    weaknesses.sort((a, b) => {
+    activeWeaknesses.sort((a, b) => {
       const scoreA = a.misses * (severityWeight[a.severity] || 2);
       const scoreB = b.misses * (severityWeight[b.severity] || 2);
       return scoreB - scoreA;
@@ -868,8 +893,8 @@ export class WalrusClient {
 
     return {
       subject,
-      total_mistakes: weaknesses.length,
-      weaknesses: weaknesses.slice(0, 5), // Top 5
+      total_mistakes: activeWeaknesses.length,
+      weaknesses: activeWeaknesses.slice(0, 5), // Top 5
       mastered,
     };
   }

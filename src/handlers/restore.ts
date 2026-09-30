@@ -233,17 +233,22 @@ export async function executeRestoreAll(ctx: Context) {
       pastCodes.push(activeSubject.toLowerCase());
     }
     if (pastCodes.length === 0) {
-      const allLedger = await walrus.getLedger();
+      const userLedger = await walrus.getLedger(chatId);
       const detected = new Set<string>();
-      for (const r of allLedger) {
-        if (r.namespace && /^[a-z]{2,5}\d{2,4}$/i.test(r.namespace)) {
+      for (const r of userLedger) {
+        if (r.chatId === chatId && r.namespace && /^[a-z]{2,5}\d{2,4}$/i.test(r.namespace)) {
           detected.add(r.namespace.toLowerCase());
         }
       }
       pastCodes = Array.from(detected);
-      if (pastCodes.length === 0) {
-        pastCodes = ["pcl301"];
-      }
+    }
+
+    if (pastCodes.length === 0) {
+      let emptyMsg = `⛓️ *Walrus On-Chain Recovery Complete*\n\n`;
+      emptyMsg += `✨ *Zero Recorded Courses or Mistakes!* You haven't started or missed any questions yet.\n\n`;
+      emptyMsg += `Type /study or enter a course code (e.g. \`PCL301\`) to start your first practice drill!`;
+      await ctx.api.editMessageText(chatId, statusMsg.message_id, emptyMsg, { parse_mode: "Markdown" });
+      return;
     }
 
     let totalBlobsFound = 0;

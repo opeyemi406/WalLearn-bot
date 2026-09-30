@@ -170,11 +170,12 @@ export async function executeBriefingAll(ctx: Context) {
       pastCodes.push(activeSubject.toLowerCase());
     }
 
+    // Only look at courses this user has actually studied or set
     if (pastCodes.length === 0) {
-      const allLedger = await walrus.getLedger();
+      const userLedger = await walrus.getLedger(chatId);
       const detected = new Set<string>();
-      for (const r of allLedger) {
-        if (r.namespace && /^[a-z]{2,5}\d{2,4}$/i.test(r.namespace)) {
+      for (const r of userLedger) {
+        if (r.chatId === chatId && r.namespace && /^[a-z]{2,5}\d{2,4}$/i.test(r.namespace)) {
           detected.add(r.namespace.toLowerCase());
         }
       }
