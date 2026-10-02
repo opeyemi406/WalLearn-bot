@@ -131,6 +131,7 @@ In WalLearn, **memory actively controls the algorithmic behavior and output of t
 4. **True Disaster Recovery (`/restore`)**:
    - Delete your Telegram chat history. Reboot the cloud container on Railway.
    - Run `/restore`: WalLearn reaches out to Walrus Protocol Mainnet via signed Ed25519 requests, scans the raw on-chain blobs, and mathematically reconstructs the entire mastery ledger in under 3 seconds.
+   - *1:N Blob Storage Architecture*: MemWal aggregates memory updates into encrypted namespace snapshots on Walrus. A single on-chain Walrus Blob can contain multiple granular weaknesses, achieving high decentralized storage efficiency without fragmentation.
 
 ---
 
@@ -242,6 +243,19 @@ Writing to decentralized storage requires handling network latency and relayer r
 1. **Phase 1 (Ingestion & Job Dispatch)**: WalLearn generates an Ed25519 signature across `timestamp.method.path.bodyHash.nonce.accountId` and dispatches the memory payload to the MemWal Relayer. The relayer returns an immediate `202 Accepted` with a cryptographic `job_id`.
 2. **Phase 2 (Background On-Chain Resolution)**: The bot registers the record in its local state ledger and asynchronously polls `/api/remember/{jobId}` until the permanent Walrus Mainnet `blob_id` is resolved and linked.
 3. **Resilient HTTP 429 Backoff**: The custom `signedFetch` client intercepts rate limits, inspects `retry_after_seconds`, and applies exponential backoff with jitter, ensuring continuous operation without dropped student data.
+
+### 6. Storage Semantics: On-Chain Blobs vs. Cognitive Weakness Records (1:N Architecture)
+When executing an on-chain recovery via `/restore`, judges and users will observe telemetry such as:
+```text
+• Permanent Blobs On-Chain: 1
+• Tracked Weaknesses (Mistakes): 3
+```
+
+This reflects an **intentional, cost-effective decentralized storage architecture**:
+- **Permanent Blob (On-Chain Container):** On Walrus Protocol, a **Blob** is a cryptographic, erasure-coded storage object distributed across Walrus storage nodes and registered on the Sui blockchain.
+- **Tracked Weaknesses (Cognitive Records):** A **Weakness** is an application-level entity containing the question stem, student misconception, lecturer fact, and 3-pass mastery streak.
+- **Atomic Batching & Snapshot Consolidation:** Minting a separate on-chain storage lease on Walrus for each isolated sentence is computationally and economically wasteful. The **MemWal (Walrus Memory)** relayer consolidates memory records belonging to a student's course namespace (`u<chatId>_<courseCode>`) into an encrypted Walrus blob snapshot.
+- **Full Recovery Fidelity:** One Walrus Blob securely houses multiple tracked weaknesses. When `/restore` re-indexes the blob from Walrus Mainnet, all contained misconceptions and streaks are completely recovered, and each entry displays a direct [Walrusscan](https://walruscan.com) link verifying the parent on-chain blob.
 
 ---
 
