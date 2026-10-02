@@ -69,7 +69,7 @@ The tutor does not provide a generic textbook definition. It proactively address
 If the user deletes their Telegram chat history or the bot's cloud server redeploys:
 - Running `/restore` triggers a cryptographic scan of the user's isolated Walrus Mainnet namespace.
 - It parses raw on-chain blobs and fully reconstructs their weaknesses, streaks, and mastery progress in under 3 seconds.
-- **1:N Blob Storage Architecture**: Notice that `Permanent Blobs On-Chain: 1` can correspond to `Tracked Weaknesses (Mistakes): 3`. Walrus Protocol stores memories via encrypted namespace snapshots where a single on-chain blob securely houses multiple granular mistakes and streaks, maximizing on-chain storage efficiency and atomic recovery.
+- **1:N Blob Storage Architecture**: Walrus Protocol stores memories via encrypted namespace snapshots where a single on-chain blob securely houses multiple granular mistakes and streaks, maximizing on-chain storage efficiency and atomic recovery without creating redundant blockchain storage leases.
 
 ---
 
