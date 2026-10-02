@@ -101,17 +101,18 @@ export function getPastCourseCodesForUser(chatId: number): string[] {
 }
 
 export function hasUserSubject(chatId: number): boolean {
-  return userProfiles.has(chatId);
+  const profile = userProfiles.get(chatId);
+  return !!(profile && profile.subjectCode && profile.subjectCode.trim().length > 0);
 }
 
 export function getUserSubject(chatId: number): string {
   const profile = userProfiles.get(chatId);
-  return profile?.subjectCode || "";
+  return (profile && profile.subjectCode && profile.subjectCode.trim().length > 0) ? profile.subjectCode : "";
 }
 
 export function getUserSubjectDisplay(chatId: number): string {
   const profile = userProfiles.get(chatId);
-  return profile?.subjectDisplay || "None (Not set yet)";
+  return (profile && profile.subjectDisplay && profile.subjectDisplay.trim().length > 0) ? profile.subjectDisplay : "None (Not set yet)";
 }
 
 export function parseSubjectInput(input: string): { code: string; display: string } {

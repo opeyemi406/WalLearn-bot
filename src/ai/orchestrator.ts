@@ -60,8 +60,8 @@ export async function orchestrateUserMessage(
     return { intent: "start_drill", questionCount: count, confidence: 1.0 };
   }
 
-  // Fast-path 3: Standalone course code (e.g. "ANA201", "PCL301", "BIO101")
-  const standaloneCode = trimmed.match(/^([a-zA-Z]{2,5}\s*\d{2,4})(?:\s*[-–—:]\s*(.+))?$/i);
+  // Fast-path 3: Standalone course code (e.g. "ANA201", "PCL301", "PST311 Cryotherapy", "BIO101 - Biology")
+  const standaloneCode = trimmed.match(/^([a-zA-Z]{2,5}\s*\d{2,4})(?:[\s:\-–—]+(.+))?$/i);
   if (standaloneCode) {
     const code = standaloneCode[1].toUpperCase().replace(/\s+/g, "");
     const title = standaloneCode[2]?.trim();
@@ -78,6 +78,28 @@ export async function orchestrateUserMessage(
       intent: "set_course",
       courseCode: code,
       courseDisplay: title ? `${code} - ${title}` : code,
+      confidence: 1.0,
+    };
+  }
+
+  // Fast-path 3b: Explicit course declaration (e.g. "The course is Cryotherapy", "Set course active as PST311- Cryotherapy")
+  const explicitCourseMatch = trimmed.match(/^(?:(?:set\s+(?:the\s+)?(?:active\s+)?course\s+(?:as\s+|to\s+)?)|(?:the\s+course\s+is\s+)|(?:my\s+course\s+is\s+)|(?:course\s*[:=]\s*))(.+)$/i);
+  if (explicitCourseMatch) {
+    const rawContent = explicitCourseMatch[1].trim();
+    const codeInContent = rawContent.match(/^([a-zA-Z]{2,5}\s*\d{2,4})(?:[\s:\-–—]+(.+))?$/i);
+    if (codeInContent) {
+      const code = codeInContent[1].toUpperCase().replace(/\s+/g, "");
+      const title = codeInContent[2]?.trim();
+      return {
+        intent: "set_course",
+        courseCode: code,
+        courseDisplay: title ? `${code} - ${title}` : code,
+        confidence: 1.0,
+      };
+    }
+    return {
+      intent: "set_course",
+      courseDisplay: rawContent,
       confidence: 1.0,
     };
   }

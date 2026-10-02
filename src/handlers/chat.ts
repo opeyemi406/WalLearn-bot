@@ -230,6 +230,7 @@ export async function handleChatMessage(ctx: Context) {
 
   // Intent H: Set Course
   if (result.intent === "set_course") {
+    const wasAwaitingSubject = awaitingCtx === "subject";
     clearAwaitingStates(chatId);
     const courseRaw = result.courseDisplay || result.courseCode || rawText;
     const profile = setUserSubject(chatId, courseRaw);
@@ -242,16 +243,47 @@ export async function handleChatMessage(ctx: Context) {
       return startQuizWithCount(ctx, result.questionCount);
     }
 
+    if (wasAwaitingSubject) {
+      // User was prompted by /study to choose a course -> Transition smoothly into question count selection!
+      const { awaitingQuizCount } = await import("../state.js");
+      awaitingQuizCount.add(chatId);
+
+      const keyboard = new InlineKeyboard()
+        .text("⚡ 5 Questions (Sprint)", "start_quiz_5")
+        .text("🎯 10 Questions (Standard)", "start_quiz_10")
+        .row()
+        .text("🔥 20 Questions (Exam Mode)", "start_quiz_20")
+        .row()
+        .text("🚀 30 Questions (Deep Drill)", "start_quiz_30")
+        .text("🏆 40 Questions (Full Mock)", "start_quiz_40");
+
+      let msg = `✅ *Active Course Set:* *${profile.subjectDisplay}*\n`;
+      msg += `⛓️ *Walrus Protocol Namespace:* \`${profile.subjectCode}\`\n\n`;
+      msg += `🎯 *How many questions would you like to drill?*\n`;
+      msg += `Select an option below or type e.g. \`/study 10\`:\n\n`;
+      msg += `_💡 Optional: You can attach lecture slides or images anytime to quiz from specific topics!_`;
+
+      await ctx.reply(formatTelegramMarkdown(msg), {
+        parse_mode: "Markdown",
+        reply_markup: keyboard,
+      });
+      return;
+    }
+
     awaitingStudyTopic.set(chatId, profile.subjectCode);
     const keyboard = new InlineKeyboard()
+      .text("🎯 Start Practice Drill", "start_drill")
+      .row()
       .text("📎 Attach Slides/Images Guide", "upload_guide");
 
     let response = `✅ *Active Course Set:* *${profile.subjectDisplay}*\n`;
     response += `⛓️ *Walrus Protocol Namespace:* \`${profile.subjectCode}\`\n\n`;
     response += `📂 *How would you like to prepare for ${profile.subjectCode.toUpperCase()}?*\n\n`;
-    response += `1️⃣ 📄 *Upload Lecture Slides or Images:*\n`;
+    response += `1️⃣ 🎯 *Start a CBT Practice Drill:*\n`;
+    response += `Tap *Start Practice Drill* or type /study anytime to generate exam-standard questions.\n\n`;
+    response += `2️⃣ 📄 *Upload Lecture Slides or Images:*\n`;
     response += `Attach your slide file (PDF, PPTX, Word) or images now to quiz directly from your lecture material.\n\n`;
-    response += `2️⃣ 💬 *Or Reply with the Topic:*\n`;
+    response += `3️⃣ 💬 *Or Reply with a Topic:*\n`;
     response += `Reply with any topic in ${profile.subjectCode.toUpperCase()} (e.g. \`Introduction & Core Concepts\`) and I will generate questions specifically on that topic!`;
 
     await ctx.reply(formatTelegramMarkdown(response), {
