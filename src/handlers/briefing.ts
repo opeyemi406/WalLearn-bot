@@ -174,9 +174,6 @@ export async function executeBriefingAll(ctx: Context) {
     const userCodes = getPastCourseCodesForUser(chatId);
     for (const c of userCodes) candidateCodes.add(c.toLowerCase());
 
-    const platformCourses = walrus.getAllPlatformCourseCodes();
-    for (const c of platformCourses) candidateCodes.add(c.toLowerCase());
-
     for (const code of candidateCodes) {
       try {
         await walrus.restoreNamespace(code, chatId);
@@ -192,8 +189,9 @@ export async function executeBriefingAll(ctx: Context) {
     for (const c of userCodes) detectedCourses.add(c.toLowerCase());
     if (activeSubject && activeSubject !== "general") detectedCourses.add(activeSubject.toLowerCase());
     for (const r of userRecords) {
-      if (r.namespace && /^[a-z]{2,5}\d{2,4}$/i.test(r.namespace)) {
-        detectedCourses.add(r.namespace.toLowerCase());
+      const cleanNs = (r.namespace || "").replace(/^u\d+_/, "").toLowerCase();
+      if (cleanNs && /^[a-z]{2,5}\d{2,4}$/i.test(cleanNs)) {
+        detectedCourses.add(cleanNs);
       }
     }
     const pastCodes = Array.from(detectedCourses);

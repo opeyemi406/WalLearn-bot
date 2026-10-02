@@ -88,8 +88,11 @@ export function getPastCourseCodesForUser(chatId: number): string[] {
         fs.readFileSync(LEDGER_FILE, "utf8")
       );
       for (const r of records) {
-        if (r.chatId === chatId && r.namespace && /^[a-z]{2,5}\d{2,4}$/i.test(r.namespace)) {
-          codes.add(r.namespace.toLowerCase());
+        if (r.chatId === chatId && r.namespace) {
+          const cleanNs = r.namespace.replace(/^u\d+_/, "").toLowerCase();
+          if (/^[a-z]{2,5}\d{2,4}$/i.test(cleanNs)) {
+            codes.add(cleanNs);
+          }
         }
       }
     }

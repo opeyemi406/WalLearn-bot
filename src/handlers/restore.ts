@@ -239,12 +239,8 @@ export async function executeRestoreAll(ctx: Context) {
     const userCodes = getPastCourseCodesForUser(chatId);
     for (const c of userCodes) candidateCodes.add(c.toLowerCase());
 
-    // All courses ever used across the platform and curriculum benchmarks
-    const platformCourses = walrus.getAllPlatformCourseCodes();
-    for (const c of platformCourses) candidateCodes.add(c.toLowerCase());
-
     const candidates = Array.from(candidateCodes);
-    console.log(`🔍 [Walrus Restore All] Probing ${candidates.length} courses for chat ${chatId}:`, candidates);
+    console.log(`🔍 [Walrus Restore All] Probing ${candidates.length} user courses for chat ${chatId}:`, candidates);
 
     let totalBlobsFound = 0;
     const restoredCourses = new Set<string>();

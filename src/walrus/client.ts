@@ -1003,12 +1003,11 @@ export class WalrusClient {
     this.loadLedger();
     const codes = new Set<string>();
     for (const r of this.localLedger) {
-      if (r.namespace && /^[a-z]{2,5}\d{2,4}$/i.test(r.namespace)) {
-        codes.add(r.namespace.toLowerCase());
+      const cleanNs = (r.namespace || "").replace(/^u\d+_/, "").toLowerCase();
+      if (cleanNs && /^[a-z]{2,5}\d{2,4}$/i.test(cleanNs)) {
+        codes.add(cleanNs);
       }
     }
-    const standard = ["pst311", "pcl301", "ana201", "bch201", "pha201", "phm301", "bio101", "chm101", "phy101"];
-    for (const s of standard) codes.add(s);
     return Array.from(codes);
   }
 }
