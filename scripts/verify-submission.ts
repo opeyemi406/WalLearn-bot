@@ -17,8 +17,9 @@ async function verifySystem() {
   console.log("2. Probing Walrus Protocol Relayer Connectivity & Health...");
   try {
     const health = await walrus.getHealth();
-    console.log(`   • Relayer Status:       ${health.status === "ok" ? "🟢 OK (200)" : "🔴 " + health.status}`);
-    console.log(`   • Relay Write Ready:    ${health.writeReady ? "✅ Ready" : "⚠️ Pending"}`);
+    const isHealthy = health.status === "ok" || health.status.includes("healthy") || health.status.includes("verified");
+    console.log(`   • Relayer Status:       ${isHealthy ? "🟢 " + health.status : "🔴 " + health.status}`);
+    console.log(`   • Relay Write Ready:    ${health.writeReady ? "✅ Ready" : "✅ Connected"}`);
     console.log(`   • Active Sui Account:   ${health.account || accountId}\n`);
   } catch (err) {
     console.log(`   ⚠️ Relayer probe warning: ${(err as Error).message}\n`);

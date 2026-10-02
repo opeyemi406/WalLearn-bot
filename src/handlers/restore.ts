@@ -249,6 +249,7 @@ export async function executeRestoreAll(ctx: Context) {
 
     let totalBlobsFound = 0;
     const restoredCourses = new Set<string>();
+    const courseBlobs = new Map<string, number>();
 
     // 2. Probe Walrus Protocol for each candidate course
     for (const code of candidates) {
@@ -257,6 +258,7 @@ export async function executeRestoreAll(ctx: Context) {
         totalBlobsFound += res.total;
         if (res.total > 0 || res.restored > 0) {
           restoredCourses.add(code.toLowerCase());
+          courseBlobs.set(code.toLowerCase(), res.total);
         }
       } catch {
         // Continue probing other courses
@@ -270,8 +272,10 @@ export async function executeRestoreAll(ctx: Context) {
     const ledger = await walrus.getLedger(chatId);
     const userRecords = ledger.filter((r) => r.chatId === chatId);
     for (const r of userRecords) {
-      if (r.namespace && /^[a-z]{2,5}\d{2,4}$/i.test(r.namespace)) {
-        restoredCourses.add(r.namespace.toLowerCase());
+      const rawNs = (r.namespace || "").toLowerCase();
+      const clean = rawNs.replace(/^u\d+_/, "");
+      if (clean && /^[a-z]{2,5}\d{2,4}$/i.test(clean)) {
+        restoredCourses.add(clean);
       }
     }
 
@@ -313,12 +317,13 @@ export async function executeRestoreAll(ctx: Context) {
     if (userMistakes.length === 0 && userFacts.length === 0) {
       msg += `_No mistakes or facts recorded across ${detectedCourses.map((c) => c.toUpperCase()).join(", ")} yet._\nStart studying with /study or upload slides to begin tracking!`;
     } else {
-      // Group by course code
+      // Group by course code, stripping any u<chatId>_ namespace prefix
       const byCourse = new Map<string, typeof userRecords>();
       for (const r of userRecords) {
-        const c = (r.namespace || "general").toUpperCase();
-        if (!byCourse.has(c)) byCourse.set(c, []);
-        byCourse.get(c)!.push(r);
+        const rawNs = (r.namespace || "general").toLowerCase();
+        const clean = rawNs.replace(/^u\d+_/, "").toUpperCase();
+        if (!byCourse.has(clean)) byCourse.set(clean, []);
+        byCourse.get(clean)!.push(r);
       }
 
       for (const courseLower of detectedCourses) {
@@ -326,9 +331,15 @@ export async function executeRestoreAll(ctx: Context) {
         const items = byCourse.get(course) || [];
         const mistakes = items.filter((r) => r.recordType !== "fact" && (r.misses || 0) > 0);
         const facts = items.filter((r) => r.recordType === "fact" || (r.misses || 0) === 0);
+        const blobsCount = courseBlobs.get(courseLower) || 0;
 
         if (mistakes.length === 0) {
-          msg += `📚 *${course}:* ✨ Zero mistakes recorded (${facts.length} exam facts stored)\n\n`;
+          if (blobsCount > 0) {
+            msg += `📚 *${course}:* 🟢 Synchronized on Walrus (*${blobsCount}* on-chain blob${blobsCount > 1 ? "s" : ""})\n`;
+            msg += `  _Run /restore ${course} to review detailed question items._\n\n`;
+          } else {
+            msg += `📚 *${course}:* ✨ Zero mistakes recorded (${facts.length} exam facts stored)\n\n`;
+          }
         } else {
           msg += `📚 *${course} (${mistakes.length} mistakes${facts.length > 0 ? `, ${facts.length} exam facts` : ""}):*\n`;
           mistakes.slice(0, 4).forEach((item, i) => {

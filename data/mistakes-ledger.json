@@ -895,5 +895,53 @@
     "timestamp": "2026-09-26T03:24:50.172Z",
     "status": "mastered",
     "recordType": "mistake"
+  },
+  {
+    "jobId": "4eabf5b2-e21b-43d4-bd5f-919473879e69",
+    "blobId": "pMJuaaktunxoPqfTyJICenPQM8NmZFDo7De7wsc-oVw",
+    "topic": "Physiological Effects of Cryotherapy - Hunting Response",
+    "question": "What is the primary physiological mechanism of the hunting response during prolonged cryotherapy?",
+    "misconception": "Chose option A: Continuous vasoconstriction to conserve heat (Continuous vasoconstriction occurs initially, but the hunting response specifically involves alternating cycles of vasoconstriction and vasodilation)",
+    "correctFact": "B. Alternating cycles of vasoconstriction and vasodilation — The hunting response is a protective mechanism involving alternating cycles of vasoconstriction and vasodilation to protect tissue from cold damage while preserving core body heat.",
+    "severity": "high",
+    "misses": 1,
+    "correctStreak": 0,
+    "namespace": "pst311",
+    "chatId": 5420044163,
+    "timestamp": "2026-10-02T08:20:00.000Z",
+    "status": "confirmed",
+    "recordType": "mistake"
+  },
+  {
+    "jobId": "caa9b82e-b3b8-45a6-a75b-29c33fa21b5b",
+    "blobId": "ctOY5_7ajm1eMysRuB4YbuD2_iFBrCkBQUcF9ImUonY",
+    "topic": "Contraindications to Cryotherapy",
+    "question": "Which clinical condition represents an absolute contraindication to cryotherapy?",
+    "misconception": "Chose option A: Ice pack application for 10 minutes (While ice packs are a cold modality, the absolute contraindication for severe Raynaud's syndrome prevents any cold application.)",
+    "correctFact": "D. Any form of cold therapy — Severe Raynaud's Syndrome is an absolute contraindication for any form of cold therapy due to the risk of extreme vasospasm and ischemic necrosis.",
+    "severity": "high",
+    "misses": 1,
+    "correctStreak": 0,
+    "namespace": "pst311",
+    "chatId": 5420044163,
+    "timestamp": "2026-10-02T08:21:00.000Z",
+    "status": "confirmed",
+    "recordType": "mistake"
+  },
+  {
+    "jobId": "d3104df7-17c2-4f85-bf18-f50f3e3dda87",
+    "blobId": "5BTSt6okVpuhzpzS1wcmFvh5Kx863nki2avsXIKzt7U",
+    "topic": "Clinical Application of Chemical Cold Packs",
+    "question": "What is a primary clinical characteristic and hazard of chemical cold packs?",
+    "misconception": "Chose option A: Longer duration of cooling (Chemical cold packs typically have a shorter duration of cooling compared to ice packs.)",
+    "correctFact": "C. No electricity required and portable — Chemical cold packs are portable and convenient for emergency use without electrical refrigeration, though they have shorter duration and can leak irritants if punctured.",
+    "severity": "high",
+    "misses": 1,
+    "correctStreak": 0,
+    "namespace": "pst311",
+    "chatId": 5420044163,
+    "timestamp": "2026-10-02T08:22:00.000Z",
+    "status": "confirmed",
+    "recordType": "mistake"
   }
 ]
