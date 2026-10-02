@@ -19,7 +19,7 @@ export async function handleLedger(ctx: Context) {
     msg += `• *Your Isolated Namespace:* \`${walrus.getUserNamespace("pcl301", chatId).split("_")[0]}\`\n`;
   }
   msg += `• *Explorer Link:* [View on Suiscan](${explorerLink})\n`;
-  msg += `• *Total Tracked Mistake Blobs:* *${ledger.length}*\n`;
+  msg += `• *Total Tracked Weaknesses (Mistakes):* *${ledger.length}*\n`;
   msg += `━━━━━━━━━━━━━━━━━━━\n\n`;
 
   if (ledger.length === 0) {

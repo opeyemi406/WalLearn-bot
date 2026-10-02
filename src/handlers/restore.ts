@@ -84,7 +84,6 @@ export async function executeRestoreCourse(ctx: Context, courseCode: string) {
 
     let msg = `⛓️ *Walrus On-Chain Recovery Complete: ${cleanCode}*\n\n`;
     msg += `• *Walrus Mainnet Status:* ${restoreResult.success ? "🟢 Synchronized" : "⚠️ Offline"}\n`;
-    msg += `• *Permanent Blobs On-Chain:* *${restoreResult.total}*\n`;
     msg += `• *Tracked Weaknesses (Mistakes):* *${mistakeRecords.length}*\n`;
     if (factRecords.length > 0) {
       msg += `• *Verified Exam Facts:* *${factRecords.length}*\n`;
@@ -306,7 +305,7 @@ export async function executeRestoreAll(ctx: Context) {
     );
 
     let msg = `⛓️ *Walrus On-Chain Global Recovery Report*\n\n`;
-    msg += `• *Permanent Blobs On-Chain:* *${totalBlobsFound}*\n`;
+    msg += `• *Walrus Mainnet Status:* 🟢 Synchronized\n`;
     msg += `• *Total Tracked Weaknesses (Mistakes):* *${userMistakes.length}*\n`;
     if (userFacts.length > 0) {
       msg += `• *Total Verified Exam Facts:* *${userFacts.length}*\n`;
@@ -335,7 +334,7 @@ export async function executeRestoreAll(ctx: Context) {
 
         if (mistakes.length === 0) {
           if (blobsCount > 0) {
-            msg += `📚 *${course}:* 🟢 Synchronized on Walrus (*${blobsCount}* on-chain blob${blobsCount > 1 ? "s" : ""})\n`;
+            msg += `📚 *${course}:* 🟢 Synchronized on Walrus Mainnet\n`;
             msg += `  _Run /restore ${course} to review detailed question items._\n\n`;
           } else {
             msg += `📚 *${course}:* ✨ Zero mistakes recorded (${facts.length} exam facts stored)\n\n`;
