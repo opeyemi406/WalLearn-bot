@@ -211,7 +211,10 @@ export async function handleChatMessage(ctx: Context) {
       .text("⚡ 5 Questions (Sprint)", "start_quiz_5")
       .text("🎯 10 Questions (Standard)", "start_quiz_10")
       .row()
-      .text("🔥 20 Questions (Exam Mode)", "start_quiz_20");
+      .text("🔥 20 Questions (Exam Mode)", "start_quiz_20")
+      .row()
+      .text("🚀 30 Questions (Deep Drill)", "start_quiz_30")
+      .text("🏆 40 Questions (Full Mock)", "start_quiz_40");
 
     let response = `🎯 *Topic Selected:* *${topic}*\n`;
     response += `📚 *Course:* *${getUserSubjectDisplay(chatId)}*\n\n`;

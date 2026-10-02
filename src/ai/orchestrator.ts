@@ -38,25 +38,25 @@ export async function orchestrateUserMessage(
 ): Promise<OrchestrationResult> {
   const trimmed = userText.trim();
 
-  // Fast-path 1: Single digits (1, 2, 3, 4) or "option X"
-  const digitMatch = trimmed.match(/^(?:option\s*)?([1-4])$/i);
+  // Fast-path 1: Single digits (1, 2, 3, 4, 5) or "option X"
+  const digitMatch = trimmed.match(/^(?:option\s*)?([1-5])$/i);
   if (digitMatch) {
     const opt = parseInt(digitMatch[1], 10);
-    // If waiting for quiz count (5, 10, 20) or if digit is 1, 2, 3:
+    // If waiting for quiz count (5, 10, 20, 30, 40):
     if (ctx.awaitingContext === "quiz_count") {
-      const count = opt === 1 ? 5 : opt === 2 ? 10 : opt === 3 ? 20 : 5;
+      const count = opt === 1 ? 5 : opt === 2 ? 10 : opt === 3 ? 20 : opt === 4 ? 30 : opt === 5 ? 40 : 5;
       return { intent: "start_drill", questionCount: count, confidence: 1.0 };
     }
     return { intent: "menu_action", menuOption: opt, confidence: 1.0 };
   }
 
-  // Fast-path 2: Common quiz counts (5, 10, 20, 15, 30) or sprint/standard/exam
-  if (/^(5|10|15|20|25|30)\b/i.test(trimmed) && (ctx.awaitingContext === "quiz_count" || ctx.hasActiveCourse)) {
+  // Fast-path 2: Common quiz counts (5, 10, 15, 20, 25, 30, 35, 40) or sprint/standard/exam/deep drill/mock
+  if (/^(5|10|15|20|25|30|35|40)\b/i.test(trimmed) && (ctx.awaitingContext === "quiz_count" || ctx.hasActiveCourse)) {
     const num = parseInt(trimmed.match(/\d+/)![0], 10);
-    return { intent: "start_drill", questionCount: Math.min(Math.max(num, 3), 30), confidence: 1.0 };
+    return { intent: "start_drill", questionCount: Math.min(Math.max(num, 3), 40), confidence: 1.0 };
   }
-  if (/^(sprint|standard|exam|exam\s*mode)$/i.test(trimmed)) {
-    const count = /sprint/i.test(trimmed) ? 5 : /exam/i.test(trimmed) ? 20 : 10;
+  if (/^(sprint|standard|exam|exam\s*mode|deep|deep\s*drill|mock|full\s*mock)$/i.test(trimmed)) {
+    const count = /sprint/i.test(trimmed) ? 5 : /mock/i.test(trimmed) ? 40 : /deep/i.test(trimmed) ? 30 : /exam/i.test(trimmed) ? 20 : 10;
     return { intent: "start_drill", questionCount: count, confidence: 1.0 };
   }
 
@@ -114,7 +114,7 @@ Output Schema:
   "courseCode": string or null (e.g. "ANA201", normalized uppercase without spaces),
   "courseDisplay": string or null,
   "topic": string or null,
-  "questionCount": number or null (e.g. 5, 10, 20),
+  "questionCount": number or null (e.g. 5, 10, 20, 30, 40),
   "scope": "all" or "single" or null,
   "menuOption": number or null (1, 2, 3, 4),
   "confidence": number (0.0 to 1.0)

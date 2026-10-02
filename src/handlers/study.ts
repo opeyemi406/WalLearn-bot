@@ -42,7 +42,7 @@ Before we begin your drill, please reply with your *Course Code* and *Course Tit
   const match = text.match(/^\/study\s*(\d+)/i);
   if (match) {
     const requestedCount = parseInt(match[1], 10);
-    const validCount = Math.min(Math.max(requestedCount, 3), 30);
+    const validCount = Math.min(Math.max(requestedCount, 3), 40);
     return startQuizWithCount(ctx, validCount);
   }
 
@@ -55,7 +55,10 @@ Before we begin your drill, please reply with your *Course Code* and *Course Tit
     .text("⚡ 5 Questions (Sprint)", "start_quiz_5")
     .text("🎯 10 Questions (Standard)", "start_quiz_10")
     .row()
-    .text("🔥 20 Questions (Exam Mode)", "start_quiz_20");
+    .text("🔥 20 Questions (Exam Mode)", "start_quiz_20")
+    .row()
+    .text("🚀 30 Questions (Deep Drill)", "start_quiz_30")
+    .text("🏆 40 Questions (Full Mock)", "start_quiz_40");
 
   let msg = `📚 *Course:* *${subjectDisplay}*\n`;
   if (pending) {
@@ -68,7 +71,7 @@ Before we begin your drill, please reply with your *Course Code* and *Course Tit
     msg += `_💡 Optional: You can attach lecture slides or images anytime to quiz from specific topics!_`;
   }
 
-  // Pre-arm awaitingQuizCount so replying directly with 5, 10, 20 or any number works immediately
+  // Pre-arm awaitingQuizCount so replying directly with 5, 10, 20, 30, 40 or any number works immediately
   const { awaitingQuizCount, clearAwaitingStates } = await import("../state.js");
   clearAwaitingStates(chatId);
   awaitingQuizCount.add(chatId);
