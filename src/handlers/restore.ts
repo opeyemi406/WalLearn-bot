@@ -90,32 +90,22 @@ export async function executeRestoreCourse(ctx: Context, courseCode: string) {
     }
     msg += `━━━━━━━━━━━━━━━━━━━\n\n`;
 
-    // Automatically register and activate this course for the user so they never have to re-enter it
-    const { setUserSubject, awaitingQuizCount, clearAwaitingStates } = await import("../state.js");
-    const profile = setUserSubject(chatId, cleanCode);
+    const { clearAwaitingStates } = await import("../state.js");
     clearAwaitingStates(chatId);
-    awaitingQuizCount.add(chatId);
 
-    const actionKeyboard = new InlineKeyboard()
-      .text("⚡ 5 Questions (Sprint)", "start_quiz_5")
-      .text("🎯 10 Questions (Standard)", "start_quiz_10")
+    const restoreKeyboard = new InlineKeyboard()
+      .text(`🎯 Study ${cleanCode.toUpperCase()}`, `study_course_${cleanCode.toLowerCase()}`)
       .row()
-      .text("🔥 20 Questions (Exam Mode)", "start_quiz_20")
-      .row()
-      .text("🚀 30 Questions (Deep Drill)", "start_quiz_30")
-      .text("🏆 40 Questions (Full Mock)", "start_quiz_40");
+      .text("📚 Restore Another Course", "restore_course_prompt")
+      .text("🌐 All Courses Report", "restore_all");
 
     if (mistakeRecords.length === 0) {
       if (factRecords.length === 0) {
         msg += `✨ *Fresh Course Record!* No past mistakes exist for *${cleanCode}* on Walrus.\n`;
-        msg += `Your active course has been set to *${profile.subjectDisplay}*.\n\n`;
-        msg += `📎 *Upload Lecture Slides or Notes:*\n`;
-        msg += `If you have lecture slides (PDF, Word, PPTX) or photos of your lecture notes, attach them now to quiz directly from your material!\n\n`;
-        msg += `🎯 *Or Start Instant Practice Drill:*\n`;
-        msg += `Select how many questions you want to drill:`;
+        msg += `You haven't recorded any missed questions or misconceptions for this course yet.\n\n`;
+        msg += `_To review another course or start a study drill, select an option below:_`;
       } else {
-        msg += `✨ *Zero Recorded Exam Mistakes!* You haven't made any mistakes in *${cleanCode}* yet.\n`;
-        msg += `Your active course has been set to *${profile.subjectDisplay}*.\n\n`;
+        msg += `✨ *Zero Recorded Exam Mistakes!* You haven't made any mistakes in *${cleanCode}* yet.\n\n`;
         msg += `📚 *Department Exam Facts on Walrus (${factRecords.length} stored):*\n`;
         factRecords.slice(0, 5).forEach((f) => {
           const cleanF = f.correctFact ? (f.correctFact.length > 140 ? `${f.correctFact.slice(0, 140)}...` : f.correctFact) : f.topic;
@@ -124,7 +114,7 @@ export async function executeRestoreCourse(ctx: Context, courseCode: string) {
         if (factRecords.length > 5) {
           msg += `_...and ${factRecords.length - 5} more facts saved on-chain._\n`;
         }
-        msg += `\n📎 *Upload lecture slides or photos anytime to add more notes, or select below to begin drilling:*`;
+        msg += `\n🎯 _To drill this course or review other records, select an option below:_`;
       }
     } else {
       msg += `📋 *Restored Mistakes & Streaks:*\n`;
@@ -164,10 +154,10 @@ export async function executeRestoreCourse(ctx: Context, courseCode: string) {
         msg += `📚 *Plus ${factRecords.length} Department Exam Facts* extracted from your past question analysis!\n`;
       }
 
-      msg += `\n🎯 *Select how many questions to drill, or attach lecture slides anytime:*`;
+      msg += `\n🎯 _To drill this specific course, tap below or type /study anytime:_`;
     }
 
-    await replySafeChunks(ctx, statusMsg.message_id, msg, actionKeyboard);
+    await replySafeChunks(ctx, statusMsg.message_id, msg, restoreKeyboard);
   } catch (err) {
     await ctx.api.editMessageText(
       chatId,

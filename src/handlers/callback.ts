@@ -51,7 +51,8 @@ export async function handleCallback(ctx: Context) {
   }
 
   if (data === "restore_course_prompt") {
-    const { awaitingRestoreCourse } = await import("../state.js");
+    const { clearAwaitingStates, awaitingRestoreCourse } = await import("../state.js");
+    clearAwaitingStates(chatId);
     awaitingRestoreCourse.add(chatId);
     await ctx.reply(
       `📚 *Restore Specific Course*\n\nPlease reply with the course code you want to restore from Walrus (e.g. \`PCL301\`, \`CHM211\`, \`BIO101\`):`,
@@ -63,6 +64,37 @@ export async function handleCallback(ctx: Context) {
   if (data === "restore_all") {
     const { executeRestoreAll } = await import("./restore.js");
     return executeRestoreAll(ctx);
+  }
+
+  if (data.startsWith("study_course_")) {
+    const courseCode = data.replace("study_course_", "").trim();
+    const { setUserSubject, awaitingQuizCount, clearAwaitingStates } = await import("../state.js");
+    const profile = setUserSubject(chatId, courseCode);
+    clearAwaitingStates(chatId);
+    awaitingQuizCount.add(chatId);
+
+    const keyboard = new InlineKeyboard()
+      .text("⚡ 5 Questions (Sprint)", "start_quiz_5")
+      .text("🎯 10 Questions (Standard)", "start_quiz_10")
+      .row()
+      .text("🔥 20 Questions (Exam Mode)", "start_quiz_20")
+      .row()
+      .text("🚀 30 Questions (Deep Drill)", "start_quiz_30")
+      .text("🏆 40 Questions (Full Mock)", "start_quiz_40");
+
+    let msg = `✅ *Switched Active Course:* *${profile.subjectDisplay}*\n`;
+    msg += `⛓️ *Walrus Protocol Namespace:* \`${profile.subjectCode}\`\n\n`;
+    msg += `📎 *Upload Lecture Slides or Notes:*\n`;
+    msg += `If you have lecture slides (PDF, Word, PPTX) or photos of lecture notes, attach them now to quiz directly from your material!\n\n`;
+    msg += `🎯 *Or Select How Many Questions to Drill:*\n`;
+    msg += `Tap an option below to begin instant CBT practice:`;
+
+    const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
+    await ctx.reply(formatTelegramMarkdown(msg), {
+      parse_mode: "Markdown",
+      reply_markup: keyboard,
+    });
+    return;
   }
 
   if (data.startsWith("start_quiz_")) {
@@ -87,7 +119,8 @@ export async function handleCallback(ctx: Context) {
   }
 
   if (data === "briefing_course_prompt") {
-    const { awaitingBriefingCourse } = await import("../state.js");
+    const { clearAwaitingStates, awaitingBriefingCourse } = await import("../state.js");
+    clearAwaitingStates(chatId);
     awaitingBriefingCourse.add(chatId);
     await ctx.reply(
       `📚 *Weakness Briefing for Specific Course*\n\nPlease reply directly with the course code you want to review (e.g. \`ANA201\`, \`PCL301\`, \`BIO101\`):`,

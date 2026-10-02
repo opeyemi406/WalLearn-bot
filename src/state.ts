@@ -254,7 +254,7 @@ export function clearUserProfile(chatId: number) {
   awaitingStartChoice.delete(chatId);
   awaitingMenuChoice.delete(chatId);
   awaitingBriefingCourse.delete(chatId);
-  awaitingSubject.add(chatId);
+  awaitingSubject.delete(chatId);
 }
 
 // Prompt listeners & interactive flow states
@@ -275,6 +275,7 @@ export function clearAwaitingStates(chatId: number) {
   awaitingRestoreCourse.delete(chatId);
   awaitingAnalyzeCourse.delete(chatId);
   awaitingBriefingCourse.delete(chatId);
+  awaitingSubject.delete(chatId);
 }
 
 const EXAM_STYLES_FILE = path.resolve(process.cwd(), "data/exam-styles.json");

@@ -59,10 +59,10 @@ export async function handleChatMessage(ctx: Context) {
 
   // 4. Natural Language Orchestrator
   const awaitingCtx =
-    awaitingSubject.has(chatId) ? "subject"
-    : awaitingRestoreCourse.has(chatId) ? "restore"
+    awaitingRestoreCourse.has(chatId) ? "restore"
     : awaitingBriefingCourse.has(chatId) ? "view_briefing"
     : awaitingAnalyzeCourse.has(chatId) ? "analyze"
+    : awaitingSubject.has(chatId) ? "subject"
     : awaitingQuizCount.has(chatId) ? "quiz_count"
     : awaitingStudyTopic.has(chatId) ? "topic"
     : null;
