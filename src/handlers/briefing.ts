@@ -164,26 +164,39 @@ export async function executeBriefingAll(ctx: Context) {
   );
 
   try {
-    let pastCodes = getPastCourseCodesForUser(chatId);
+    const candidateCodes = new Set<string>();
+
     const activeSubject = getUserSubject(chatId);
-    if (activeSubject && activeSubject !== "general" && !pastCodes.includes(activeSubject.toLowerCase())) {
-      pastCodes.push(activeSubject.toLowerCase());
+    if (activeSubject && activeSubject !== "general" && /^[a-z]{2,5}\d{2,4}$/i.test(activeSubject)) {
+      candidateCodes.add(activeSubject.toLowerCase());
     }
 
-    // Only look at courses this user has actually studied or set
-    if (pastCodes.length === 0) {
-      const userLedger = await walrus.getLedger(chatId);
-      const detected = new Set<string>();
-      for (const r of userLedger) {
-        if (r.chatId === chatId && r.namespace && /^[a-z]{2,5}\d{2,4}$/i.test(r.namespace)) {
-          detected.add(r.namespace.toLowerCase());
-        }
+    const userCodes = getPastCourseCodesForUser(chatId);
+    for (const c of userCodes) candidateCodes.add(c.toLowerCase());
+
+    const platformCourses = walrus.getAllPlatformCourseCodes();
+    for (const c of platformCourses) candidateCodes.add(c.toLowerCase());
+
+    for (const code of candidateCodes) {
+      try {
+        await walrus.restoreNamespace(code, chatId);
+      } catch {
+        // continue
       }
-      pastCodes = Array.from(detected);
     }
 
     const ledger = await walrus.getLedger(chatId);
     const userRecords = ledger.filter((r) => r.chatId === chatId);
+
+    const detectedCourses = new Set<string>();
+    for (const c of userCodes) detectedCourses.add(c.toLowerCase());
+    if (activeSubject && activeSubject !== "general") detectedCourses.add(activeSubject.toLowerCase());
+    for (const r of userRecords) {
+      if (r.namespace && /^[a-z]{2,5}\d{2,4}$/i.test(r.namespace)) {
+        detectedCourses.add(r.namespace.toLowerCase());
+      }
+    }
+    const pastCodes = Array.from(detectedCourses);
 
     const userMistakes = userRecords.filter(
       (r) =>

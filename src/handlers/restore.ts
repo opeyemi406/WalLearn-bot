@@ -227,38 +227,63 @@ export async function executeRestoreAll(ctx: Context) {
   });
 
   try {
-    let pastCodes = getPastCourseCodesForUser(chatId);
+    // 1. Gather all potential course codes to probe on Walrus Protocol
+    const candidateCodes = new Set<string>();
+
+    // User's active course
     const activeSubject = getUserSubject(chatId);
-    if (activeSubject && activeSubject !== "general" && !pastCodes.includes(activeSubject.toLowerCase())) {
-      pastCodes.push(activeSubject.toLowerCase());
-    }
-    if (pastCodes.length === 0) {
-      const userLedger = await walrus.getLedger(chatId);
-      const detected = new Set<string>();
-      for (const r of userLedger) {
-        if (r.chatId === chatId && r.namespace && /^[a-z]{2,5}\d{2,4}$/i.test(r.namespace)) {
-          detected.add(r.namespace.toLowerCase());
-        }
-      }
-      pastCodes = Array.from(detected);
+    if (activeSubject && activeSubject !== "general" && /^[a-z]{2,5}\d{2,4}$/i.test(activeSubject)) {
+      candidateCodes.add(activeSubject.toLowerCase());
     }
 
-    if (pastCodes.length === 0) {
+    // User's recorded past courses (from user profile history & local ledger)
+    const userCodes = getPastCourseCodesForUser(chatId);
+    for (const c of userCodes) candidateCodes.add(c.toLowerCase());
+
+    // All courses ever used across the platform and curriculum benchmarks
+    const platformCourses = walrus.getAllPlatformCourseCodes();
+    for (const c of platformCourses) candidateCodes.add(c.toLowerCase());
+
+    const candidates = Array.from(candidateCodes);
+    console.log(`🔍 [Walrus Restore All] Probing ${candidates.length} courses for chat ${chatId}:`, candidates);
+
+    let totalBlobsFound = 0;
+    const restoredCourses = new Set<string>();
+
+    // 2. Probe Walrus Protocol for each candidate course
+    for (const code of candidates) {
+      try {
+        const res = await walrus.restoreNamespace(code, chatId);
+        totalBlobsFound += res.total;
+        if (res.total > 0 || res.restored > 0) {
+          restoredCourses.add(code.toLowerCase());
+        }
+      } catch {
+        // Continue probing other courses
+      }
+    }
+
+    // Include courses user has active or recorded in ledger
+    for (const c of userCodes) restoredCourses.add(c.toLowerCase());
+    if (activeSubject && activeSubject !== "general") restoredCourses.add(activeSubject.toLowerCase());
+
+    const ledger = await walrus.getLedger(chatId);
+    const userRecords = ledger.filter((r) => r.chatId === chatId);
+    for (const r of userRecords) {
+      if (r.namespace && /^[a-z]{2,5}\d{2,4}$/i.test(r.namespace)) {
+        restoredCourses.add(r.namespace.toLowerCase());
+      }
+    }
+
+    const detectedCourses = Array.from(restoredCourses);
+
+    if (detectedCourses.length === 0) {
       let emptyMsg = `⛓️ *Walrus On-Chain Recovery Complete*\n\n`;
       emptyMsg += `✨ *Zero Recorded Courses or Mistakes!* You haven't started or missed any questions yet.\n\n`;
       emptyMsg += `Type /study or enter a course code (e.g. \`PCL301\`) to start your first practice drill!`;
       await ctx.api.editMessageText(chatId, statusMsg.message_id, emptyMsg, { parse_mode: "Markdown" });
       return;
     }
-
-    let totalBlobsFound = 0;
-    for (const code of pastCodes) {
-      const res = await walrus.restoreNamespace(code, chatId);
-      totalBlobsFound += res.total;
-    }
-
-    const ledger = await walrus.getLedger(chatId);
-    const userRecords = ledger.filter((r) => r.chatId === chatId);
 
     const userMistakes = userRecords.filter(
       (r) =>
@@ -282,11 +307,11 @@ export async function executeRestoreAll(ctx: Context) {
     if (userFacts.length > 0) {
       msg += `• *Total Verified Exam Facts:* *${userFacts.length}*\n`;
     }
-    msg += `• *Courses Detected:* ${pastCodes.map((c) => `\`${c.toUpperCase()}\``).join(", ")}\n`;
+    msg += `• *Courses Detected:* ${detectedCourses.map((c) => `\`${c.toUpperCase()}\``).join(", ")}\n`;
     msg += `━━━━━━━━━━━━━━━━━━━\n\n`;
 
     if (userMistakes.length === 0 && userFacts.length === 0) {
-      msg += `_No mistakes or facts recorded across any course code yet._\nStart studying with /study or upload slides to begin tracking!`;
+      msg += `_No mistakes or facts recorded across ${detectedCourses.map((c) => c.toUpperCase()).join(", ")} yet._\nStart studying with /study or upload slides to begin tracking!`;
     } else {
       // Group by course code
       const byCourse = new Map<string, typeof userRecords>();
@@ -296,7 +321,9 @@ export async function executeRestoreAll(ctx: Context) {
         byCourse.get(c)!.push(r);
       }
 
-      for (const [course, items] of byCourse.entries()) {
+      for (const courseLower of detectedCourses) {
+        const course = courseLower.toUpperCase();
+        const items = byCourse.get(course) || [];
         const mistakes = items.filter((r) => r.recordType !== "fact" && (r.misses || 0) > 0);
         const facts = items.filter((r) => r.recordType === "fact" || (r.misses || 0) === 0);
 

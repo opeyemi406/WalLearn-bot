@@ -23,6 +23,7 @@ export interface QuizSession {
 export interface UserProfile {
   subjectCode: string; // e.g. "pcl301", "bch201" for Walrus namespace
   subjectDisplay: string; // e.g. "PCL301 - Evaluation of Drug Toxicity"
+  pastCourses?: string[];
 }
 
 export interface PendingSlide {
@@ -65,23 +66,38 @@ const userProfiles = loadProfiles();
 export const awaitingSubject = new Set<number>();
 
 export function getPastCourseCodesForUser(chatId: number): string[] {
+  const codes = new Set<string>();
+
+  // 1. Current profile subject & pastCourses history
+  const profile = userProfiles.get(chatId);
+  if (profile?.subjectCode && /^[a-z]{2,5}\d{2,4}$/i.test(profile.subjectCode)) {
+    codes.add(profile.subjectCode.toLowerCase());
+  }
+  if (profile?.pastCourses) {
+    for (const c of profile.pastCourses) {
+      if (/^[a-z]{2,5}\d{2,4}$/i.test(c)) {
+        codes.add(c.toLowerCase());
+      }
+    }
+  }
+
+  // 2. Records in local ledger for this user
   try {
     if (fs.existsSync(LEDGER_FILE)) {
       const records: Array<{ chatId?: number; namespace?: string }> = JSON.parse(
         fs.readFileSync(LEDGER_FILE, "utf8")
       );
-      const codes = new Set<string>();
       for (const r of records) {
         if (r.chatId === chatId && r.namespace && /^[a-z]{2,5}\d{2,4}$/i.test(r.namespace)) {
           codes.add(r.namespace.toLowerCase());
         }
       }
-      return Array.from(codes);
     }
   } catch (e) {
     // ignore
   }
-  return [];
+
+  return Array.from(codes);
 }
 
 export function hasUserSubject(chatId: number): boolean {
@@ -193,9 +209,17 @@ export function setUserSubject(chatId: number, rawInput: string): UserProfile {
     sessions.delete(chatId);
   }
 
+  const existingPast = oldProfile?.pastCourses || [];
+  const cleanCode = parsed.code.toLowerCase();
+  const pastCourses = [...existingPast];
+  if (/^[a-z]{2,5}\d{2,4}$/i.test(cleanCode) && !pastCourses.includes(cleanCode)) {
+    pastCourses.push(cleanCode);
+  }
+
   const profile: UserProfile = {
     subjectCode: parsed.code,
     subjectDisplay: parsed.display,
+    pastCourses,
   };
 
   userProfiles.set(chatId, profile);
@@ -205,7 +229,15 @@ export function setUserSubject(chatId: number, rawInput: string): UserProfile {
 }
 
 export function clearUserProfile(chatId: number) {
+  const oldProfile = userProfiles.get(chatId);
   userProfiles.delete(chatId);
+  if (oldProfile?.pastCourses && oldProfile.pastCourses.length > 0) {
+    userProfiles.set(chatId, {
+      subjectCode: "",
+      subjectDisplay: "",
+      pastCourses: oldProfile.pastCourses,
+    });
+  }
   saveProfiles(userProfiles);
   sessions.delete(chatId);
   pendingSlides.delete(chatId);

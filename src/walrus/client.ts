@@ -968,6 +968,22 @@ export class WalrusClient {
 
     return this.localLedger;
   }
+
+  /**
+   * Return all unique course codes that have ever been used on the platform
+   */
+  getAllPlatformCourseCodes(): string[] {
+    this.loadLedger();
+    const codes = new Set<string>();
+    for (const r of this.localLedger) {
+      if (r.namespace && /^[a-z]{2,5}\d{2,4}$/i.test(r.namespace)) {
+        codes.add(r.namespace.toLowerCase());
+      }
+    }
+    const standard = ["pst311", "pcl301", "ana201", "bch201", "pha201", "phm301", "bio101", "chm101", "phy101"];
+    for (const s of standard) codes.add(s);
+    return Array.from(codes);
+  }
 }
 
 export const walrus = new WalrusClient();

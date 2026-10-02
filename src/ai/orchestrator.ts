@@ -87,6 +87,21 @@ export async function orchestrateUserMessage(
     return { intent: "reset_session", confidence: 1.0 };
   }
 
+  // Fast-path 5: Natural language restore / recover queries (e.g. "restore mistake for all course", "restore all")
+  if (/\b(?:restore|recover)\b/i.test(trimmed)) {
+    if (/\b(?:all|every|everything|all\s*courses?)\b/i.test(trimmed)) {
+      return { intent: "restore_memory", scope: "all", confidence: 1.0 };
+    }
+    const courseInText = trimmed.match(/\b([a-zA-Z]{2,5}\s*\d{2,4})\b/i);
+    if (courseInText) {
+      const code = courseInText[1].toUpperCase().replace(/\s+/g, "");
+      return { intent: "restore_memory", courseCode: code, scope: "single", confidence: 1.0 };
+    }
+    if (ctx.awaitingContext === "restore" || /mistakes?/i.test(trimmed)) {
+      return { intent: "restore_memory", scope: "all", confidence: 1.0 };
+    }
+  }
+
   // AI-Powered Natural Language Orchestration
   const prompt = `You are the Natural Language Intent Router for WalLearn, an on-chain academic CBT study Telegram bot.
 Classify the student's message into one of these intents and extract parameters as strict JSON.
