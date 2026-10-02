@@ -22,6 +22,8 @@ export async function handleStudy(ctx: Context) {
 
   // 1. Check if user has configured an active course/subject
   if (!hasUserSubject(chatId)) {
+    const { clearAwaitingStates } = await import("../state.js");
+    clearAwaitingStates(chatId);
     awaitingSubject.add(chatId);
 
     const askMsg = `📚 *What course or subject are you studying?*

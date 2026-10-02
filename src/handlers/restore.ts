@@ -90,12 +90,32 @@ export async function executeRestoreCourse(ctx: Context, courseCode: string) {
     }
     msg += `━━━━━━━━━━━━━━━━━━━\n\n`;
 
+    // Automatically register and activate this course for the user so they never have to re-enter it
+    const { setUserSubject, awaitingQuizCount, clearAwaitingStates } = await import("../state.js");
+    const profile = setUserSubject(chatId, cleanCode);
+    clearAwaitingStates(chatId);
+    awaitingQuizCount.add(chatId);
+
+    const actionKeyboard = new InlineKeyboard()
+      .text("⚡ 5 Questions (Sprint)", "start_quiz_5")
+      .text("🎯 10 Questions (Standard)", "start_quiz_10")
+      .row()
+      .text("🔥 20 Questions (Exam Mode)", "start_quiz_20")
+      .row()
+      .text("🚀 30 Questions (Deep Drill)", "start_quiz_30")
+      .text("🏆 40 Questions (Full Mock)", "start_quiz_40");
+
     if (mistakeRecords.length === 0) {
       if (factRecords.length === 0) {
         msg += `✨ *Fresh Course Record!* No past mistakes exist for *${cleanCode}* on Walrus.\n`;
-        msg += `You are studying this course for the first time. Start a study session with /study to begin!`;
+        msg += `Your active course has been set to *${profile.subjectDisplay}*.\n\n`;
+        msg += `📎 *Upload Lecture Slides or Notes:*\n`;
+        msg += `If you have lecture slides (PDF, Word, PPTX) or photos of your lecture notes, attach them now to quiz directly from your material!\n\n`;
+        msg += `🎯 *Or Start Instant Practice Drill:*\n`;
+        msg += `Select how many questions you want to drill:`;
       } else {
-        msg += `✨ *Zero Recorded Exam Mistakes!* You haven't made any mistakes in *${cleanCode}* yet.\n\n`;
+        msg += `✨ *Zero Recorded Exam Mistakes!* You haven't made any mistakes in *${cleanCode}* yet.\n`;
+        msg += `Your active course has been set to *${profile.subjectDisplay}*.\n\n`;
         msg += `📚 *Department Exam Facts on Walrus (${factRecords.length} stored):*\n`;
         factRecords.slice(0, 5).forEach((f) => {
           const cleanF = f.correctFact ? (f.correctFact.length > 140 ? `${f.correctFact.slice(0, 140)}...` : f.correctFact) : f.topic;
@@ -104,7 +124,7 @@ export async function executeRestoreCourse(ctx: Context, courseCode: string) {
         if (factRecords.length > 5) {
           msg += `_...and ${factRecords.length - 5} more facts saved on-chain._\n`;
         }
-        msg += `\n🎯 _Start an exam drill calibrated to your lecturer's style with /study!_`;
+        msg += `\n📎 *Upload lecture slides or photos anytime to add more notes, or select below to begin drilling:*`;
       }
     } else {
       msg += `📋 *Restored Mistakes & Streaks:*\n`;
@@ -144,10 +164,10 @@ export async function executeRestoreCourse(ctx: Context, courseCode: string) {
         msg += `📚 *Plus ${factRecords.length} Department Exam Facts* extracted from your past question analysis!\n`;
       }
 
-      msg += `\n🎯 _To drill these specific past mistakes, type /study or upload your lecture slides!_`;
+      msg += `\n🎯 *Select how many questions to drill, or attach lecture slides anytime:*`;
     }
 
-    await replySafeChunks(ctx, statusMsg.message_id, msg);
+    await replySafeChunks(ctx, statusMsg.message_id, msg, actionKeyboard);
   } catch (err) {
     await ctx.api.editMessageText(
       chatId,
@@ -163,7 +183,7 @@ export async function executeRestoreCourse(ctx: Context, courseCode: string) {
 /**
  * Safely edit or send long message texts within Telegram 4096 character limit
  */
-async function replySafeChunks(ctx: Context, initialMessageId: number, fullText: string) {
+async function replySafeChunks(ctx: Context, initialMessageId: number, fullText: string, keyboard?: InlineKeyboard) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
@@ -172,8 +192,9 @@ async function replySafeChunks(ctx: Context, initialMessageId: number, fullText:
     await ctx.api.editMessageText(chatId, initialMessageId, fullText, {
       parse_mode: "Markdown",
       link_preview_options: { is_disabled: false },
+      reply_markup: keyboard,
     }).catch(async () => {
-      await ctx.api.editMessageText(chatId, initialMessageId, fullText);
+      await ctx.api.editMessageText(chatId, initialMessageId, fullText, { reply_markup: keyboard });
     });
     return;
   }
@@ -195,21 +216,27 @@ async function replySafeChunks(ctx: Context, initialMessageId: number, fullText:
 
   // Edit initial message with first chunk
   if (chunks.length > 0) {
+    const isSingle = chunks.length === 1;
     await ctx.api.editMessageText(chatId, initialMessageId, chunks[0], {
       parse_mode: "Markdown",
       link_preview_options: { is_disabled: false },
+      reply_markup: isSingle ? keyboard : undefined,
     }).catch(async () => {
-      await ctx.api.editMessageText(chatId, initialMessageId, chunks[0]);
+      await ctx.api.editMessageText(chatId, initialMessageId, chunks[0], {
+        reply_markup: isSingle ? keyboard : undefined,
+      });
     });
   }
 
   // Send subsequent chunks as follow-up messages
   for (let i = 1; i < chunks.length; i++) {
+    const isLast = i === chunks.length - 1;
     await ctx.reply(chunks[i], {
       parse_mode: "Markdown",
       link_preview_options: { is_disabled: false },
+      reply_markup: isLast ? keyboard : undefined,
     }).catch(async () => {
-      await ctx.reply(chunks[i]);
+      await ctx.reply(chunks[i], { reply_markup: isLast ? keyboard : undefined });
     });
   }
 }

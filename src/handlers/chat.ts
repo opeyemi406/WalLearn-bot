@@ -59,12 +59,12 @@ export async function handleChatMessage(ctx: Context) {
 
   // 4. Natural Language Orchestrator
   const awaitingCtx =
-    awaitingRestoreCourse.has(chatId) ? "restore"
+    awaitingSubject.has(chatId) ? "subject"
+    : awaitingRestoreCourse.has(chatId) ? "restore"
     : awaitingBriefingCourse.has(chatId) ? "view_briefing"
     : awaitingAnalyzeCourse.has(chatId) ? "analyze"
     : awaitingQuizCount.has(chatId) ? "quiz_count"
     : awaitingStudyTopic.has(chatId) ? "topic"
-    : awaitingSubject.has(chatId) ? "subject"
     : null;
 
   const result = await orchestrateUserMessage(rawText, {
@@ -259,9 +259,10 @@ export async function handleChatMessage(ctx: Context) {
 
       let msg = `✅ *Active Course Set:* *${profile.subjectDisplay}*\n`;
       msg += `⛓️ *Walrus Protocol Namespace:* \`${profile.subjectCode}\`\n\n`;
-      msg += `🎯 *How many questions would you like to drill?*\n`;
-      msg += `Select an option below or type e.g. \`/study 10\`:\n\n`;
-      msg += `_💡 Optional: You can attach lecture slides or images anytime to quiz from specific topics!_`;
+      msg += `📎 *Upload Lecture Slides or Notes:*\n`;
+      msg += `If you have lecture slides (PDF, Word, PPTX) or photos of lecture notes, attach them now to quiz directly from your material!\n\n`;
+      msg += `🎯 *Or Start Instant Practice Drill:*\n`;
+      msg += `Select how many questions you want to drill:`;
 
       await ctx.reply(formatTelegramMarkdown(msg), {
         parse_mode: "Markdown",

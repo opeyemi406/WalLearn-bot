@@ -17,8 +17,9 @@ export async function handleCallback(ctx: Context) {
   }
 
   if (data === "upload_slides_direct") {
-    const { awaitingSubject, hasUserSubject, getUserSubjectDisplay } = await import("../state.js");
+    const { awaitingSubject, hasUserSubject, getUserSubjectDisplay, clearAwaitingStates } = await import("../state.js");
     if (!hasUserSubject(chatId)) {
+      clearAwaitingStates(chatId);
       awaitingSubject.add(chatId);
       await ctx.reply(
         `Please reply with your *Course Code & Title* (e.g. \`PCL301 - Evaluation of Drug Toxicity\`)`,
@@ -102,7 +103,8 @@ export async function handleCallback(ctx: Context) {
   }
 
   if (data === "change_subject") {
-    const { awaitingSubject } = await import("../state.js");
+    const { awaitingSubject, clearAwaitingStates } = await import("../state.js");
+    clearAwaitingStates(chatId);
     awaitingSubject.add(chatId);
     await ctx.reply(
       `📚 Please reply with your new *Course Code* and *Course Title by the side*, for example:\n👉 \`BCH201 - General Biochemistry\`\n👉 \`CSC302 - Operating Systems\`\n👉 \`PCL301 - Clinical Pharmacokinetics\`\n\n• Attach lecture slides or images anytime to generate a quiz specifically from your lecture notes!`,

@@ -164,6 +164,8 @@ export async function handleSubject(ctx: Context) {
   const rawArg = match ? match[1].trim() : "";
 
   if (!rawArg) {
+    const { clearAwaitingStates } = await import("../state.js");
+    clearAwaitingStates(chatId);
     awaitingSubject.add(chatId);
     const current = getUserSubjectDisplay(chatId);
     await ctx.reply(
