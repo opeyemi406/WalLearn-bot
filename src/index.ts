@@ -1,3 +1,4 @@
+import http from "node:http";
 import { Bot } from "grammy";
 import { config } from "./config.js";
 import { handleStart, handleMenu, handleSubject, handleReset } from "./handlers/start.js";
@@ -104,12 +105,72 @@ async function main() {
     { command: "reset", description: "Reset active session to start fresh" },
   ]).catch(() => {});
 
-  await bot.start({
-    allowed_updates: ["message", "callback_query"],
-    onStart: (botInfo) => {
-      console.log(`✅ Logged in as @${botInfo.username} (${botInfo.id})`);
-    },
-  });
+  // Optional HTTP health probe for Railway container lifecycle
+  const port = process.env.PORT;
+  let httpServer: http.Server | null = null;
+  if (port) {
+    httpServer = http.createServer((_req, res) => {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ status: "healthy", bot: "@WalLearnBot", timestamp: new Date().toISOString() }));
+    });
+    httpServer.listen(Number(port), () => {
+      console.log(`🌐 HTTP health probe listening on port ${port}`);
+    });
+  }
+
+  // Graceful shutdown handling (Railway SIGTERM/SIGINT)
+  let isStopping = false;
+  const gracefulShutdown = async (signal: string) => {
+    if (isStopping) return;
+    isStopping = true;
+    console.log(`🛑 Received ${signal}. Shutting down WalLearn gracefully...`);
+    try {
+      if (httpServer) {
+        httpServer.close();
+      }
+      await bot.stop();
+      console.log("👋 Telegram bot polling stopped cleanly.");
+    } catch {
+      // Ignore errors during shutdown
+    }
+    process.exit(0);
+  };
+
+  process.once("SIGINT", () => gracefulShutdown("SIGINT"));
+  process.once("SIGTERM", () => gracefulShutdown("SIGTERM"));
+
+  // Robust Telegram polling loop with 409 Conflict handover retry
+  const maxRetries = 10;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    if (isStopping) break;
+    try {
+      await bot.start({
+        allowed_updates: ["message", "callback_query"],
+        onStart: (botInfo) => {
+          console.log(`✅ Logged in as @${botInfo.username} (${botInfo.id})`);
+        },
+      });
+      break;
+    } catch (err: any) {
+      if (isStopping) break;
+
+      const isConflict =
+        err?.error_code === 409 ||
+        err?.message?.includes("409") ||
+        err?.description?.includes("terminated by other getUpdates request");
+
+      if (isConflict) {
+        if (attempt < maxRetries) {
+          console.warn(
+            `⏳ Telegram polling handover (another instance is releasing the session). Waiting 3s to retry (${attempt}/${maxRetries})...`
+          );
+          await new Promise((r) => setTimeout(r, 3000));
+          continue;
+        }
+      }
+      throw err;
+    }
+  }
 }
 
 main().catch((err) => {

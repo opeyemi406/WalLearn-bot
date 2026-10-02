@@ -22,4 +22,4 @@ COPY . .
 RUN npm run build
 
 # Start the WalLearn Telegram Bot
-CMD ["npm", "start"]
+CMD ["node", "dist/index.js"]
