@@ -91,7 +91,7 @@ flowchart TD
 
 ## 🏆 Hackathon Judging Criteria & Direct Evidence
 
-The Walrus Hackathon (*Chatbots That Remember*) judges submissions across three core pillars. Here is how WalLearn was engineered to directly address and exceed each requirement:
+The Walrus Hackathon (*Chatbots That Remember*) judges submissions across four core pillars. Here is how WalLearn was engineered to directly address and exceed each requirement:
 
 ---
 
@@ -118,7 +118,7 @@ In WalLearn, **memory actively controls the algorithmic behavior and output of t
    - **Visible Improvement**: If a student repeatedly confuses *Succinylcholine Phase 1 depolarization* with *competitive blockade*, the question generator specifically crafts multiple-choice distractors that probe that exact physiological boundary.
 
 2. **The 3-Consecutive-Pass Spaced Repetition State Machine**:
-   - Memory is not binary. WalLearn models cognitive mastery as a four-phase state machine on Walrus:
+   - Memory is not binary. WalLearn models cognitive mastery as a formal event-sourced state machine on Walrus:
      $$\text{Pending} \xrightarrow{\text{Job Confirmed}} \text{Confirmed (In Recovery)} \xrightarrow{\text{3 Consecutive Passes}} \text{Mastered}$$
    - If a student guesses a question correctly once, it remains in recovery. Only 3 consecutive independent passes across distinct sessions transition the status to `[MASTERED]`.
    - If a mastered concept is failed during a random 10% spot check, it is immediately demoted back to active recovery on Walrus.
@@ -130,8 +130,8 @@ In WalLearn, **memory actively controls the algorithmic behavior and output of t
 
 4. **True Disaster Recovery (`/restore`)**:
    - Delete your Telegram chat history. Reboot the cloud container on Railway.
-   - Run `/restore`: WalLearn reaches out to Walrus Protocol Mainnet via signed Ed25519 requests, scans the raw on-chain blobs, and mathematically reconstructs the entire mastery ledger in under 3 seconds.
-   - *1:N Blob Storage Architecture*: MemWal aggregates memory updates into encrypted namespace snapshots on Walrus. A single on-chain Walrus Blob can contain multiple granular weaknesses, achieving high decentralized storage efficiency without fragmentation.
+   - Run `/restore`: WalLearn reaches out to Walrus Protocol Mainnet via signed requests using `@mysten-incubation/memwal`, queries the student's isolated namespace, and reconstructs the entire mastery ledger.
+   - *Event-Sourced Architecture*: Every mistake, progress milestone, and syllabus fact is an immutable event committed to Walrus. Replaying these events in time order reconstructs 100% of the learner's state anywhere.
 
 ---
 
@@ -144,13 +144,16 @@ In WalLearn, **memory actively controls the algorithmic behavior and output of t
   - **PCL301**: General & Autonomic Pharmacology (e.g. Neuromuscular blockers, Organophosphates, Ganglionic transmission).
   - **PCL302**: Neuropharmacology & Catecholamine Metabolism.
   - **ANA201**: Human Anatomy (Thorax, Mediastinum, Musculoskeletal).
-- **Production User Telemetry**: Over **57 recorded cognitive milestones** and **50 confirmed on-chain blobs** across multiple unique student Chat IDs (e.g., `Chat ID: 6878463854`, `Chat ID: 5420044163`).
+- **Production User Telemetry**: 
+  - **15 Active On-Chain Namespaces** (e.g. `u6878463854_pcl301`, `u5420044163_pcl302`, `u6878463854_ana204`).
+  - **50 Confirmed On-Chain Blobs** on Walrus Protocol Mainnet.
+  - **57 Total Recorded Cognitive Milestones** across student accounts.
 
 #### 2. The Before / After Contrast (Real-World Evidence)
 
 | Dimension | Standard AI Study Tool (Before) | WalLearn with Walrus Memory (After) |
 |---|---|---|
-| **Misconception Retention** | **0% Retention.** Forgotten the second the session expires or chat history scrolls past. | **100% Immutable Retention.** Encrypted and committed to Walrus Mainnet within seconds. |
+| **Misconception Retention** | **0% Retention.** Forgotten the second the session expires or chat history scrolls past. | **100% Immutable Retention.** Committed to Walrus Mainnet via MemWal. |
 | **Question Relevance** | **Generic & Repetitive.** Tests broad concepts the student already mastered 2 weeks ago. | **Algorithmic 60/30/10 Targeting.** 60% of every quiz targets verified on-chain cognitive vulnerabilities. |
 | **Cross-Session Continuity** | **Amnesia.** Fresh session = day 1. Student must re-explain what they don't know. | **Cold Recall.** `/briefing` surfaces top errors ranked by $(\text{Misses} \times \text{Severity})$ instantly. |
 | **Mastery Verification** | **False Confidence.** One lucky guess leads the user to believe they know the topic. | **Strict 3-Pass Rule.** Requires 3 consecutive passes across spaced sessions to graduate. |
@@ -244,19 +247,32 @@ Writing to decentralized storage requires handling network latency and relayer r
 2. **Phase 2 (Background On-Chain Resolution)**: The bot registers the record in its local state ledger and asynchronously polls `/api/remember/{jobId}` until the permanent Walrus Mainnet `blob_id` is resolved and linked.
 3. **Resilient HTTP 429 Backoff**: The custom `signedFetch` client intercepts rate limits, inspects `retry_after_seconds`, and applies exponential backoff with jitter, ensuring continuous operation without dropped student data.
 
-### 6. Storage Semantics: Decentralized Blobs vs. Application Weakness Records (1:N Architecture)
-When executing an on-chain recovery via `/restore`, WalLearn presents a clean, user-centric telemetry report:
+### 6. Storage Semantics: Event-Sourced Event Lines & On-Chain Replay Engine
+When executing an on-chain recovery via `/restore`, WalLearn presents an auditable telemetry report:
 ```text
 • Walrus Mainnet Status: 🟢 Synchronized
 • Tracked Weaknesses (Mistakes): 5
 • Verified Exam Facts: 3
 ```
 
-Under the hood, this reflects an **intentional, cost-effective decentralized storage architecture**:
-- **Decentralized Blob (On-Chain Container):** On Walrus Protocol, a **Blob** is a cryptographic, erasure-coded storage object distributed across Walrus storage nodes and registered as a Sui blockchain object.
-- **Tracked Weaknesses (Cognitive Records):** A **Weakness** is an application-level entity containing the question stem, student misconception, lecturer fact, and 3-pass mastery streak.
-- **Atomic Batching & Snapshot Consolidation:** Minting an individual on-chain storage lease on Walrus for each isolated sentence is computationally and economically wasteful. The **MemWal (Walrus Memory)** relayer consolidates memory records belonging to a student's course namespace (`u<chatId>_<courseCode>`) into an encrypted Walrus blob snapshot.
-- **Full Recovery Fidelity & Auditability:** One Walrus Blob securely houses multiple tracked weaknesses. When `/restore` re-indexes from Walrus Mainnet, all contained misconceptions and streaks are completely recovered, and each entry displays a direct [Walrusscan](https://walruscan.com) link verifying the parent on-chain blob.
+Under the hood, this reflects an **event-sourced decentralized storage architecture**:
+- **Decentralized Blob (On-Chain Container):** On Walrus Protocol, memories are stored as cryptographic, erasure-coded blobs via `@mysten-incubation/memwal`.
+- **Event-Sourced Event Lines:** Every cognitive transition (`[MISTAKE]`, `[PROGRESS]`, `[MASTERED]`, `[EXAM_FACT]`) is written to Walrus as an immutable event line.
+- **Atomic Recovery & State Reconstruction:** When `/restore` or a cold start runs, WalLearn queries the user's isolated namespace (`u<chatId>_<courseCode>`) on Walrus Mainnet and replays all events chronologically. Streaks, misconceptions, and mastery statuses are mathematically reconstructed without depending on local disk persistence.
+
+---
+
+### Criterion 4: Best Article, Educational Narrative & Ecosystem Feedback
+> *"Is the article clear, honest, and useful to a newcomer? Does it document before/after behavior and friction points encountered during integration?"*
+
+1. **Published Article (Medium / Inkray)**:  
+   *Building WalLearn: How We Ended AI Study Amnesia with Walrus Protocol Memory* breaks down the cognitive amnesia problem, `@mysten-incubation/memwal` integration, before/after medical student test results, and practical engineering guidance for on-chain AI developers.
+2. **Beyond the Big Two Track Compliance**:  
+   Uses **Google Gemini 2.5 Flash** (via OpenRouter) on Node.js/TypeScript rather than Anthropic or OpenAI. Gemini 2.5 Flash powers structured JSON extraction, rapid quiz distractor generation, and high-context slide ingestion, demonstrating that Walrus Memory functions as a universal, model-agnostic substrate.
+3. **Official Hackathon Feedback & Friction Submitted**:  
+   - *Friction 1 (SDK ESM Exports)*: Documented lack of CommonJS export mappings in `@mysten-incubation/memwal` causing packaging friction in hybrid environments.  
+   - *Friction 2 (Restore Pagination)*: Single-shot candidate selection on `/restore` without keyset cursors.  
+   - *Improvement 1 (Semantic Distance)*: Exposing configurable `maxDistance` thresholds on `/recall`.
 
 ---
 
@@ -317,7 +333,7 @@ wallearn-bot/
 │   │   ├── orchestrator.ts      # Dual-layer Natural Language Orchestrator
 │   │   └── prompts.ts           # Socratic, diagnostic, and CBT generation prompts
 │   ├── walrus/
-│   │   ├── client.ts            # Walrus client, Ed25519 request signer, and relayer interface
+│   │   ├── client.ts            # Walrus client powered by @mysten-incubation/memwal SDK
 │   │   ├── types.ts             # Mistake, briefing, and ledger type contracts
 │   │   └── memory-events.ts     # Event-sourced memory format & replay engine
 │   ├── handlers/
@@ -329,15 +345,22 @@ wallearn-bot/
 │   │   ├── health.ts            # Diagnostic telemetry & Sui/Walrus status
 │   │   ├── callback.ts          # Inline button callback dispatcher
 │   │   ├── chat.ts              # Freeform message routing & Socratic tutor
-│   │   ├── document.ts          # PDF, PPTX, and DOCX text extraction
+│   │   ├── document.ts          # PDF, PPTX, and DOCX document handling
 │   │   ├── photo.ts             # Multimodal photo & diagram OCR via Gemini
 │   │   └── ledger.ts            # On-chain proof ledger display
 │   └── utils/
 │       └── telegram-format.ts   # Telegram MarkdownV1 sanitizer
+├── scripts/
+│   ├── verify-submission.ts     # Automated on-chain diagnostic verifier (npm test)
+│   ├── parse_document.py        # Local Python document extractor (PDF/PPTX/DOCX)
+│   └── e2e-pdf-test.ts          # End-to-end slide ingestion integration test
+├── tests/
+│   └── cross-session.test.ts    # Automated cross-session isolation & mastery tests
 ├── data/
 │   └── mistakes-ledger.json     # Committed on-chain state cache & verification proof
 ├── package.json
 ├── tsconfig.json
+├── JUDGING.md                   # Hackathon evaluation dossier across all 4 criteria
 └── README.md
 ```
 
@@ -359,7 +382,7 @@ npm install
 ```
 
 ### 3. Environment Configuration
-Create a `.env` file in the root directory:
+Create a `.env` file in the root directory (see `.env.example`):
 ```env
 # Telegram Bot Configuration
 TELEGRAM_BOT_TOKEN="your_bot_token_from_botfather"
@@ -386,7 +409,10 @@ npm run build
 # 2. Run automated on-chain verification diagnostic
 npm test
 
-# 3. Start production bot server
+# 3. Run automated cross-session test suite
+npm run test:cross-session
+
+# 4. Start production bot server
 npm start
 
 # Or run in development mode with auto-reload
@@ -416,13 +442,12 @@ CMD ["node", "dist/index.js"]
 
 ## Hackathon Evaluation Checklist for Judges
 
-| Evaluation Dimension | How WalLearn Excels |
-|---|---|
-| **Novelty of Memory Usage** | Memory is not passive chat history; it drives an active, mathematical spaced-repetition cognitive model that actively alters quiz generation. |
-| **Walrus Protocol Integration** | Directly integrates MemWal relayer with Ed25519 signing, user-isolated namespaces, and verifiable blobs on Walruscan. |
-| **Real-World Utility** | Solves an acute problem for millions of university, medical, and professional students preparing for high-stakes exams. |
-| **User Experience (UX)** | Instant inline Telegram buttons, 0ms fast-path routing, natural language orchestration, and multimodal document handling. |
-| **Production Readiness** | Enterprise TypeScript codebase, resilient rate-limit backoff, graceful error handling, and live production deployment on Railway. |
+| Evaluation Dimension | How WalLearn Excels | Reference |
+|---|---|---|
+| **1. Does It Actually Remember?** | Memory is an active computational state variable governing 60/30/10 question generation, cold-start tutoring, and a 3-pass spaced repetition state machine. | [JUDGING.md Criterion 1](JUDGING.md#criterion-1-does-it-actually-remember) |
+| **2. Real-World Use** | Live on Telegram (@WalLearnBot) with medical/university students across 15 on-chain namespaces, 50 confirmed Walruscan blobs, and a convincing before/after contrast. | [JUDGING.md Criterion 2](JUDGING.md#criterion-2-real-world-use--the-beforeafter-case-study) |
+| **3. Build Quality & SDK** | Clean TypeScript integration powered by `@mysten-incubation/memwal` (v0.1.8), verifiable in 60s via `npm test` and `npm run test:cross-session`. | [JUDGING.md Criterion 3](JUDGING.md#criterion-3-build-quality-clean-integration--reproducibility) |
+| **4. Best Article & Ecosystem Feedback** | Educational deep-dive article published on Medium/Inkray, full compliance with Beyond the Big Two track (Gemini 2.5 Flash), and documented friction report submitted to Mysten Labs. | [JUDGING.md Criterion 4](JUDGING.md#criterion-4-best-article-educational-narrative--ecosystem-feedback) |
 
 ---
 

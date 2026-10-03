@@ -1,15 +1,17 @@
 # 🏆 WalLearn — Hackathon Judging & Evaluation Dossier
 
-> **Hackathon Track:** Walrus Sessions: *Chatbots That Remember*  
+> **Hackathon Track:** Walrus Sessions: *Chatbots That Remember* (DeepSurge)  
 > **Bot Handle:** [@WalLearnBot](https://t.me/WalLearnBot)  
 > **Repository:** [opeyemi406/WalLearn-bot](https://github.com/opeyemi406/WalLearn-bot)  
-> **Live On-Chain Sui Object:** [`0x75a533d83e9fee09e36b29b14e8b093862042ee92b188e5122338da7118be140`](https://suiscan.xyz/mainnet/object/0x75a533d83e9fee09e36b29b14e8b093862042ee92b188e5122338da7118be140)
+> **Live On-Chain Sui Object:** [`0x75a533d83e9fee09e36b29b14e8b093862042ee92b188e5122338da7118be140`](https://suiscan.xyz/mainnet/object/0x75a533d83e9fee09e36b29b14e8b093862042ee92b188e5122338da7118be140)  
+> **Dedicated Sessions Wallet:** [`0xf3efc1f6d86ea33f736072668549138f00f2ca8fc67962019543e213a0fa2db2`](https://suiscan.xyz/mainnet/account/0xf3efc1f6d86ea33f736072668549138f00f2ca8fc67962019543e213a0fa2db2)  
+> **Primary AI Model:** `google/gemini-2.5-flash` via OpenRouter (Beyond the Big Two Track)
 
 ---
 
 ## Direct Evaluation Against Hackathon Criteria
 
-This document provides direct, auditable evidence for the three official judging criteria of the hackathon.
+This document provides direct, auditable evidence for the four official judging criteria of the hackathon:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -17,7 +19,8 @@ This document provides direct, auditable evidence for the three official judging
 │                                                                        │
 │ 1. Does it actually remember? (Real Work vs. Decorative)               │
 │ 2. Real-World Use (Deployed, real people, before/after impact)         │
-│ 3. Build Quality (Clean integration, documented, reproducible)         │
+│ 3. Build Quality (Official MemWal SDK, documented, reproducible)       │
+│ 4. Best Article & Ecosystem Feedback (Publication & friction report)   │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -40,11 +43,11 @@ WalLearn never generates questions at random. When a student enters `/study`:
 3. It binds those misconceptions directly into the generation prompt:
    - **60% of questions** are programmatically targeted at the student's exact historical misconceptions.
    - The LLM is given negative constraints: *"The student previously chose Option B (confusing Phase 1 depolarization with competitive block). Formulate clinical distractors that force them to distinguish these two mechanisms."*
-   - **30% of questions** test new concepts from uploaded slides.
+   - **30% of questions** test new concepts from uploaded slides or syllabus facts.
    - **10% of questions** spot-check previously mastered topics.
 
 #### B. The 3-Consecutive-Pass Spaced Repetition Lifecycle
-A single correct answer is not proof of mastery. WalLearn enforces a formal state machine on Walrus:
+A single correct answer is not proof of mastery. WalLearn enforces a formal event-sourced state machine on Walrus:
 ```
 [NEW MISTAKE] 
       │  (severity: high, misses: 1, correctStreak: 0)
@@ -67,9 +70,9 @@ The tutor does not provide a generic textbook definition. It proactively address
 
 #### D. Disaster Recovery (`/restore`)
 If the user deletes their Telegram chat history or the bot's cloud server redeploys:
-- Running `/restore` triggers a cryptographic scan of the user's isolated Walrus Mainnet namespace.
-- It parses raw on-chain blobs and fully reconstructs their weaknesses, streaks, and mastery progress in under 3 seconds.
-- **1:N Blob Storage Architecture**: Walrus Protocol stores memories via encrypted namespace snapshots where a single on-chain blob securely houses multiple granular mistakes and streaks, maximizing on-chain storage efficiency and atomic recovery without creating redundant blockchain storage leases.
+- Running `/restore` triggers a scan of the user's isolated Walrus Mainnet namespace.
+- It parses raw on-chain blobs and reconstructs their weaknesses, streaks, and mastery progress.
+- **Event-Sourced On-Chain State**: Every state transition (`[MISTAKE]`, `[PROGRESS]`, `[MASTERED]`, `[EXAM_FACT]`) is committed as a permanent event line to Walrus. Replaying these events in chronological order reconstructs 100% of the cognitive state without relying on local storage.
 
 ---
 
@@ -83,7 +86,10 @@ If the user deletes their Telegram chat history or the bot's cloud server redepl
   - **PCL301**: Autonomic & General Pharmacology
   - **PCL302**: Neuropharmacology & Catecholamine Disorders
   - **ANA201**: Human Gross Anatomy (Thorax, Mediastinum)
-- **Real Production Telemetry**: Over **57 recorded cognitive milestones** and **50 confirmed on-chain blobs** across multiple unique student accounts (e.g. `Chat ID: 6878463854`, `Chat ID: 5420044163`).
+- **Production On-Chain Telemetry**: 
+  - **15 Active On-Chain Namespaces** (e.g. `u6878463854_pcl301`, `u5420044163_pcl302`, `u6878463854_ana204`).
+  - **50 Confirmed On-Chain Blobs** on Walrus Protocol Mainnet.
+  - **57 Total Recorded Cognitive Milestones** across student accounts.
 
 ### 2. The Before / After Contrast
 
@@ -91,7 +97,7 @@ If the user deletes their Telegram chat history or the bot's cloud server redepl
 ┌──────────────────────────────────────┬──────────────────────────────────────┐
 │  WITHOUT WALRUS MEMORY (BEFORE)      │   WITH WALRUS MEMORY (WALLEARN)      │
 ├──────────────────────────────────────┼──────────────────────────────────────┤
-│ ❌ Amnesia after every session        │ ✅ 100% On-chain persistence         │
+│ ❌ Amnesia after every session        │ ✅ Permanent on-chain persistence    │
 │ ❌ Generic, unweighted questions     │ ✅ 60% targeted weakness drilling    │
 │ ❌ False mastery from lucky guesses   │ ✅ Strict 3-consecutive-pass rule    │
 │ ❌ Chat history clear wipes progress  │ ✅ `/restore` rebuilds full state    │
@@ -99,13 +105,13 @@ If the user deletes their Telegram chat history or the bot's cloud server redepl
 └──────────────────────────────────────┴──────────────────────────────────────┘
 ```
 
-### 3. Concrete User Walkthrough
-- **User Action**: A student practicing `PCL301` answered a question on *Succinylcholine Phase 1 Blockade*. They incorrectly chose that cholinesterase inhibitors reverse Phase 1 blockade (in reality, they augment it).
+### 3. Concrete User Walkthrough: Autonomic Pharmacology (`PCL301`)
+- **User Action**: Student (`Chat ID: 6878463854`) practicing `PCL301` answered a question on *Succinylcholine Phase 1 Blockade*. They incorrectly selected that cholinesterase inhibitors reverse Phase 1 blockade (in reality, they augment it).
 - **WalLearn Reaction**:
   1. Intercepted the misconception and categorized it as high-severity.
-  2. Dispatched an Ed25519-signed write to Walrus Mainnet.
+  2. Dispatched an Ed25519-signed write via `@mysten-incubation/memwal` to Walrus Mainnet.
   3. Output: Confirmed on-chain blob [`5BTSt6okVpuhzpzS1wcmFvh5Kx863nki2avsXIKzt7U`](https://walruscan.com/mainnet/blob/5BTSt6okVpuhzpzS1wcmFvh5Kx863nki2avsXIKzt7U).
-- **The Follow-Up Session**: When the student returned the next day, `/briefing` flagged this exact misconception at the top of their briefing. The next adaptive quiz generated a new scenario asking about Phase 1 vs Phase 2 transitions, forcing the student to resolve their cognitive blind spot.
+- **The Follow-Up Session**: When the student returned in a subsequent session, `/briefing` flagged this exact misconception at the top of their briefing. The next adaptive quiz generated a new scenario asking about Phase 1 vs Phase 2 transitions, forcing the student to resolve their cognitive blind spot.
 
 ---
 
@@ -114,12 +120,12 @@ If the user deletes their Telegram chat history or the bot's cloud server redepl
 > *"Is the integration clean, documented, and reproducible? Could someone clone the repository and run it?"*
 
 ### 1. Architectural Rigor
-- **Strictly-Typed Enterprise TypeScript**: Clean separation between AI orchestration (`src/ai`), Walrus cryptographic client (`src/walrus`), UI handlers (`src/handlers`), and multimodal parsers (`src/parsers`).
-- **Dual-Layer Orchestrator**: Fast-path deterministic routing (< 1ms) for inline buttons and numeric commands, with semantic Gemini Flash JSON parsing for conversational compound messages.
-- **Cryptographic Request Signing**: Full Ed25519 canonical message hashing (`timestamp.method.path.bodyHash.nonce.accountId`) via `@noble/ed25519`.
-- **Fault-Tolerant Network Client**: Custom `signedFetch` with automated HTTP 429 exponential backoff, jitter, and non-blocking background polling.
+- **Official SDK Integration**: Powered by `@mysten-incubation/memwal` (v0.1.8). All operations (`remember`, `rememberBulk`, `recall`, `restore`, `health`, `listNamespaces`, and `getRememberStatus`) interact with the official Mysten Labs SDK.
+- **Strictly-Typed Enterprise TypeScript**: Clean separation between AI orchestration (`src/ai`), Walrus cryptographic client (`src/walrus`), UI handlers (`src/handlers`), and document parser pipeline (`scripts/parse_document.py`).
+- **Cryptographic Request Signing**: Full Ed25519 canonical message hashing (`timestamp.method.path.bodyHash.nonce.accountId`) via `@noble/ed25519` and MemWal TEE enclave.
+- **Fault-Tolerant Network Client**: Automated HTTP 429 exponential backoff, jitter, and non-blocking background polling.
 
-### 2. Verified Local Reproducibility in 60 Seconds
+### 2. Verified Local Reproducibility
 Judges can verify the entire on-chain stack locally in 3 commands:
 
 ```bash
@@ -132,6 +138,9 @@ npm install
 
 # 3. Run automated on-chain verification diagnostic
 npm test
+
+# 4. Run automated cross-session test suite
+npm run test:cross-session
 ```
 
 #### Diagnostic Output (`npm test`):
@@ -145,28 +154,60 @@ npm test
    • Delegate Address:     0x7dea8c54a7a72c231fa829abed50a47a03b7d1e99e74974bc21773c73490bbaa
    • Relayer URL:          https://relayer.memory.walrus.xyz
    • Primary AI Model:     google/gemini-2.5-flash
+   • SDK Integration:      @mysten-incubation/memwal (Official SDK)
+   • Credentials Loaded:   ✅ Yes (Delegate Signer Active)
 
 2. Probing Walrus Protocol Relayer Connectivity & Health...
    • Relayer Status:       🟢 healthy & verified on Walrus Protocol
+   • Relayer Reachable:    ✅ Yes
+   • Relayer Version:      0.1.0
    • Active Sui Account:   0x75a533d83e9fee09e36b29b14e8b093862042ee92b188e5122338da7118be140
+   • Active On-Chain Namespaces: 15
 
 3. Inspecting Confirmed On-Chain Memory Blobs...
    • Total Ledger Records: 57
-   • Confirmed Blobs:      50
+   • Unique Mainnet Blobs: 50 (Requirement: >= 10 blobs)
 
-4. Testing Cold Recall & Memory Ingestion...
-   • Cold Recall Check:    ✅ Active Memory Retrieved
+4. Testing Remote Memory Recall (Strict Verification)...
+   • Recall Source:        🟢 Walrus Mainnet (TEE Decrypted)
+   • Entries Retrieved:    41
+   • Sample On-Chain Blob: https://walruscan.com/mainnet/blob/iuOwcgiiDz-ukL_wbR4I6dsNNyIvNcv2V5UhzNd89h4
+
+5. Testing Cross-Session Cognitive State Reconstruction...
+   • Active Weaknesses:    5 cognitive topics
+   • Mastered Topics:      3 graduated topics
 ============================================================
-✅ Verification Complete: WalLearn is live, connected, and operating on Walrus Mainnet!
+✅ Verification Complete: WalLearn on-chain artifacts verified!
 ============================================================
 ```
 
-### 3. One-Command Production Launch
-```bash
-cp .env.example .env
-npm run build
-npm start
-```
+---
+
+## Criterion 4: Best Article, Educational Narrative & Ecosystem Feedback
+
+> *"Is the article clear, honest, and useful to a newcomer? Does it document before/after behavior and friction points encountered during integration?"*
+
+### 1. Published Article & Community Sharing
+- **Article Platform**: Medium / Inkray
+- **Article Title**: *Building WalLearn: How We Ended AI Study Amnesia with Walrus Protocol Memory*
+- **Contents**:
+  1. The Cognitive Amnesia Problem in modern education chatbots.
+  2. How we integrated `@mysten-incubation/memwal` to store event-sourced cognitive state on Walrus Mainnet.
+  3. Concrete Before vs. After student case study in medical pharmacology (`PCL301`).
+  4. Architectural walkthrough of the 60/30/10 generative model and 3-pass spaced repetition lifecycle.
+  5. Practical advice and code snippets for developers integrating Walrus Memory into production bots.
+- **X / Twitter Announcement**: Shared publicly tagging `@WalrusProtocol` with `#WalrusMemory`.
+
+### 2. Beyond the Big Two Track Compliance
+- **Primary LLM**: `google/gemini-2.5-flash` via OpenRouter.
+- **Runtime**: Node.js v20+ with TypeScript and `@mysten-incubation/memwal`.
+- **Why Beyond the Big Two**: Demonstrates that Walrus Memory acts as an open, model-agnostic substrate. By utilizing Google Gemini 2.5 Flash, WalLearn achieves fast structured JSON output generation, high context window processing for uploaded slides, and cost-effective multimodal tutoring without relying on Anthropic or OpenAI.
+
+### 3. Walrus Memory Integration Feedback & Friction Report
+As required by the hackathon submission guidelines, we submitted feedback covering:
+1. **Friction / Bug Point 1 (SDK ESM Exports)**: `@mysten-incubation/memwal` (v0.1.8) specifies `"exports": { ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" } }` without CommonJS fallback. When tools or runtimes evaluate code in mixed environments, `ERR_PACKAGE_PATH_NOT_EXPORTED` is thrown unless the project is strictly `"type": "module"`. Adding dual CJS/ESM exports would ease integration.
+2. **Friction / Bug Point 2 (Restore Pagination)**: The `memwal.restore(namespace, limit)` endpoint currently performs a single-shot inspection without keyset cursor pagination. When an account contains many memories across several namespaces, candidate selection can be truncated without a cursor to fetch the next batch. Adding pagination cursors to `/restore` would make cold-start disaster recovery fully deterministic.
+3. **Improvement Idea 1 (Query Semantic Distance Threshold)**: Short queries (e.g. `"mistakes"`) produce cosine distance ~0.65-0.70 which can be dropped by the relayer's default distance filter. Exposing `maxDistance` in the query options helps developers tune semantic recall for short prompts.
 
 ---
 
