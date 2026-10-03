@@ -54,17 +54,33 @@ export async function handleCallback(ctx: Context) {
     const { clearAwaitingStates, awaitingRestoreCourse } = await import("../state.js");
     clearAwaitingStates(chatId);
     awaitingRestoreCourse.add(chatId);
-    await ctx.reply(
-      `📚 *Restore Specific Course*\n\nPlease reply with the course code you want to restore from Walrus (e.g. \`PCL301\`, \`CHM211\`, \`BIO101\`):`,
-      { parse_mode: "Markdown" }
-    );
+    try {
+      await ctx.reply(
+        `📚 *Restore Specific Course*\n\nPlease reply with the course code you want to restore from Walrus (e.g. \`PCL301\`, \`CHM211\`, \`BIO101\`):`,
+        { parse_mode: "Markdown" }
+      );
+    } catch {
+      await ctx.reply(
+        `📚 Restore Specific Course\n\nPlease reply with the course code you want to restore from Walrus (e.g. PCL301, CHM211, BIO101):`
+      );
+    }
     return;
   }
 
-  if (data.startsWith("restore_course_quick_")) {
-    const courseCode = data.replace("restore_course_quick_", "").trim();
-    const { executeRestoreCourse } = await import("./restore.js");
-    return executeRestoreCourse(ctx, courseCode);
+  if (data === "restore_all") {
+    const { handleRestore } = await import("./restore.js");
+    return handleRestore(ctx);
+  }
+
+  if (data.startsWith("restore_course_quick_") || (data.startsWith("restore_course_") && data !== "restore_course_prompt")) {
+    const courseCode = data
+      .replace("restore_course_quick_", "")
+      .replace("restore_course_", "")
+      .trim();
+    if (courseCode) {
+      const { executeRestoreCourse } = await import("./restore.js");
+      return executeRestoreCourse(ctx, courseCode);
+    }
   }
 
   if (data.startsWith("study_course_")) {

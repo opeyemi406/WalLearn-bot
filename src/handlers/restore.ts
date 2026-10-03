@@ -51,15 +51,26 @@ export async function handleRestore(ctx: Context) {
 
   const msg =
     `🔄 *Walrus Protocol Mainnet Restore Engine*\n\n` +
-    `_Decentralized memory blobs on Walrus Protocol are isolated per course namespace (\`u<chatId>_<courseCode>\`)._\n\n` +
+    `Decentralized memory blobs on Walrus Protocol are isolated per course namespace.\n\n` +
     `Please reply with the *Course Code* you want to restore from Walrus (e.g. \`PCL301\`, \`ANA201\`, \`CHM211\`):`;
 
-  const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
-
-  await ctx.reply(formatTelegramMarkdown(msg), {
-    parse_mode: "Markdown",
-    reply_markup: keyboard,
-  });
+  try {
+    const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
+    await ctx.reply(formatTelegramMarkdown(msg), {
+      parse_mode: "Markdown",
+      reply_markup: keyboard,
+    });
+  } catch (err) {
+    console.warn("⚠️ handleRestore Markdown reply failed, falling back to plain text:", err);
+    await ctx.reply(
+      `🔄 Walrus Protocol Mainnet Restore Engine\n\n` +
+      `Decentralized memory blobs on Walrus Protocol are isolated per course namespace.\n\n` +
+      `Please reply with the Course Code you want to restore from Walrus (e.g. PCL301, ANA201, CHM211):`,
+      { reply_markup: keyboard }
+    ).catch((e) => {
+      console.error("❌ Failed to send restore prompt fallback message:", e);
+    });
+  }
 }
 
 /**
@@ -69,10 +80,21 @@ export async function executeRestoreCourse(ctx: Context, courseCode: string) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  const cleanCode = courseCode.toUpperCase().replace(/[^A-Z0-9]/g, "");
-  const statusMsg = await ctx.reply(`⏳ *Restoring past mistakes for ${cleanCode} from Walrus Protocol Mainnet...*`, {
-    parse_mode: "Markdown",
-  });
+  const cleanCode = (courseCode || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (!cleanCode) {
+    return handleRestore(ctx);
+  }
+
+  let statusMsgId: number | undefined;
+  try {
+    const sent = await ctx.reply(`⏳ *Restoring past mistakes for ${cleanCode} from Walrus Protocol Mainnet...*`, {
+      parse_mode: "Markdown",
+    });
+    statusMsgId = sent.message_id;
+  } catch {
+    const fallback = await ctx.reply(`⏳ Restoring past mistakes for ${cleanCode} from Walrus Protocol Mainnet...`).catch(() => undefined);
+    if (fallback) statusMsgId = fallback.message_id;
+  }
 
   try {
     const restoreResult = await walrus.restoreNamespace(cleanCode, chatId);
@@ -156,7 +178,7 @@ export async function executeRestoreCourse(ctx: Context, courseCode: string) {
 
         msg += `\n*${i + 1}. ${item.topic}* [${streakBadge}]\n`;
         if (cleanMisconception) {
-          msg += `• *Misconception:* _${cleanMisconception}_\n`;
+          msg += `• *Misconception:* ${cleanMisconception}\n`;
         }
         if (cleanFact) {
           msg += `• *Key Fact:* ${cleanFact}\n`;
@@ -174,34 +196,66 @@ export async function executeRestoreCourse(ctx: Context, courseCode: string) {
       msg += `\n🎯 _To drill this specific course, tap below or type /study anytime:_`;
     }
 
-    await replySafeChunks(ctx, statusMsg.message_id, msg, restoreKeyboard);
+    const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
+    await replySafeChunks(ctx, statusMsgId, formatTelegramMarkdown(msg), restoreKeyboard);
   } catch (err) {
-    await ctx.api.editMessageText(
-      chatId,
-      statusMsg.message_id,
-      `⚠️ *Restore failed:* ${(err as Error).message}\nPlease try again later.`,
-      { parse_mode: "Markdown" }
-    ).catch(async () => {
-      await ctx.reply(`⚠️ *Restore failed:* ${(err as Error).message}`);
-    });
+    const errMsg = (err as Error).message || "Unknown error";
+    if (statusMsgId) {
+      await ctx.api.editMessageText(
+        chatId,
+        statusMsgId,
+        `⚠️ *Restore failed:* ${errMsg}\nPlease try again later.`,
+        { parse_mode: "Markdown" }
+      ).catch(async () => {
+        await ctx.reply(`⚠️ Restore failed: ${errMsg}\nPlease try again later.`).catch(() => {});
+      });
+    } else {
+      await ctx.reply(`⚠️ Restore failed: ${errMsg}\nPlease try again later.`).catch(() => {});
+    }
   }
 }
 
 /**
  * Safely edit or send long message texts within Telegram 4096 character limit
  */
-async function replySafeChunks(ctx: Context, initialMessageId: number, fullText: string, keyboard?: InlineKeyboard) {
+async function replySafeChunks(
+  ctx: Context,
+  initialMessageId: number | undefined,
+  fullText: string,
+  keyboard?: InlineKeyboard
+) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
   const MAX_CHUNK = 3600;
+  const plainText = fullText.replace(/[*_`#]/g, "");
+
   if (fullText.length <= MAX_CHUNK) {
-    await ctx.api.editMessageText(chatId, initialMessageId, fullText, {
+    if (initialMessageId) {
+      try {
+        await ctx.api.editMessageText(chatId, initialMessageId, fullText, {
+          parse_mode: "Markdown",
+          link_preview_options: { is_disabled: false },
+          reply_markup: keyboard,
+        });
+        return;
+      } catch {
+        try {
+          await ctx.api.editMessageText(chatId, initialMessageId, plainText, {
+            reply_markup: keyboard,
+          });
+          return;
+        } catch {
+          // If edit fails completely, send as a new message
+        }
+      }
+    }
+    await ctx.reply(fullText, {
       parse_mode: "Markdown",
       link_preview_options: { is_disabled: false },
       reply_markup: keyboard,
     }).catch(async () => {
-      await ctx.api.editMessageText(chatId, initialMessageId, fullText, { reply_markup: keyboard });
+      await ctx.reply(plainText, { reply_markup: keyboard }).catch(() => {});
     });
     return;
   }
@@ -221,29 +275,40 @@ async function replySafeChunks(ctx: Context, initialMessageId: number, fullText:
   }
   if (currentChunk) chunks.push(currentChunk);
 
-  // Edit initial message with first chunk
-  if (chunks.length > 0) {
+  // Edit initial message with first chunk if present
+  let startIndex = 0;
+  if (initialMessageId && chunks.length > 0) {
     const isSingle = chunks.length === 1;
-    await ctx.api.editMessageText(chatId, initialMessageId, chunks[0], {
-      parse_mode: "Markdown",
-      link_preview_options: { is_disabled: false },
-      reply_markup: isSingle ? keyboard : undefined,
-    }).catch(async () => {
+    try {
       await ctx.api.editMessageText(chatId, initialMessageId, chunks[0], {
+        parse_mode: "Markdown",
+        link_preview_options: { is_disabled: false },
         reply_markup: isSingle ? keyboard : undefined,
       });
-    });
+      startIndex = 1;
+    } catch {
+      try {
+        await ctx.api.editMessageText(chatId, initialMessageId, chunks[0].replace(/[*_`#]/g, ""), {
+          reply_markup: isSingle ? keyboard : undefined,
+        });
+        startIndex = 1;
+      } catch {
+        startIndex = 0; // If edit fails, will send as fresh messages
+      }
+    }
   }
 
-  // Send subsequent chunks as follow-up messages
-  for (let i = 1; i < chunks.length; i++) {
+  // Send chunks as messages
+  for (let i = startIndex; i < chunks.length; i++) {
     const isLast = i === chunks.length - 1;
     await ctx.reply(chunks[i], {
       parse_mode: "Markdown",
       link_preview_options: { is_disabled: false },
       reply_markup: isLast ? keyboard : undefined,
     }).catch(async () => {
-      await ctx.reply(chunks[i], { reply_markup: isLast ? keyboard : undefined });
+      await ctx.reply(chunks[i].replace(/[*_`#]/g, ""), {
+        reply_markup: isLast ? keyboard : undefined,
+      }).catch(() => {});
     });
   }
 }
