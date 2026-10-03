@@ -141,10 +141,6 @@ export async function handleChatMessage(ctx: Context) {
   // Intent C: Restore Memory Blobs
   if (result.intent === "restore_memory") {
     clearAwaitingStates(chatId);
-    if (result.scope === "all") {
-      const { executeRestoreAll } = await import("./restore.js");
-      return executeRestoreAll(ctx);
-    }
     if (result.courseCode) {
       const { executeRestoreCourse } = await import("./restore.js");
       return executeRestoreCourse(ctx, result.courseCode);

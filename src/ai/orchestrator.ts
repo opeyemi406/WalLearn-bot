@@ -109,19 +109,14 @@ export async function orchestrateUserMessage(
     return { intent: "reset_session", confidence: 1.0 };
   }
 
-  // Fast-path 5: Natural language restore / recover queries (e.g. "restore mistake for all course", "restore all")
+  // Fast-path 5: Natural language restore / recover queries (e.g. "restore PCL301", "restore my mistakes")
   if (/\b(?:restore|recover)\b/i.test(trimmed)) {
-    if (/\b(?:all|every|everything|all\s*courses?)\b/i.test(trimmed)) {
-      return { intent: "restore_memory", scope: "all", confidence: 1.0 };
-    }
     const courseInText = trimmed.match(/\b([a-zA-Z]{2,5}\s*\d{2,4})\b/i);
     if (courseInText) {
       const code = courseInText[1].toUpperCase().replace(/\s+/g, "");
       return { intent: "restore_memory", courseCode: code, scope: "single", confidence: 1.0 };
     }
-    if (ctx.awaitingContext === "restore" || /mistakes?/i.test(trimmed)) {
-      return { intent: "restore_memory", scope: "all", confidence: 1.0 };
-    }
+    return { intent: "restore_memory", scope: "single", confidence: 1.0 };
   }
 
   // AI-Powered Natural Language Orchestration
@@ -138,7 +133,7 @@ Allowed Intents:
 1. "set_course": Student wants to set, switch, or study a course (e.g., "let's do ANA201", "switch to pharmacology", "study BIO101").
 2. "start_drill": Student wants to take a test, practice quiz, drill questions, or specifies a question count (e.g., "quiz me", "start 10 questions on thorax", "drill now", "give me 5 questions in ANA201").
 3. "set_topic": Student is naming a topic to study within their current course (e.g., "Thorax and Mediastinum", "Pharmacokinetics", "Cardiovascular system", "test me on Upper Limb").
-4. "restore_memory": Student wants to recover or restore on-chain mistakes/records from Walrus Protocol (e.g., "restore my mistakes", "recover PCL301", "restore all courses").
+4. "restore_memory": Student wants to recover or restore on-chain mistakes/records from Walrus Protocol for a specific course (e.g., "restore my mistakes", "recover PCL301", "restore past errors").
 5. "view_briefing": Student wants their weakness briefing, mistakes overview, or report (e.g., "show my weaknesses", "how am I doing in anatomy?", "view briefing").
 6. "analyze_past_q": Student wants to analyze past department exam papers/questions (e.g., "analyze past questions", "past questions for ANA204").
 7. "menu_action": Student selects menu options 1, 2, 3, or 4 (or words like "study directly", "slides guide", "menu").
@@ -184,7 +179,9 @@ Student Message: "${trimmed}"`;
     console.warn("Orchestrator AI parse fallback:", err);
     // Intelligent fallback based on keywords
     if (/restore|recover/i.test(trimmed)) {
-      return { intent: "restore_memory", scope: /all/i.test(trimmed) ? "all" : "single", confidence: 0.7 };
+      const courseInText = trimmed.match(/\b([a-zA-Z]{2,5}\s*\d{2,4})\b/i);
+      const code = courseInText ? courseInText[1].toUpperCase().replace(/\s+/g, "") : null;
+      return { intent: "restore_memory", courseCode: code, scope: "single", confidence: 0.7 };
     }
     if (/briefing|weakness|report/i.test(trimmed)) {
       return { intent: "view_briefing", scope: /all/i.test(trimmed) ? "all" : "single", confidence: 0.7 };

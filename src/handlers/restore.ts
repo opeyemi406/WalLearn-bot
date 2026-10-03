@@ -3,16 +3,20 @@ import { walrus } from "../walrus/client.js";
 import { awaitingRestoreCourse, getPastCourseCodesForUser, getUserSubject } from "../state.js";
 
 /**
- * Entrypoint for /restore and /mistakes commands
+ * Entrypoint for /restore, /mistakes and /ledger commands
  */
 export async function handleRestore(ctx: Context) {
   const chatId = ctx.chat?.id;
   if (!chatId) return;
 
-  const isCommand = !ctx.callbackQuery && (ctx.message?.text?.startsWith("/restore") || ctx.message?.text?.startsWith("/mistakes"));
-  const text = isCommand ? (ctx.message?.text?.trim() || "") : "";
+  const isCommand =
+    !ctx.callbackQuery &&
+    (ctx.message?.text?.startsWith("/restore") ||
+      ctx.message?.text?.startsWith("/mistakes") ||
+      ctx.message?.text?.startsWith("/ledger"));
+  const text = isCommand ? ctx.message?.text?.trim() || "" : "";
   const parts = text.split(/\s+/);
-  const explicitCourse = (isCommand && parts.length > 1) ? parts[1].trim() : null;
+  const explicitCourse = isCommand && parts.length > 1 ? parts[1].trim() : null;
 
   if (explicitCourse) {
     // User directly supplied course code: /restore PCL301
@@ -20,21 +24,35 @@ export async function handleRestore(ctx: Context) {
     return;
   }
 
-  // Pre-arm awaitingRestoreCourse so typing the course code directly without pressing the button works instantly
+  // Pre-arm awaitingRestoreCourse so typing the course code directly without pressing buttons works instantly
   const { clearAwaitingStates } = await import("../state.js");
   clearAwaitingStates(chatId);
   awaitingRestoreCourse.add(chatId);
 
-  const keyboard = new InlineKeyboard()
-    .text("📚 Specific Course Code", "restore_course_prompt")
-    .text("🌐 All Course Codes", "restore_all");
+  // Quick-select buttons for any past courses the user studied
+  const pastCourses = getPastCourseCodesForUser(chatId);
+  const activeSubject = getUserSubject(chatId);
+  const quickCourses = new Set<string>();
+  if (activeSubject && activeSubject !== "general" && /^[a-z]{2,5}\d{2,4}$/i.test(activeSubject)) {
+    quickCourses.add(activeSubject.toUpperCase());
+  }
+  for (const c of pastCourses) {
+    if (/^[a-z]{2,5}\d{2,4}$/i.test(c)) quickCourses.add(c.toUpperCase());
+  }
+
+  const keyboard = new InlineKeyboard();
+  const courseList = Array.from(quickCourses);
+  if (courseList.length > 0) {
+    for (const code of courseList.slice(0, 4)) {
+      keyboard.text(`📚 ${code}`, `restore_course_quick_${code.toLowerCase()}`).row();
+    }
+  }
+  keyboard.text("❌ Cancel", "main_menu");
 
   const msg =
     `🔄 *Walrus Protocol Mainnet Restore Engine*\n\n` +
-    `_Decentralized memory blobs stored on Walrus are permanent and immutable. ` +
-    `Even if your Telegram chat history was cleared, your past missed questions, misconceptions, ` +
-    `and 3-pass mastery streaks remain safely stored on-chain._\n\n` +
-    `Select what you want to restore, or reply directly with your *Course Code* (e.g. \`ANA201\` or \`PCL301\`):`;
+    `_Decentralized memory blobs on Walrus Protocol are isolated per course namespace (\`u<chatId>_<courseCode>\`)._\n\n` +
+    `Please reply with the *Course Code* you want to restore from Walrus (e.g. \`PCL301\`, \`ANA201\`, \`CHM211\`):`;
 
   const { formatTelegramMarkdown } = await import("../utils/telegram-format.js");
 
@@ -96,8 +114,7 @@ export async function executeRestoreCourse(ctx: Context, courseCode: string) {
     const restoreKeyboard = new InlineKeyboard()
       .text(`🎯 Study ${cleanCode.toUpperCase()}`, `study_course_${cleanCode.toLowerCase()}`)
       .row()
-      .text("📚 Restore Another Course", "restore_course_prompt")
-      .text("🌐 All Courses Report", "restore_all");
+      .text("📚 Restore Another Course", "restore_course_prompt");
 
     if (mistakeRecords.length === 0) {
       if (factRecords.length === 0) {
@@ -227,160 +244,6 @@ async function replySafeChunks(ctx: Context, initialMessageId: number, fullText:
       reply_markup: isLast ? keyboard : undefined,
     }).catch(async () => {
       await ctx.reply(chunks[i], { reply_markup: isLast ? keyboard : undefined });
-    });
-  }
-}
-
-/**
- * Restore mistakes across all course codes the user has ever studied
- */
-export async function executeRestoreAll(ctx: Context) {
-  const chatId = ctx.chat?.id;
-  if (!chatId) return;
-
-  const statusMsg = await ctx.reply(`⏳ *Scanning and restoring all course codes from Walrus Protocol Mainnet...*`, {
-    parse_mode: "Markdown",
-  });
-
-  try {
-    // 1. Gather all potential course codes to probe on Walrus Protocol
-    const candidateCodes = new Set<string>();
-
-    // User's active course
-    const activeSubject = getUserSubject(chatId);
-    if (activeSubject && activeSubject !== "general" && /^[a-z]{2,5}\d{2,4}$/i.test(activeSubject)) {
-      candidateCodes.add(activeSubject.toLowerCase());
-    }
-
-    // User's recorded past courses (from user profile history & local ledger)
-    const userCodes = getPastCourseCodesForUser(chatId);
-    for (const c of userCodes) candidateCodes.add(c.toLowerCase());
-
-    const candidates = Array.from(candidateCodes);
-    console.log(`🔍 [Walrus Restore All] Probing ${candidates.length} user courses for chat ${chatId}:`, candidates);
-
-    let totalBlobsFound = 0;
-    const restoredCourses = new Set<string>();
-    const courseBlobs = new Map<string, number>();
-
-    // 2. Probe Walrus Protocol for each candidate course
-    for (const code of candidates) {
-      try {
-        const res = await walrus.restoreNamespace(code, chatId);
-        totalBlobsFound += res.total;
-        if (res.total > 0 || res.restored > 0) {
-          restoredCourses.add(code.toLowerCase());
-          courseBlobs.set(code.toLowerCase(), res.total);
-        }
-      } catch {
-        // Continue probing other courses
-      }
-    }
-
-    // Include courses user has active or recorded in ledger
-    for (const c of userCodes) restoredCourses.add(c.toLowerCase());
-    if (activeSubject && activeSubject !== "general") restoredCourses.add(activeSubject.toLowerCase());
-
-    const ledger = await walrus.getLedger(chatId);
-    const userRecords = ledger.filter((r) => r.chatId === chatId);
-    for (const r of userRecords) {
-      const rawNs = (r.namespace || "").toLowerCase();
-      const clean = rawNs.replace(/^u\d+_/, "");
-      if (clean && /^[a-z]{2,5}\d{2,4}$/i.test(clean)) {
-        restoredCourses.add(clean);
-      }
-    }
-
-    const detectedCourses = Array.from(restoredCourses);
-
-    if (detectedCourses.length === 0) {
-      let emptyMsg = `⛓️ *Walrus On-Chain Recovery Complete*\n\n`;
-      emptyMsg += `✨ *Zero Recorded Courses or Mistakes!* You haven't started or missed any questions yet.\n\n`;
-      emptyMsg += `Type /study or enter a course code (e.g. \`PCL301\`) to start your first practice drill!`;
-      await ctx.api.editMessageText(chatId, statusMsg.message_id, emptyMsg, { parse_mode: "Markdown" });
-      return;
-    }
-
-    const userMistakes = userRecords.filter(
-      (r) =>
-        r.recordType !== "fact" &&
-        (r.misses || 0) > 0 &&
-        r.topic !== "Exam Syllabus Fact" &&
-        r.topic !== "Syllabus Concept"
-    );
-
-    const userFacts = userRecords.filter(
-      (r) =>
-        r.recordType === "fact" ||
-        (r.misses || 0) === 0 ||
-        r.topic === "Exam Syllabus Fact" ||
-        r.topic === "Syllabus Concept"
-    );
-
-    let msg = `⛓️ *Walrus On-Chain Global Recovery Report*\n\n`;
-    msg += `• *Walrus Mainnet Status:* 🟢 Synchronized\n`;
-    msg += `• *Total Tracked Weaknesses (Mistakes):* *${userMistakes.length}*\n`;
-    if (userFacts.length > 0) {
-      msg += `• *Total Verified Exam Facts:* *${userFacts.length}*\n`;
-    }
-    msg += `• *Courses Detected:* ${detectedCourses.map((c) => `\`${c.toUpperCase()}\``).join(", ")}\n`;
-    msg += `━━━━━━━━━━━━━━━━━━━\n\n`;
-
-    if (userMistakes.length === 0 && userFacts.length === 0) {
-      msg += `_No mistakes or facts recorded across ${detectedCourses.map((c) => c.toUpperCase()).join(", ")} yet._\nStart studying with /study or upload slides to begin tracking!`;
-    } else {
-      // Group by course code, stripping any u<chatId>_ namespace prefix
-      const byCourse = new Map<string, typeof userRecords>();
-      for (const r of userRecords) {
-        const rawNs = (r.namespace || "general").toLowerCase();
-        const clean = rawNs.replace(/^u\d+_/, "").toUpperCase();
-        if (!byCourse.has(clean)) byCourse.set(clean, []);
-        byCourse.get(clean)!.push(r);
-      }
-
-      for (const courseLower of detectedCourses) {
-        const course = courseLower.toUpperCase();
-        const items = byCourse.get(course) || [];
-        const mistakes = items.filter((r) => r.recordType !== "fact" && (r.misses || 0) > 0);
-        const facts = items.filter((r) => r.recordType === "fact" || (r.misses || 0) === 0);
-        const blobsCount = courseBlobs.get(courseLower) || 0;
-
-        if (mistakes.length === 0) {
-          if (blobsCount > 0) {
-            msg += `📚 *${course}:* 🟢 Synchronized on Walrus Mainnet\n`;
-            msg += `  _Run /restore ${course} to review detailed question items._\n\n`;
-          } else {
-            msg += `📚 *${course}:* ✨ Zero mistakes recorded (${facts.length} exam facts stored)\n\n`;
-          }
-        } else {
-          msg += `📚 *${course} (${mistakes.length} mistakes${facts.length > 0 ? `, ${facts.length} exam facts` : ""}):*\n`;
-          mistakes.slice(0, 4).forEach((item, i) => {
-            const streak = item.correctStreak || 0;
-            const badge = streak >= 3 ? "🏆 3/3" : `${streak}/3`;
-            msg += `  ${i + 1}. *${item.topic}* [${badge}]\n`;
-            if (item.blobId) {
-              msg += `     [Walrusscan Blob](https://walruscan.com/mainnet/blob/${item.blobId})\n`;
-            }
-          });
-          if (mistakes.length > 4) {
-            msg += `  _...and ${mistakes.length - 4} more topics_\n`;
-          }
-          msg += `\n`;
-        }
-      }
-
-      msg += `🎯 _Run /restore <courseCode> to see full details for any specific course._`;
-    }
-
-    await replySafeChunks(ctx, statusMsg.message_id, msg);
-  } catch (err) {
-    await ctx.api.editMessageText(
-      chatId,
-      statusMsg.message_id,
-      `⚠️ *Restore failed:* ${(err as Error).message}\nPlease try again later.`,
-      { parse_mode: "Markdown" }
-    ).catch(async () => {
-      await ctx.reply(`⚠️ *Restore failed:* ${(err as Error).message}`);
     });
   }
 }

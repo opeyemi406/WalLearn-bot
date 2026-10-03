@@ -61,9 +61,10 @@ export async function handleCallback(ctx: Context) {
     return;
   }
 
-  if (data === "restore_all") {
-    const { executeRestoreAll } = await import("./restore.js");
-    return executeRestoreAll(ctx);
+  if (data.startsWith("restore_course_quick_")) {
+    const courseCode = data.replace("restore_course_quick_", "").trim();
+    const { executeRestoreCourse } = await import("./restore.js");
+    return executeRestoreCourse(ctx, courseCode);
   }
 
   if (data.startsWith("study_course_")) {
