@@ -179,7 +179,7 @@ In WalLearn, **memory actively controls the algorithmic behavior and output of t
 #### 2. Verification in Under 60 Seconds (`npm test`)
 Judges can verify the entire on-chain stack locally without running the full Telegram bot:
 ```bash
-git clone git@github-second:opeyemi406/WalLearn-bot.git
+git clone https://github.com/opeyemi406/WalLearn-bot.git
 cd WalLearn-bot
 npm install
 npm test
@@ -319,7 +319,7 @@ wallearn-bot/
 │   ├── walrus/
 │   │   ├── client.ts            # Walrus client, Ed25519 request signer, and relayer interface
 │   │   ├── types.ts             # Mistake, briefing, and ledger type contracts
-│   │   └── seed-data.ts         # Cold-start baseline academic curriculum data
+│   │   └── memory-events.ts     # Event-sourced memory format & replay engine
 │   ├── handlers/
 │   │   ├── start.ts             # Onboarding and menu dispatch
 │   │   ├── study.ts             # Adaptive CBT quiz engine & streak evaluator
@@ -328,12 +328,14 @@ wallearn-bot/
 │   │   ├── restore.ts           # On-chain disaster recovery & blob re-indexer
 │   │   ├── health.ts            # Diagnostic telemetry & Sui/Walrus status
 │   │   ├── callback.ts          # Inline button callback dispatcher
-│   │   └── chat.ts              # Freeform message routing & Socratic tutor
-│   └── parsers/
-│       ├── document.ts          # PDF, PPTX, and DOCX text extraction
-│       └── vision.ts            # Multimodal photo & diagram OCR via Gemini
+│   │   ├── chat.ts              # Freeform message routing & Socratic tutor
+│   │   ├── document.ts          # PDF, PPTX, and DOCX text extraction
+│   │   ├── photo.ts             # Multimodal photo & diagram OCR via Gemini
+│   │   └── ledger.ts            # On-chain proof ledger display
+│   └── utils/
+│       └── telegram-format.ts   # Telegram MarkdownV1 sanitizer
 ├── data/
-│   └── mistakes-ledger.json     # Local cached snapshot of on-chain state
+│   └── mistakes-ledger.json     # Committed on-chain state cache & verification proof
 ├── package.json
 ├── tsconfig.json
 └── README.md
@@ -351,7 +353,7 @@ wallearn-bot/
 
 ### 2. Installation
 ```bash
-git clone git@github-second:opeyemi406/WalLearn-bot.git
+git clone https://github.com/opeyemi406/WalLearn-bot.git
 cd WalLearn-bot
 npm install
 ```

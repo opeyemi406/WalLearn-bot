@@ -40,8 +40,9 @@ export async function handleChatMessage(ctx: Context) {
     return evaluateAndRespondAnswer(ctx, activeSession.currentIndex, selectedOpt, activeSession, true);
   }
 
-  // 3. Fast-Path: Large paste of past MCQ questions
-  const looksLikeMultiQuestions = /(?:\b[1-9]\d?[\.\)]|\b[A-D][\.\)]|\boption\b)/i.test(rawText) && rawText.length > 50;
+  // 3. Fast-Path: Past MCQ questions paste (must have multiple MCQ option markers like A. B.)
+  const hasMultipleMcqMarkers = (rawText.match(/\b[A-D][\.\)]\s+/gi) || []).length >= 2;
+  const looksLikeMultiQuestions = (hasMultipleMcqMarkers && rawText.length > 120);
   if (awaitingPastQuestions.has(chatId) || looksLikeMultiQuestions) {
     let courseCode = awaitingPastQuestions.get(chatId);
     if (!courseCode) {

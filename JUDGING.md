@@ -124,7 +124,7 @@ Judges can verify the entire on-chain stack locally in 3 commands:
 
 ```bash
 # 1. Clone repository
-git clone git@github-second:opeyemi406/WalLearn-bot.git
+git clone https://github.com/opeyemi406/WalLearn-bot.git
 cd WalLearn-bot
 
 # 2. Install dependencies

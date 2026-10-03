@@ -26,6 +26,7 @@ export const config = {
   walrusRelayerUrl: process.env.WALRUS_RELAYER_URL || "https://relayer.memory.walrus.xyz",
 
   defaultSubject: "pcl301",
+  dataDir: path.resolve(process.cwd(), "data"),
 };
 
 if (!config.telegramBotToken) {

@@ -306,7 +306,7 @@ export async function evaluateAndRespondAnswer(
       if (res.jobId) {
         const updatedText = text.replace(
           "• *Status:* ⏳ Storing on Walrus Protocol...",
-          `• *Status:* ✅ Encrypted & Stored to Memory\n• *Job ID:* \`${res.jobId}\``
+          `• *Status:* ✅ Committed to Walrus Mainnet Memory\n• *Job ID:* \`${res.jobId}\``
         );
         if (isTextReply && sentMsg && ctx.chat) {
           ctx.api.editMessageText(ctx.chat.id, sentMsg.message_id, updatedText, {

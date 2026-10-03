@@ -36,9 +36,11 @@ export interface StoredBlobRecord {
   correctFact?: string;
   severity?: "high" | "medium" | "low";
   misses?: number;
-  correctStreak?: number; // Requires 3 consecutive passes to reach full mastery
+  correctStreak?: number; // 3 consecutive correct answers = mastered
   namespace?: string;
   chatId?: number;
   timestamp: string;
+  updatedAt?: string; // last local state change (guards against stale remote sync)
+  unverified?: boolean; // set when the relayer cannot confirm the blob
   status: "pending" | "confirmed" | "recovering" | "mastered";
 }
