@@ -121,6 +121,7 @@ If the user deletes their Telegram chat history or the bot's cloud server redepl
 
 ### 1. Architectural Rigor
 - **Official SDK Integration**: Powered by `@mysten-incubation/memwal` (v0.1.8). All operations (`remember`, `rememberBulk`, `recall`, `restore`, `health`, `listNamespaces`, and `getRememberStatus`) interact with the official Mysten Labs SDK.
+- **Agentic Custodian Pattern & Consumer Web3 Adoption**: Solving the mass-adoption bottleneck by letting the autonomous bot sponsor Walrus storage and delegated signing, while cryptographically siloing students into dedicated course namespaces (`u<chatId>_<courseCode>`). Students experience 0% onboarding friction on Telegram, yet 100% immutable persistence on Walrus Mainnet.
 - **Strictly-Typed Enterprise TypeScript**: Clean separation between AI orchestration (`src/ai`), Walrus cryptographic client (`src/walrus`), UI handlers (`src/handlers`), and document parser pipeline (`scripts/parse_document.py`).
 - **Cryptographic Request Signing**: Full Ed25519 canonical message hashing (`timestamp.method.path.bodyHash.nonce.accountId`) via `@noble/ed25519` and MemWal TEE enclave.
 - **Fault-Tolerant Network Client**: Automated HTTP 429 exponential backoff, jitter, and non-blocking background polling.

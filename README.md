@@ -28,6 +28,32 @@ When the student returns the following morning, the AI tutor greets them with a 
 
 ---
 
+## 🎯 The Pitch: Why WalLearn & Decentralized Memory?
+
+### 1. The Human Problem: High-Stakes Exam Amnesia
+Every student knows the feeling: you spend hours studying pharmacology, anatomy, or engineering. You take an AI-generated quiz, make ten subtle conceptual mistakes, and understand your errors in the moment. But the next day, the chat context resets. The AI tutor greets you with a blank slate, having forgotten your weaknesses. Two weeks later on exam day, **you fail on the exact same trap question you missed before.**
+
+Traditional EdTech treats memory as an ephemeral session variable or locks it into proprietary, centralized database silos. If the platform shuts down or the database resets, your revision history is wiped out.
+
+### 2. The Cognitive Innovation: Memory as Active Computational State
+WalLearn transforms **Walrus Memory (MemWal)** from a passive database into an **active computational state machine**:
+- **Mistakes become permanent on-chain cognitive assets**: Every wrong option chosen, diagnostic gap, and lecturer trap is committed to Walrus Mainnet as an immutable, append-only event line.
+- **Dynamic 60/30/10 Exam Generation**: 60% of every quiz drill is algorithmically synthesized to target your active Walrus misconceptions with rotated clinical distractors.
+- **The Strict 3-Consecutive-Pass Rule**: Guessing right once is not enough. A topic only graduates to `[MASTERED]` on Walrus after 3 independent passes across distinct sessions. If you fail a random spot-check weeks later, WalLearn demotes it back to active recovery.
+- **True Disaster Resilience**: Clear your Telegram chat. Wipe the cloud container. Type `/restore PCL301`: WalLearn reaches out to Walrus Mainnet, replays all historical memory events, and reconstructs your entire cognitive profile in seconds with **zero local disk dependency**.
+
+### 3. The Web3 Breakthrough: The Agentic Custodian Pattern (Zero-Friction Mass Adoption)
+The single greatest barrier to consumer Web3 adoption is friction: **everyday university students do not have Sui wallets, SUI tokens for gas, or seed phrases.** If an educational bot forced a non-crypto student to sign a wallet transaction on every quiz question, user retention would be zero.
+
+WalLearn solves this with the **Agentic Custodian Pattern**:
+- **WalLearn acts as an autonomous study agent**: It holds a delegated MemWal signer and sponsors Walrus storage costs on Sui Mainnet.
+- **Cryptographic Namespace Partitioning**: Each student's cognitive records are mathematically isolated into dedicated course namespaces (`u<telegramChatId>_<courseCode>`).
+- **Web2 User Experience, Web3 Permanence**: A student simply taps `/start` on Telegram—no wallet installation, no gas tokens, no key management—yet every mistake and mastery streak is permanently anchored to Walrus Protocol Mainnet.
+
+This is decentralized memory doing real, measurable cognitive work in the hands of real learners.
+
+---
+
 ## High-Level System Architecture
 
 WalLearn is designed around a **hexagonal, decoupled micro-architecture** engineered for sub-second UI responsiveness, resilient blockchain writes, and deterministic learning state progression.
