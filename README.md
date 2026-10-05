@@ -327,10 +327,17 @@ npm run test:cross-session
 npm run build && npm start
 ```
 
-### 4. Production Deployment
-WalLearn is architected as a stateless container with zero local disk persistence requirements:
-- Fully deployable via `Dockerfile` on Railway, Fly.io, or AWS ECS.
-- If the container restarts or migrates, running `/restore` rebuilds the student's entire learning state directly from Walrus Protocol Mainnet in seconds.
+### 4. Deploying to Railway with Custom Credentials
+WalLearn includes a production `Dockerfile` and `railway.json` for zero-configuration, 24/7 container deployment:
+
+1. **Fork or Push** this repository to your GitHub account.
+2. In [Railway](https://railway.app), click **"New Project"** → **"Deploy from GitHub repo"** → Select `WalLearn-bot`.
+3. Under the **Variables** tab in Railway, add your credentials:
+   - `TELEGRAM_BOT_TOKEN`: Your bot token from Telegram's [@BotFather](https://t.me/BotFather).
+   - `OPENROUTER_API_KEY`: Your OpenRouter API key with access to `google/gemini-2.5-flash`.
+   - `MEMWAL_CREDENTIALS_JSON` *(or `WALRUS_DELEGATE_PRIVATE_KEY`)*: Your MemWal delegate credentials (or omit to use WalLearn's default sponsored account).
+4. Railway automatically detects `railway.json`, builds the Docker container (Node 20 + Python + pypdf), binds the healthcheck to `$PORT`, and launches the bot 24/7 on Telegram.
+5. **Zero Disk Dependency**: If the Railway container restarts or redeploys, student state is preserved on Walrus Protocol Mainnet and restored on demand via `/restore`.
 
 ---
 

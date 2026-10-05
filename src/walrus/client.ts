@@ -92,6 +92,13 @@ export class WalrusClient {
     try {
       if (process.env.MEMWAL_CREDENTIALS_JSON) {
         this.creds = JSON.parse(process.env.MEMWAL_CREDENTIALS_JSON);
+      } else if (process.env.WALRUS_DELEGATE_PRIVATE_KEY) {
+        this.creds = {
+          accountId: config.walrusAccountId,
+          delegatePrivateKey: process.env.WALRUS_DELEGATE_PRIVATE_KEY,
+          delegatePublicKeyHex: process.env.WALRUS_DELEGATE_ADDRESS || config.walrusDelegateAddress,
+          walletAddress: process.env.WALRUS_WALLET_ADDRESS || config.walrusWalletAddress,
+        };
       } else {
         const credsPath = path.join(config.memwalCredsDir, "credentials.json");
         if (fs.existsSync(credsPath)) {
