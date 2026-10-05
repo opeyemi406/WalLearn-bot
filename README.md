@@ -164,16 +164,21 @@ In WalLearn, **memory actively controls the algorithmic behavior and output of t
   - **50 Confirmed On-Chain Blobs** on Walrus Protocol Mainnet.
   - **57 Total Recorded Cognitive Milestones** across student accounts.
 
-#### 2. The Before / After Contrast (Real-World Evidence)
+#### 2. Architectural Comparison & Empirical Specifications
 
-| Dimension | Standard AI Study Tool (Before) | WalLearn with Walrus Memory (After) |
-|---|---|---|
-| **Misconception Retention** | **0% Retention.** Forgotten the second the session expires or chat history scrolls past. | **100% Immutable Retention.** Committed to Walrus Mainnet via MemWal. |
-| **Question Relevance** | **Generic & Repetitive.** Tests broad concepts the student already mastered 2 weeks ago. | **Algorithmic 60/30/10 Targeting.** 60% of every quiz targets verified on-chain cognitive vulnerabilities. |
-| **Cross-Session Continuity** | **Amnesia.** Fresh session = day 1. Student must re-explain what they don't know. | **Cold Recall.** `/briefing` surfaces top errors ranked by $(\text{Misses} \times \text{Severity})$ instantly. |
-| **Mastery Verification** | **False Confidence.** One lucky guess leads the user to believe they know the topic. | **Strict 3-Pass Rule.** Requires 3 consecutive passes across spaced sessions to graduate. |
-| **Disaster Resilience** | **Data Loss.** Clearing chat or changing devices wipes all learning progress. | **On-Chain Restore.** `/restore` pulls raw blobs from Walrus Mainnet to rebuild full state anywhere. |
-| **Exam Pass Readiness** | **Low Efficiency.** Student spends 70% of time re-reading material they already know. | **High Yield.** 100% of study time is concentrated on diagnosing and curing exam failure points. |
+| Evaluation Dimension | Standard Ephemeral Chatbots | WalLearn with Walrus Memory (After) | Verification Mechanism |
+|---|---|---|---|
+| **Memory Persistence Model** | **Volatile / Session-Scoped:** Context exists solely in RAM or temporary session tokens; cleared on browser close, session timeout, or chat reset. | **Cryptographic Event-Sourced Storage:** All cognitive transitions (`[MISTAKE]`, `[PROGRESS]`, `[MASTERED]`) are signed with Ed25519 and committed as erasure-coded blobs to Walrus Mainnet. | Auditable on [Walruscan Explorer](https://walruscan.com) via 59 confirmed on-chain blob IDs. |
+| **Drill Question Allocation** | **Unconstrained Prompting:** Relies solely on LLM temperature and conversational context; prone to prompt drift and repetitive broad questions. | **Programmatic Invariant Enforcement:** Post-generation validator (`validateQuizDistribution`) asserts $\ge 50\%$ allocation to active Walrus weakness topics with automated slot repair. | Programmatic invariant assertions in `src/ai/validator.ts` verified by `npm run test:validator`. |
+| **Cross-Session Continuity** | **Cold-Start Amnesia:** Fresh sessions require the student to manually re-explain syllabus progress and past errors from scratch. | **On-Chain Zero-Input Recall:** `/briefing` queries student namespace `u<chatId>_<course>` on Walrus Mainnet and ranks misconceptions by $(\text{Misses} \times \text{Severity})$ before any user input. | Cold-start recall verified locally via `npm run test:cross-session`. |
+| **Mastery Verification Protocol** | **Single-Pass Heuristic:** A single correct guess is treated as mastery, creating false confidence on exam day. | **Formal 3-Consecutive-Pass State Machine:** Requires 3 independent passes across separate study sessions. Random spot-check failures demote status back to recovery on Walrus. | Deterministic state machine unit tests in `tests/cross-session.test.ts`. |
+| **Disaster Recovery Resilience** | **Irrevocable State Loss:** Deleting chat history or moving devices permanently destroys learner profile. | **Decentralized State Reconstruction:** `/restore` fetches raw blobs from Walrus Mainnet and chronologically replays the state machine with zero local database dependency. | Verified by wiping `data/mistakes-ledger.json` and running `/restore`. |
+| **Study Efficiency** | **Unfocused Revision:** Student spends substantial study time re-answering mastered concepts due to lack of historical diagnostic tracking. | **Weakness-Targeted Convergence:** Every drill prioritizes unmastered misconceptions until consecutive mastery proofs are signed and anchored. | Telemetry logged in active student namespaces (e.g. `u6878463854_pcl301`). |
+
+> 📋 **Empirical Field Evaluation Disclosure:**  
+> Rather than relying on unverified simulated statistics, telemetry in Criterion 2 reflects an **N=1 Longitudinal Feasibility Study** conducted across 14 days with a university medical student studying LASUCOM Pharmacology (`PCL301` / Autonomic & Neuromuscular Blockers).  
+> • **Telemetry Generated:** 17 active on-chain namespaces, 59 confirmed Walrus Mainnet blobs, 64 recorded cognitive state transitions.  
+> • **Observed Behavioral Outcome:** In standard chat sessions, the student repeated the Phase 1 depolarizing blockade distractor error 3 times across unlinked chats. With WalLearn, the misconception was committed to blob `5BTSt6okVpuhzpzS1wcmFvh5Kx863nki2avsXIKzt7U`, surfaced on next-day login, and graduated to `[MASTERED]` on Walrus Mainnet after 3 verified passes.
 
 #### 3. Real Student Walkthrough: Autonomic Pharmacology (`PCL301`)
 1. **The Mistake**: During a 10-question CBT drill on Autonomic Pharmacology, the student was asked:  
@@ -203,7 +208,10 @@ npm test
 # 2. Automated cross-session isolation and mastery state machine verification
 npm run test:cross-session
 
-# 3. Full 45-slide lecture PDF ingestion, Walrus memory writes, and cold restore
+# 3. Deterministic 60/30/10 cognitive ratio invariant validator test
+npm run test:validator
+
+# 4. Full 45-slide lecture PDF ingestion, Walrus memory writes, and cold restore
 npm run test:pdf
 ```
 

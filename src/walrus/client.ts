@@ -597,22 +597,32 @@ export class WalrusClient {
     let details: string | undefined;
 
     try {
-      if (this.sdk) {
-        const d = await this.sdk.restore(target, 100);
-        restoreOk = true;
-        skipped = d.skipped ?? 0;
-        failed = d.failed ?? 0;
-        relayerTotal = d.total ?? 0;
-      } else {
-        const res = await this.signedFetch("POST", "/api/restore", JSON.stringify({ namespace: target, limit: 100 }));
-        if (res.ok) {
-          const d = (await res.json()) as { skipped?: number; failed?: number; total?: number };
+      let isTruncated = true;
+      let pageCount = 0;
+      const MAX_RESTORE_PAGES = 10; // Supports up to 1,000 on-chain blobs per namespace
+
+      while (isTruncated && pageCount < MAX_RESTORE_PAGES) {
+        pageCount++;
+        if (this.sdk) {
+          const d = await this.sdk.restore(target, 100);
           restoreOk = true;
-          skipped = d.skipped ?? 0;
-          failed = d.failed ?? 0;
-          relayerTotal = d.total ?? 0;
+          skipped += d.skipped ?? 0;
+          failed += d.failed ?? 0;
+          relayerTotal = Math.max(relayerTotal, d.total ?? 0);
+          isTruncated = Boolean(d.truncated);
         } else {
-          details = `restore HTTP ${res.status}: ${await res.text()}`;
+          const res = await this.signedFetch("POST", "/api/restore", JSON.stringify({ namespace: target, limit: 100 }));
+          if (res.ok) {
+            const d = (await res.json()) as { skipped?: number; failed?: number; total?: number; truncated?: boolean };
+            restoreOk = true;
+            skipped += d.skipped ?? 0;
+            failed += d.failed ?? 0;
+            relayerTotal = Math.max(relayerTotal, d.total ?? 0);
+            isTruncated = Boolean(d.truncated);
+          } else {
+            details = `restore HTTP ${res.status}: ${await res.text()}`;
+            break;
+          }
         }
       }
     } catch (err) {

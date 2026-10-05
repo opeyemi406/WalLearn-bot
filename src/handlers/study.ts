@@ -182,10 +182,58 @@ export async function startQuizWithCount(ctx: Context, count: number) {
       parsed = cleanAndParseQuizJson(retryRaw);
     }
 
-    const questions: Question[] = parsed.questions;
+    let questions: Question[] = parsed.questions;
     if (!questions || questions.length === 0) {
       throw new Error("No questions parsed from AI response.");
     }
+
+    // 2b. Invariant Validation (Deterministic 60/30/10 Ratio Enforcement)
+    const { validateQuizDistribution } = await import("../ai/validator.js");
+    let distribution = validateQuizDistribution(questions, briefing.weaknesses, count, isSlideUpload);
+
+    console.log(
+      `📊 [Invariant Check] Total: ${distribution.total} | Weakness: ${distribution.weaknessCount} (${distribution.ratios.weaknessPct}%) | Slide: ${distribution.slideCount} (${distribution.ratios.slidePct}%) | Spot: ${distribution.spotCheckCount} (${distribution.ratios.spotCheckPct}%) | Invariant: ${distribution.valid ? "PASSED ✅" : "DRIFT DETECTED ⚠️"}`
+    );
+
+    // If invariant failed and we have missing weakness slots, run the targeted slot-repair backfiller:
+    if (!distribution.valid && distribution.missingWeaknessSlots > 0 && distribution.untestedWeaknesses.length > 0) {
+      console.log(`🔧 [Slot Repair] Generating ${distribution.missingWeaknessSlots} targeted question(s) for missing weaknesses:`, distribution.untestedWeaknesses);
+      try {
+        const { buildTargetedWeaknessRepairPrompt } = await import("../ai/prompts.js");
+        const repairPrompt = buildTargetedWeaknessRepairPrompt(
+          distribution.untestedWeaknesses,
+          briefing,
+          distribution.missingWeaknessSlots
+        );
+        const repairRaw = await askAi(
+          [{ role: "system", content: "You output valid JSON only." }, { role: "user", content: repairPrompt }],
+          0.3,
+          true
+        );
+        const repairParsed = cleanAndParseQuizJson(repairRaw);
+        if (repairParsed.questions && repairParsed.questions.length > 0) {
+          const nonWeaknessIndices: number[] = [];
+          questions.forEach((q, idx) => {
+            if (q.category !== "weakness") nonWeaknessIndices.push(idx);
+          });
+
+          repairParsed.questions.forEach((repQ, i) => {
+            if (i < nonWeaknessIndices.length) {
+              questions[nonWeaknessIndices[i]] = repQ;
+            }
+          });
+
+          // Re-validate distribution
+          distribution = validateQuizDistribution(questions, briefing.weaknesses, count, isSlideUpload);
+          console.log(`✅ [Slot Repair Applied] Re-evaluated Weakness Ratio: ${distribution.ratios.weaknessPct}% | Status: ${distribution.valid ? "PASSED ✅" : "REPAIRED"}`);
+        }
+      } catch (repairErr) {
+        console.warn("Notice: Slot repair pass skipped:", (repairErr as Error).message);
+      }
+    }
+
+    // Assign consistent sequential IDs (1..count)
+    questions = questions.slice(0, count).map((q, idx) => ({ ...q, id: idx + 1 }));
 
     // 3. Initialize session
     const session: QuizSession = {

@@ -10,6 +10,7 @@
     "build": "tsc",
     "test": "tsx scripts/verify-submission.ts",
     "test:cross-session": "tsx tests/cross-session.test.ts",
+    "test:validator": "tsx tests/validator.test.ts",
     "test:pdf": "tsx scripts/test-document.ts"
   },
   "dependencies": {

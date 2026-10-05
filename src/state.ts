@@ -7,6 +7,8 @@ export interface Question {
   options: Record<string, string>;
   correct: string;
   topic: string;
+  category?: "weakness" | "slide_concept" | "spot_check";
+  targetedWeakness?: string | null;
   traps?: Record<string, string>;
   fact: string;
 }

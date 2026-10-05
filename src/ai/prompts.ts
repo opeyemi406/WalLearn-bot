@@ -79,6 +79,8 @@ You MUST respond with ONLY a valid JSON object matching this exact schema:
       },
       "correct": "A",
       "topic": "Specific Subtopic Name",
+      "category": "weakness",
+      "targetedWeakness": "Exact weakness topic from above if category is weakness, else null",
       "traps": {
         "B": "Why option B is wrong and what specific misconception it represents",
         "C": "Why option C is wrong and what specific misconception it represents",
@@ -88,6 +90,11 @@ You MUST respond with ONLY a valid JSON object matching this exact schema:
     }
   ]
 }
+
+CRITICAL CATEGORY INSTRUCTIONS:
+- For questions targeting the student's listed Walrus weaknesses: set "category": "weakness" and "targetedWeakness" to that exact topic name.
+- For questions testing general slide concepts or curriculum: set "category": "slide_concept" and "targetedWeakness": null.
+- For spot-check fundamental questions: set "category": "spot_check" and "targetedWeakness": null.
 
 CRITICAL FORMATTING RULES:
 1. Output valid, standard JSON only.
@@ -117,3 +124,53 @@ CRITICAL FORMATTING RULES:
 4. Never use markdown headers (##) or double asterisks (**). Use single asterisks *bold* for bold text.
 `;
 }
+
+export function buildTargetedWeaknessRepairPrompt(
+  missingTopics: string[],
+  briefing: WeaknessBriefing,
+  count: number
+): string {
+  const weakDetails = briefing.weaknesses
+    .filter((w) => missingTopics.some((t) => t.toLowerCase() === w.topic.toLowerCase()))
+    .map((w) => `• Topic: "${w.topic}" | Prior Misconception: "${w.misconception}" | Severity: ${w.severity}`)
+    .join("\n");
+
+  return `
+You are generating exactly ${count} targeted multiple-choice practice questions (CBT format) for a student studying "${briefing.subject}".
+Each question MUST strictly target one of these specific student weaknesses on Walrus:
+${weakDetails}
+
+## CBT QUESTION STANDARDS:
+- Clear question stem testing the exact physiological/clinical misconception.
+- Exactly 4 options (A, B, C, D) with exactly one correct answer.
+- Distractors must represent the misconception described above.
+
+## OUTPUT FORMAT:
+Respond with ONLY valid JSON:
+{
+  "questions": [
+    {
+      "id": 1,
+      "stem": "The question text goes here...",
+      "options": {
+        "A": "First option",
+        "B": "Second option",
+        "C": "Third option",
+        "D": "Fourth option"
+      },
+      "correct": "A",
+      "topic": "Specific Subtopic Name",
+      "category": "weakness",
+      "targetedWeakness": "Exact Weakness Topic Name",
+      "traps": {
+        "B": "Why option B is wrong",
+        "C": "Why option C is wrong",
+        "D": "Why option D is wrong"
+      },
+      "fact": "Core high-yield fact explaining the correct concept."
+    }
+  ]
+}
+`;
+}
+
