@@ -289,19 +289,22 @@ wallearn-bot/
 │   └── utils/                   # Markdown sanitizers & Telegram formatting helpers
 ├── scripts/
 │   ├── verify-submission.ts     # Automated on-chain diagnostic probe (npm test)
+│   ├── verify-production.ts     # Optional production-only account verifier (npm run test:production)
 │   ├── test-document.ts         # Multimodal 45-slide lecture PDF ingest test (npm run test:pdf)
 │   └── parse_document.py        # Local Python document extractor (PDF/PPTX/DOCX)
 ├── tests/
-│   └── cross-session.test.ts    # Cross-session isolation & 3-pass state machine tests
+│   ├── cross-session.test.ts    # Account-independent cross-session isolation & state tests
+│   ├── validator.test.ts        # 60/30/10 Invariant validator test suite
+│   └── config-safety.test.ts    # Configuration safety & isolation test suite (npm run test:config)
 ├── data/
-│   └── mistakes-ledger.json     # Zero-dependency write-through performance cache
+│   └── demo-ledger.example.json # Static reference fixture (runtime ledger is uncommitted)
 ├── JUDGING.md                   # Complete evaluation dossier across all criteria
 └── README.md
 ```
 
 ---
 
-## Local Development & Setup Guide
+## Local Development & Setup Guide for Judges
 
 ### 1. Installation
 ```bash
@@ -317,19 +320,33 @@ TELEGRAM_BOT_TOKEN="your_bot_token_from_botfather"
 OPENROUTER_API_KEY="your_openrouter_api_key"
 AI_MODEL="google/gemini-2.5-flash"
 
-WALRUS_ACCOUNT_ID="0x75a533d83e9fee09e36b29b14e8b093862042ee92b188e5122338da7118be140"
-WALRUS_WALLET_ADDRESS="0xf3efc1f6d86ea33f736072668549138f00f2ca8fc67962019543e213a0fa2db2"
-WALRUS_DELEGATE_ADDRESS="0x7dea8c54a7a72c231fa829abed50a47a03b7d1e99e74974bc21773c73490bbaa"
+# Walrus Protocol MemWal Credentials (Use your own account):
+MEMWAL_CREDS_DIR="~/.memwal-wallearn"
+# OR provide discrete environment variables:
+WALRUS_ACCOUNT_ID="0xYOUR_SUI_MEMWAL_ACCOUNT_ID"
+WALRUS_WALLET_ADDRESS="0xYOUR_SUI_WALLET_ADDRESS"
+WALRUS_DELEGATE_ADDRESS="0xYOUR_DELEGATE_ADDRESS"
+WALRUS_DELEGATE_PRIVATE_KEY="your_ed25519_delegate_private_key"
 WALRUS_RELAYER_URL="https://relayer.memory.walrus.xyz"
 ```
+> **Security Note**: Never commit `.env` or paste private keys in chat or commits. All MemWal identity fields (`WALRUS_ACCOUNT_ID`, `WALRUS_DELEGATE_ADDRESS`, `WALRUS_DELEGATE_PRIVATE_KEY`) must belong to the **same** Sui account.
 
 ### 3. Verify & Run
 ```bash
-# Run automated on-chain verification diagnostic
+# Run automated account-independent on-chain verification probe
 npm test
 
-# Run cross-session isolation test suite
+# Run cross-session isolation & cognitive state test suite
 npm run test:cross-session
+
+# Run configuration safety and credential isolation tests
+npm run test:config
+
+# Run 60/30/10 invariant validator tests
+npm run test:validator
+
+# (Optional) Verify deployed production account with explicit target variables
+PRODUCTION_WALRUS_ACCOUNT_ID=0x... PRODUCTION_CHAT_ID=... npm run test:production
 
 # Start production bot server
 npm run build && npm start
@@ -343,9 +360,9 @@ WalLearn includes a production `Dockerfile` and `railway.json` for zero-configur
 3. Under the **Variables** tab in Railway, add your credentials:
    - `TELEGRAM_BOT_TOKEN`: Your bot token from Telegram's [@BotFather](https://t.me/BotFather).
    - `OPENROUTER_API_KEY`: Your OpenRouter API key with access to `google/gemini-2.5-flash`.
-   - `MEMWAL_CREDENTIALS_JSON` *(or `WALRUS_DELEGATE_PRIVATE_KEY`)*: Your MemWal delegate credentials (or omit to use WalLearn's default sponsored account).
+   - `MEMWAL_CREDENTIALS_JSON` *(or `WALRUS_DELEGATE_PRIVATE_KEY`)*: Your MemWal delegate credentials for your Sui account.
 4. Railway automatically detects `railway.json`, builds the Docker container (Node 20 + Python + pypdf), binds the healthcheck to `$PORT`, and launches the bot 24/7 on Telegram.
-5. **Zero Disk Dependency**: If the Railway container restarts or redeploys, student state is preserved on Walrus Protocol Mainnet and restored on demand via `/restore`.
+5. **Zero Disk Dependency & Clean Startup**: The repository starts with zero pre-loaded runtime learner history. All student cognitive states are stored directly on Walrus Protocol Mainnet and restored on demand via `/restore`.
 
 ---
 

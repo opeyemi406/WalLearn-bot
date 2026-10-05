@@ -102,7 +102,7 @@ async function runTestSuite() {
   console.log("Document: Drugs Acting on Nicotinic Receptors, NMJ & Autonomic Ganglia (Prof Oreagba)");
   console.log("================================================================================\n");
 
-  const testChatId = 6878463854; // Babyveec's real active chat ID
+  const testChatId = process.env.TEST_CHAT_ID ? parseInt(process.env.TEST_CHAT_ID, 10) : 998000123;
   const testCourseCode = "PCL301";
 
   // --------------------------------------------------------------------------------

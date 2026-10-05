@@ -147,48 +147,66 @@ npm test
 # 4. Run automated cross-session test suite
 npm run test:cross-session
 
-# 5. Run deterministic 60/30/10 ratio invariant validator test
+# 5. Run configuration safety and credential isolation tests
+npm run test:config
+
+# 6. Run deterministic 60/30/10 ratio invariant validator test
 npm run test:validator
 
-# 6. Run end-to-end CLI document & MemWal test on sample lecture PDF
+# 7. Run end-to-end CLI document & MemWal test on sample lecture PDF
 npm run test:pdf
+
+# 8. (Optional) Run separate production-only account verification
+PRODUCTION_WALRUS_ACCOUNT_ID=0x... PRODUCTION_CHAT_ID=... npm run test:production
 ```
+
+> **Plug-and-Play Judge Verification**:
+> - Judges provide their **own** MemWal credentials in `.env` (or run in Public Audit Mode).
+> - Tests do not rely on pre-existing creator learner data. Instead, `npm test` and `npm run test:cross-session` generate a unique isolated test namespace (`u<chatId>_audit<nonce>`), perform a live write to Walrus Protocol Mainnet, poll for on-chain blob confirmation, and verify remote TEE recall and state reconstruction.
+> - The local runtime ledger is strictly a disposable performance cache that starts clean in fresh checkouts.
 
 #### Diagnostic Output (`npm test`):
 ```
 ============================================================
-🔍 WalLearn Hackathon Submission Verification Diagnostic
+🔍 WalLearn Submission & Protocol Verification Diagnostic
 ============================================================
-1. Checking Environment & On-Chain Identity...
-   • Sui MemWalAccount ID: 0x75a533d83e9fee09e36b29b14e8b093862042ee92b188e5122338da7118be140
-   • Wallet Address:       0xf3efc1f6d86ea33f736072668549138f00f2ca8fc67962019543e213a0fa2db2
-   • Delegate Address:     0x7dea8c54a7a72c231fa829abed50a47a03b7d1e99e74974bc21773c73490bbaa
+
+1. Checking Environment & Configured Account Identity...
+   • Sui MemWalAccount ID: 0x... (Judge's Account ID)
+   • Wallet Address:       0x...
+   • Delegate Address:     0x...
    • Relayer URL:          https://relayer.memory.walrus.xyz
    • Primary AI Model:     google/gemini-2.5-flash
    • SDK Integration:      @mysten-incubation/memwal (Official SDK)
-   • Credentials Loaded:   ✅ Yes (Delegate Signer Active)
+   • Mode:                 🟢 Authenticated (Delegate Signer Active)
 
 2. Probing Walrus Protocol Relayer Connectivity & Health...
    • Relayer Status:       🟢 healthy & verified on Walrus Protocol
    • Relayer Reachable:    ✅ Yes
    • Relayer Version:      0.1.0
-   • Active Sui Account:   0x75a533d83e9fee09e36b29b14e8b093862042ee92b188e5122338da7118be140
-   • Active On-Chain Namespaces: 15
+   • Active Sui Account:   0x...
 
-3. Inspecting Confirmed On-Chain Memory Blobs...
-   • Total Ledger Records: 57
-   • Unique Mainnet Blobs: 50 (Requirement: >= 10 blobs)
+3. Inspecting Local Ledger & Performance Cache Status...
+   • Local Cache Records:  0 (Runtime write-through cache)
+   • Cached Blobs:         0
+   • Reference Fixture:    Available at data/demo-ledger.example.json
 
-4. Testing Remote Memory Recall (Strict Verification)...
+4. Testing Remote Memory Recall (Dynamic Protocol Verification)...
+   • Generated audit namespace: u998000221_audit550221
+   • Writing dynamic verification fact to Walrus Mainnet...
+   • Remember Job Accepted: f4c8b049-de71-4431-9195-ae0f8b4cdce1
+   • Polling job confirmation on Walrus Protocol...
+   • Confirmed Blob on Walrus: https://walruscan.com/mainnet/blob/Fxl-HaSeQXzSJ38Nx1XtusghfCYLASgj6EepkB8dHRA
+   • Querying remote signed recall on audit namespace...
    • Recall Source:        🟢 Walrus Mainnet (TEE Decrypted)
-   • Entries Retrieved:    41
-   • Sample On-Chain Blob: https://walruscan.com/mainnet/blob/iuOwcgiiDz-ukL_wbR4I6dsNNyIvNcv2V5UhzNd89h4
+   • Entries Retrieved:    1
+   • Recalled Preview:     "[EXAM_FACT] Topic: Walrus Protocol Verification 550221 | Fact: Live round-trip verification token..."
 
 5. Testing Cross-Session Cognitive State Reconstruction...
-   • Active Weaknesses:    5 cognitive topics
-   • Mastered Topics:      3 graduated topics
+   • Event-Sourced Replay:  🟢 Reconstructed 1 fact(s) with zero disk dependency.
+
 ============================================================
-✅ Verification Complete: WalLearn on-chain artifacts verified!
+✅ Verification Complete: Live Walrus Protocol Mainnet round-trip verified!
 ============================================================
 ```
 

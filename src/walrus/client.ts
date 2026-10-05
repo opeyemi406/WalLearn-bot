@@ -3,7 +3,7 @@ import path from "path";
 import crypto from "crypto";
 import { signAsync } from "@noble/ed25519";
 import { MemWal } from "@mysten-incubation/memwal";
-import { config } from "../config.js";
+import { config, resolveCredsDir } from "../config.js";
 import { MistakeEntry, WeaknessBriefing, WeaknessItem, StoredBlobRecord } from "./types.js";
 import {
   formatMistake,
@@ -66,11 +66,11 @@ export class WalrusClient {
   }
 
   public getAccountId(): string {
-    return this.creds?.accountId || config.walrusAccountId;
+    return this.creds?.accountId || config.walrusAccountId || "";
   }
 
   public hasCredentials(): boolean {
-    return !!this.creds;
+    return !!(this.creds?.accountId && this.creds?.delegatePrivateKey);
   }
 
   public getSdk(): MemWal | null {
@@ -84,6 +84,10 @@ export class WalrusClient {
     return { namespaces: [], has_more: false, next_cursor: null, snapshot_version: 0 };
   }
 
+  public reloadCredentials() {
+    this.loadCredentials();
+  }
+
   private ensureDataDir() {
     fs.mkdirSync(path.dirname(LEDGER_FILE), { recursive: true });
   }
@@ -91,22 +95,77 @@ export class WalrusClient {
   private loadCredentials() {
     try {
       if (process.env.MEMWAL_CREDENTIALS_JSON) {
-        this.creds = JSON.parse(process.env.MEMWAL_CREDENTIALS_JSON);
-      } else if (process.env.WALRUS_DELEGATE_PRIVATE_KEY) {
+        let parsed: any;
+        try {
+          parsed = JSON.parse(process.env.MEMWAL_CREDENTIALS_JSON);
+        } catch (jsonErr) {
+          throw new Error(`Failed to parse MEMWAL_CREDENTIALS_JSON: ${(jsonErr as Error).message}`);
+        }
+        if (!parsed.accountId || !parsed.delegatePrivateKey) {
+          throw new Error("Invalid MEMWAL_CREDENTIALS_JSON: missing required fields 'accountId' and 'delegatePrivateKey'.");
+        }
         this.creds = {
-          accountId: config.walrusAccountId,
-          delegatePrivateKey: process.env.WALRUS_DELEGATE_PRIVATE_KEY,
-          delegatePublicKeyHex: process.env.WALRUS_DELEGATE_ADDRESS || config.walrusDelegateAddress,
-          walletAddress: process.env.WALRUS_WALLET_ADDRESS || config.walrusWalletAddress,
+          accountId: parsed.accountId,
+          delegatePrivateKey: parsed.delegatePrivateKey,
+          delegatePublicKeyHex: parsed.delegatePublicKeyHex || parsed.delegateAddress || "",
+          walletAddress: parsed.walletAddress || "",
+        };
+      } else if (process.env.WALRUS_DELEGATE_PRIVATE_KEY) {
+        const accountId = (process.env.WALRUS_ACCOUNT_ID || "").trim();
+        const delegateAddress = (process.env.WALRUS_DELEGATE_ADDRESS || "").trim();
+        const walletAddress = (process.env.WALRUS_WALLET_ADDRESS || "").trim();
+
+        const missing: string[] = [];
+        if (!accountId) missing.push("WALRUS_ACCOUNT_ID");
+        if (!delegateAddress) missing.push("WALRUS_DELEGATE_ADDRESS");
+
+        if (missing.length > 0) {
+          throw new Error(
+            `Incomplete Walrus credentials: WALRUS_DELEGATE_PRIVATE_KEY is provided, but required identity field(s) [${missing.join(
+              ", "
+            )}] are missing. Never pair a delegate private key with an unspecified or mismatched account.`
+          );
+        }
+
+        this.creds = {
+          accountId,
+          delegatePrivateKey: process.env.WALRUS_DELEGATE_PRIVATE_KEY.trim(),
+          delegatePublicKeyHex: delegateAddress,
+          walletAddress: walletAddress || "",
         };
       } else {
-        const credsPath = path.join(config.memwalCredsDir, "credentials.json");
-        if (fs.existsSync(credsPath)) {
-          this.creds = JSON.parse(fs.readFileSync(credsPath, "utf8"));
+        const credsDir =
+          process.env.MEMWAL_CREDS_DIR !== undefined
+            ? process.env.MEMWAL_CREDS_DIR === "none" || process.env.MEMWAL_CREDS_DIR === ""
+              ? ""
+              : resolveCredsDir(process.env.MEMWAL_CREDS_DIR)
+            : config.memwalCredsDir;
+        const credsPath = credsDir ? path.join(credsDir, "credentials.json") : "";
+        if (credsPath && fs.existsSync(credsPath)) {
+          let parsed: any;
+          try {
+            parsed = JSON.parse(fs.readFileSync(credsPath, "utf8"));
+          } catch (jsonErr) {
+            throw new Error(`Failed to parse ${credsPath}: ${(jsonErr as Error).message}`);
+          }
+          if (!parsed.accountId || !parsed.delegatePrivateKey) {
+            throw new Error(`Invalid credentials file at ${credsPath}: missing 'accountId' and 'delegatePrivateKey'.`);
+          }
+          this.creds = {
+            accountId: parsed.accountId,
+            delegatePrivateKey: parsed.delegatePrivateKey,
+            delegatePublicKeyHex: parsed.delegatePublicKeyHex || parsed.delegateAddress || "",
+            walletAddress: parsed.walletAddress || "",
+          };
+        } else {
+          this.creds = null;
         }
       }
 
       if (this.creds?.delegatePrivateKey && this.creds?.accountId) {
+        if (!/^[0-9a-fA-F]{64}$/.test(this.creds.delegatePrivateKey.trim())) {
+          throw new Error("Invalid delegatePrivateKey: must be a 64-character hex-encoded Ed25519 private key.");
+        }
         this.sdk = MemWal.create({
           key: this.creds.delegatePrivateKey,
           accountId: this.creds.accountId,
@@ -114,10 +173,14 @@ export class WalrusClient {
         });
         console.log(`✅ Loaded Walrus credentials & initialized MemWal SDK for account: ${this.creds.accountId.slice(0, 12)}...`);
       } else {
-        console.warn(`⚠️ Walrus credentials not found or incomplete.`);
+        this.creds = null;
+        this.sdk = null;
       }
     } catch (e) {
-      console.error("Failed to load Walrus credentials / initialize MemWal SDK:", e);
+      this.creds = null;
+      this.sdk = null;
+      console.error("Configuration notice in Walrus credentials:", (e as Error).message);
+      throw e;
     }
   }
 
@@ -274,6 +337,37 @@ export class WalrusClient {
     this.saveLedger();
     if (jobId) void this.pollJobCompletion(jobId);
 
+    return { success: !!jobId, jobId, details };
+  }
+
+  /** Store a single exam or verified syllabus fact to Walrus (event line). */
+  async recordFact(
+    topic: string,
+    fact: string,
+    namespace: string = config.defaultSubject,
+    chatId?: number
+  ): Promise<{ success: boolean; jobId?: string; details?: string }> {
+    const at = new Date().toISOString();
+    const target = this.getUserNamespace(namespace, chatId);
+    const line = `[EXAM_FACT] Topic: ${topic} | Fact: ${fact} | At: ${at}`;
+    const { jobId, details } = await this.postRemember(line, target);
+    this.ledger.push({
+      jobId,
+      recordType: "fact",
+      topic,
+      question: "Exam Syllabus Fact",
+      misconception: "",
+      correctFact: fact,
+      severity: "low",
+      misses: 0,
+      correctStreak: 0,
+      namespace,
+      chatId,
+      timestamp: at,
+      status: jobId ? "confirmed" : "pending",
+    });
+    this.saveLedger();
+    if (jobId) void this.pollJobCompletion(jobId);
     return { success: !!jobId, jobId, details };
   }
 
@@ -782,12 +876,50 @@ export class WalrusClient {
     return {
       status,
       reachable,
-      accountId: this.creds?.accountId || config.walrusAccountId,
-      walletAddress: this.creds?.walletAddress || config.walrusWalletAddress,
+      accountId: this.creds?.accountId || "unconfigured",
+      walletAddress: this.creds?.walletAddress || "unconfigured",
       blobCount: records.length,
       confirmedBlobs: new Set(records.filter((r) => r.blobId).map((r) => r.blobId)).size,
       relayerVersion,
     };
+  }
+
+  /**
+   * Actively wait for a MemWal write job to complete and confirm a Walrus blob ID.
+   */
+  public async waitForJobCompletion(jobId: string, maxAttempts = 10, intervalMs = 2500): Promise<{ status: string; blobId?: string }> {
+    for (let i = 0; i < maxAttempts; i++) {
+      try {
+        if (this.sdk) {
+          const data = await this.sdk.getRememberStatus(jobId);
+          if (data.status === "done" && data.blob_id) {
+            const rec = this.ledger.find((r) => r.jobId === jobId);
+            if (rec) {
+              rec.blobId = data.blob_id;
+              this.saveLedger();
+            }
+            return { status: "done", blobId: data.blob_id };
+          }
+        } else {
+          const res = await this.signedFetch("GET", `/api/remember/${jobId}`, "");
+          if (res.ok) {
+            const data = (await res.json()) as { status?: string; blob_id?: string };
+            if (data.status === "done" && data.blob_id) {
+              const rec = this.ledger.find((r) => r.jobId === jobId);
+              if (rec) {
+                rec.blobId = data.blob_id;
+                this.saveLedger();
+              }
+              return { status: "done", blobId: data.blob_id };
+            }
+          }
+        }
+      } catch {
+        // transient error, retry
+      }
+      await sleep(intervalMs);
+    }
+    return { status: "pending" };
   }
 
   /** Resolve blob IDs for recent jobs. Only fills blobId; never changes learning state. */

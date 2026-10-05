@@ -11,7 +11,9 @@
     "test": "tsx scripts/verify-submission.ts",
     "test:cross-session": "tsx tests/cross-session.test.ts",
     "test:validator": "tsx tests/validator.test.ts",
-    "test:pdf": "tsx scripts/test-document.ts"
+    "test:pdf": "tsx scripts/test-document.ts",
+    "test:production": "tsx scripts/verify-production.ts",
+    "test:config": "tsx tests/config-safety.test.ts"
   },
   "dependencies": {
     "@mysten-incubation/memwal": "^0.1.8",

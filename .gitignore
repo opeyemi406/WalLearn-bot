@@ -3,8 +3,10 @@ dist/
 .env
 *.log
 data/user-profiles.json
+data/mistakes-ledger.json
 *.pdf
 *.pptx
 *.docx
 !tests/fixtures/*
+!data/demo-ledger.example.json
 

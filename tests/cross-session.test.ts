@@ -16,12 +16,13 @@ async function runCrossSessionTests() {
   console.log("============================================================\n");
 
   const hasCreds = walrus.hasCredentials();
-  console.log(`Environment: ${hasCreds ? "🟢 Authenticated (MemWal SDK Active)" : "ℹ️ Public Audit Mode"}`);
+  const accountId = walrus.getAccountId();
+  console.log(`Environment: ${hasCreds ? `🟢 Authenticated (${accountId.slice(0, 12)}...)` : "ℹ️ Public / Unauthenticated Mode"}`);
 
   // -------------------------------------------------------------------------
-  // Test 1: Spaced Repetition Mastery Progression State Machine
+  // Test 1: Spaced Repetition Mastery Progression State Machine (Local)
   // -------------------------------------------------------------------------
-  console.log("\n▶ Test 1: 3-Consecutive-Pass Spaced Repetition State Machine & Demotion");
+  console.log("\n▶ Test 1: 3-Consecutive-Pass Spaced Repetition State Machine & Demotion (Local)");
   {
     const topic = "Neuromuscular Blocker Mechanism";
     const baseMistake: MistakeEntry = {
@@ -34,7 +35,7 @@ async function runCrossSessionTests() {
     };
 
     const t0 = Date.now();
-    const evMistake = parseMemoryLine(formatMistake(baseMistake, new Date(t0).toISOString()), "blob-1")!;
+    const evMistake = parseMemoryLine(formatMistake(baseMistake, new Date(t0).toISOString()), "blob-sim-1")!;
     assert(evMistake, "Failed to parse mistake event");
     assert.strictEqual(evMistake.kind, "mistake");
     assert.strictEqual(evMistake.topic, topic);
@@ -47,28 +48,28 @@ async function runCrossSessionTests() {
     assert.strictEqual(topicState.status, "confirmed", "Initial status must be confirmed (in recovery)");
 
     // Pass 1
-    const evPass1 = parseMemoryLine(formatProgress(topic, 1, new Date(t0 + 1000).toISOString()), "blob-2")!;
+    const evPass1 = parseMemoryLine(formatProgress(topic, 1, new Date(t0 + 1000).toISOString()), "blob-sim-2")!;
     state = replayEvents([evMistake, evPass1]);
     topicState = state.topics.get(topic.toLowerCase().trim())!;
     assert.strictEqual(topicState.streak, 1, "Streak must be 1 after pass 1");
     assert.strictEqual(topicState.status, "recovering", "Status must be recovering after pass 1");
 
     // Pass 2
-    const evPass2 = parseMemoryLine(formatProgress(topic, 2, new Date(t0 + 2000).toISOString()), "blob-3")!;
+    const evPass2 = parseMemoryLine(formatProgress(topic, 2, new Date(t0 + 2000).toISOString()), "blob-sim-3")!;
     state = replayEvents([evMistake, evPass1, evPass2]);
     topicState = state.topics.get(topic.toLowerCase().trim())!;
     assert.strictEqual(topicState.streak, 2, "Streak must be 2 after pass 2");
     assert.strictEqual(topicState.status, "recovering", "Status must be recovering after pass 2");
 
     // Pass 3 (Graduation to Mastered)
-    const evMastered = parseMemoryLine(formatMastered(topic, new Date(t0 + 3000).toISOString()), "blob-4")!;
+    const evMastered = parseMemoryLine(formatMastered(topic, new Date(t0 + 3000).toISOString()), "blob-sim-4")!;
     state = replayEvents([evMistake, evPass1, evPass2, evMastered]);
     topicState = state.topics.get(topic.toLowerCase().trim())!;
     assert.strictEqual(topicState.streak, 3, "Streak must be 3 after pass 3");
     assert.strictEqual(topicState.status, "mastered", "Topic must graduate to mastered on 3rd pass");
 
     // Subsequent Failure (Demotion during 10% spot-check)
-    const evDemote = parseMemoryLine(formatMistake({ ...baseMistake, misses: 2 }, new Date(t0 + 4000).toISOString()), "blob-5")!;
+    const evDemote = parseMemoryLine(formatMistake({ ...baseMistake, misses: 2 }, new Date(t0 + 4000).toISOString()), "blob-sim-5")!;
     state = replayEvents([evMistake, evPass1, evPass2, evMastered, evDemote]);
     topicState = state.topics.get(topic.toLowerCase().trim())!;
     assert.strictEqual(topicState.streak, 0, "Streak must be reset to 0 after demotion");
@@ -79,9 +80,9 @@ async function runCrossSessionTests() {
   }
 
   // -------------------------------------------------------------------------
-  // Test 2: Cold-Start Cognitive State Reconstruction from Events
+  // Test 2: Cold-Start Cognitive State Reconstruction from Events (Local)
   // -------------------------------------------------------------------------
-  console.log("\n▶ Test 2: Cold-Start Cognitive State Reconstruction from Events");
+  console.log("\n▶ Test 2: Cold-Start Cognitive State Reconstruction from Events (Local)");
   {
     const sampleEvents: MemoryEvent[] = [
       parseMemoryLine(
@@ -112,44 +113,9 @@ async function runCrossSessionTests() {
   }
 
   // -------------------------------------------------------------------------
-  // Test 3: Remote MemWal Recall & Namespace Isolation (Live Mainnet)
+  // Test 3: Handling of Duplicate Mistakes & Idempotent Recording (Local)
   // -------------------------------------------------------------------------
-  console.log("\n▶ Test 3: Remote MemWal Recall & Namespace Isolation (Live Walrus Mainnet)");
-  if (hasCreds) {
-    const studentChatId = 6878463854;
-    const studentCourse = "pcl301";
-
-    // A. Query real student namespace
-    const studentRecall = await walrus.recallDetailed(
-      "autonomic pharmacology neuromuscular blockers",
-      studentCourse,
-      studentChatId,
-      { fallbackToLocal: false, limit: 50 }
-    );
-
-    assert.strictEqual(studentRecall.source, "walrus", "Recall source must be 'walrus'");
-    assert(studentRecall.texts.length > 0, "Recall must return memories for real learner namespace");
-    console.log(`  ✅ Learner namespace (u${studentChatId}_${studentCourse}): retrieved ${studentRecall.texts.length} memories from Walrus Mainnet`);
-
-    // B. Query an isolated/empty namespace
-    const nonExistentNs = await walrus.recallDetailed(
-      "neuromuscular blockers",
-      "nonexistent_course_9999",
-      9999999999,
-      { fallbackToLocal: false, limit: 10 }
-    );
-
-    assert.strictEqual(nonExistentNs.source, "none", "Non-existent namespace must return source 'none' when fallback is disabled");
-    assert.strictEqual(nonExistentNs.texts.length, 0, "Non-existent namespace must return 0 memories (Strict Isolation)");
-    console.log("  ✅ Namespace isolation verified: other namespaces do not leak or cross-contaminate.");
-  } else {
-    console.log("  ℹ️ Public audit mode: skipping remote signed recall test (requires delegate key).");
-  }
-
-  // -------------------------------------------------------------------------
-  // Test 4: Handling of Duplicate Mistakes & Idempotent Recording
-  // -------------------------------------------------------------------------
-  console.log("\n▶ Test 4: Handling Duplicate Mistakes & Cumulative Misses");
+  console.log("\n▶ Test 3: Handling Duplicate Mistakes & Cumulative Misses (Local)");
   {
     const topic = "Beta-1 Adrenergic Signaling";
     const tKey = topic.toLowerCase().trim();
@@ -172,8 +138,96 @@ async function runCrossSessionTests() {
     console.log("  ✅ Duplicate mistakes handling verified: state smoothly accumulates misses without conflict.");
   }
 
+  // -------------------------------------------------------------------------
+  // Test 4: Remote MemWal Live Write, Confirmation, Recall & Isolation
+  // -------------------------------------------------------------------------
+  console.log("\n▶ Test 4: Remote MemWal Live Write, Confirmation, Recall & Isolation (Walrus Protocol)");
+  let remotePassed = false;
+  let remoteSkipped = false;
+
+  if (hasCreds) {
+    const auditNonce = Math.floor(100000 + Math.random() * 900000);
+    const auditChatId = 998000000 + (auditNonce % 10000);
+    const auditCourse = `audit${auditNonce}`;
+    const testTopic = `Autonomous Audit Token ${auditNonce}`;
+    const testFact = `Walrus Protocol decentralized cognitive memory verified for audit ${auditNonce}`;
+
+    console.log(`  • Generated isolated test namespace: u${auditChatId}_${auditCourse}`);
+    console.log(`  • Writing test fact to Walrus Mainnet with active signer...`);
+
+    const rememberResult = await walrus.recordFact(testTopic, testFact, auditCourse, auditChatId);
+    console.log(`  • Remember job submitted: ${rememberResult.jobId || "direct"}`);
+
+    if (rememberResult.jobId) {
+      console.log(`  • Polling job confirmation on Walrus Protocol...`);
+      const pollStatus = await walrus.waitForJobCompletion(rememberResult.jobId, 8, 2000);
+      if (pollStatus.blobId) {
+        console.log(`  • Blob confirmed on Walrus: https://walruscan.com/mainnet/blob/${pollStatus.blobId}`);
+      }
+    }
+
+    console.log(`  • Testing remote signed recall on audit namespace...`);
+    let studentRecall = await walrus.recallDetailed(
+      testFact,
+      auditCourse,
+      auditChatId,
+      { fallbackToLocal: false, limit: 10 }
+    );
+
+    // Background vector indexing at relayer can take 2-4 seconds; poll if not immediately returned
+    for (let attempt = 0; attempt < 5 && (!studentRecall.texts || studentRecall.texts.length === 0); attempt++) {
+      await new Promise((r) => setTimeout(r, 2000));
+      studentRecall = await walrus.recallDetailed(
+        testFact,
+        auditCourse,
+        auditChatId,
+        { fallbackToLocal: false, limit: 10 }
+      );
+    }
+
+    assert.strictEqual(studentRecall.source, "walrus", "Recall source must be 'walrus'");
+    assert(studentRecall.texts.length > 0, "Recall must return memories for generated audit namespace");
+    assert(
+      studentRecall.texts.some((t) => t.includes(String(auditNonce))),
+      "Recalled memory must contain the unique audit token"
+    );
+    console.log(`  ✅ Live recall verified: retrieved ${studentRecall.texts.length} decrypted memories from Walrus Mainnet.`);
+
+    // Isolation test: Query an unpopulated namespace
+    const isolatedCourse = `isolated${auditNonce}`;
+    const nonExistentNs = await walrus.recallDetailed(
+      "neuromuscular blockers",
+      isolatedCourse,
+      999999999,
+      { fallbackToLocal: false, limit: 10 }
+    );
+
+    assert.strictEqual(nonExistentNs.source, "none", "Non-existent namespace must return source 'none' when fallback is disabled");
+    assert.strictEqual(nonExistentNs.texts.length, 0, "Non-existent namespace must return 0 memories (Strict Isolation)");
+    console.log("  ✅ Namespace isolation verified: other namespaces do not leak or cross-contaminate.");
+
+    // State reconstruction from live bytes
+    const sampleEvent = parseMemoryLine(studentRecall.texts[0], studentRecall.blobs?.[0]);
+    if (sampleEvent) {
+      const state = replayEvents([sampleEvent]);
+      assert(state.facts.length > 0 || state.topics.size > 0, "State must rebuild from live recalled memory");
+      console.log("  ✅ End-to-end cognitive state rebuilt from live Walrus bytes.");
+    }
+
+    remotePassed = true;
+  } else {
+    remoteSkipped = true;
+    console.log("  ⚠️ Remote live Walrus test SKIPPED: MemWal credentials not configured in environment or .env.");
+    console.log("     To test live writes & signed recall against Walrus Protocol Mainnet, provide your MemWal credentials.");
+  }
+
   console.log("\n============================================================");
-  console.log("🎉 All Cross-Session & Memory Integrity Tests Passed!");
+  if (remotePassed) {
+    console.log("🎉 All 4/4 Tests Passed (3 Local State Machine + 1 Remote Live Walrus Mainnet Round-Trip)!");
+  } else if (remoteSkipped) {
+    console.log("⚠️ Partial Pass: 3/3 Local Tests Passed, 1 Remote Test Skipped (No credentials configured).");
+    console.log("   (Remote tests were safely skipped and not reported as passed without credentials.)");
+  }
   console.log("============================================================\n");
 }
 
