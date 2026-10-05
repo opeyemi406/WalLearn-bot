@@ -113,6 +113,20 @@ flowchart TD
     WalrusMainnet -. "Weakness Briefing" .-> AdaptiveQuiz
 ```
 
+### Storage Architecture: Write-Through Cache vs. Decentralized Source of Truth
+
+A critical architectural requirement for high-speed chat bots is handling **network latency and relayer indexing delay**:
+- **The Telegram Latency Reality**: On Telegram, students tap inline buttons (`[A]`, `[B]`, `[C]`, `[D]`). Performing a synchronous remote HTTP call to the Walrus relayer on every single quiz option tap would freeze the Telegram UI for 1.5–3 seconds per question.
+- **Relayer Asynchronous Indexing Lag**: When a write job is submitted to Walrus MemWal, it enters `status: running`. TEE encryption, Sui object anchoring, and vector indexing take 2–5 seconds. If a student answers Question 1, makes an error, and immediately taps Question 2, relying solely on immediate remote recall would create a race condition where the in-flight write has not yet appeared in the remote vector index.
+- **The Role of `data/mistakes-ledger.json` (Write-Through Cache & Job Tracker)**:
+  - While web-based bots (like Walmo) store chat state in **browser `localStorage`** and **Upstash Redis**, Telegram bots have no browser environment.
+  - WalLearn uses `data/mistakes-ledger.json` as a **zero-dependency write-through performance cache and background job tracker**.
+  - Every mistake or streak change is committed to `mistakes-ledger.json` for instant (<10ms) button feedback, while an Ed25519-signed event is simultaneously dispatched to Walrus Protocol Mainnet in the background.
+- **Decentralized Ground Truth & Zero-Disk Dependency**:
+  - `mistakes-ledger.json` is strictly a performance cache and is completely **disposable**.
+  - Walrus Protocol Mainnet is the **sole, immutable source of truth**.
+  - If `mistakes-ledger.json` is deleted or the bot's cloud container redeploys on a fresh server, `/restore <courseCode>` reaches out to Walrus Mainnet, fetches all raw event lines, replays the state machine, and completely reconstructs the local ledger in seconds.
+
 ---
 
 ## 🏆 Hackathon Judging Criteria & Direct Evidence

@@ -125,6 +125,7 @@ If the user deletes their Telegram chat history or the bot's cloud server redepl
 - **Strictly-Typed Enterprise TypeScript**: Clean separation between AI orchestration (`src/ai`), Walrus cryptographic client (`src/walrus`), UI handlers (`src/handlers`), and document parser pipeline (`scripts/parse_document.py`).
 - **Cryptographic Request Signing**: Full Ed25519 canonical message hashing (`timestamp.method.path.bodyHash.nonce.accountId`) via `@noble/ed25519` and MemWal TEE enclave.
 - **100% Self-Contained & Portable**: WalLearn is 100% self-contained, fully portable, and can rebuild its entire state directly from Walrus Protocol Mainnet at any time without any external SQL database dependency.
+- **Write-Through Performance Cache (`data/mistakes-ledger.json`)**: Eliminates 1.5–3s Telegram button latency and the 2–5s MemWal asynchronous indexing lag. Acts as a lightweight write-through performance cache (analogous to how web bots like Walmo use browser `localStorage`/Redis), while Walrus Protocol Mainnet remains the permanent, immutable source of truth. If deleted, `/restore` reconstructs the entire cache directly from Walrus.
 - **Fault-Tolerant Network Client**: Automated HTTP 429 exponential backoff, jitter, and non-blocking background polling.
 
 ### 2. Verified Local Reproducibility
