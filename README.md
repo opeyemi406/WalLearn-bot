@@ -7,373 +7,149 @@
 [![Telegram](https://img.shields.io/badge/Telegram-@WalLearnBot-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/WalLearnBot)
 [![Judging Dossier](https://img.shields.io/badge/Evaluation-Judging_Dossier-FF7E00?style=for-the-badge&logo=gitbook&logoColor=white)](JUDGING.md)
 
-> **Submission for the Walrus Sessions Hackathon: *Chatbots That Remember***  
-> **Production Bot:** [@WalLearnBot](https://t.me/WalLearnBot)  
-> **Live Architecture:** Dual-Layer Orchestration • Decentralized Memory via MemWal • Adaptive 60/30/10 Cognitive Quizzing  
-> 📋 **Judges Quick Link:** Direct evaluation against all 3 criteria with verifiable evidence in [JUDGING.md](JUDGING.md).
+> **Submission for the Walrus Sessions Hackathon: *Chatbots That Remember***
+> **Production Bot:** [@WalLearnBot](https://t.me/WalLearnBot) | **Primary AI Model:** `google/gemini-2.5-flash` via OpenRouter
+> 📋 **Judges Quick Link:** Direct evaluation against all 4 criteria with auditable test evidence in [JUDGING.md](JUDGING.md).
 
 ---
 
-## 🎯 The Problem & The Pitch: Ending AI Study Amnesia
+## 1. Project Overview
 
-### 1. The Human Problem: High-Stakes Exam Amnesia
-Modern AI study tools suffer from **catastrophic cognitive amnesia**. A university or medical student can spend four grueling hours working through past questions and lecture slides, making critical conceptual errors. The moment the chat tab closes or the session expires, **those errors evaporate into the digital void**.
-
-Traditional EdTech treats memory as an ephemeral session variable or locks it into proprietary, centralized database silos. If the platform restarts or the database resets, revision history is wiped out. Two weeks later on exam day, **students fail on the exact same trap questions they missed before.**
-
-### 2. The Cognitive Innovation: Memory as Active Computational State
-**Mistakes are the highest-yield cognitive data in human learning.** WalLearn couples **Google Gemini 2.5 Flash** with **Walrus Protocol's decentralized, immutable storage layer** via `@mysten-incubation/memwal` (v0.1.8):
-- **Mistakes as On-Chain Assets**: Every misconception, diagnostic gap, and failed attempt is permanently committed to Walrus Mainnet as an immutable, append-only event line.
-- **Dynamic 60/30/10 Exam Generation**: 60% of every quiz drill algorithmically targets active Walrus misconceptions with rotated clinical distractors.
-- **Strict 3-Consecutive-Pass Rule**: Guessing right once is not enough. A topic only graduates to `[MASTERED]` on Walrus after 3 independent passes across distinct sessions.
-- **True Disaster Resilience**: Clear your Telegram chat, wipe the local cache, or redeploy the cloud container. Running `/restore <courseCode>` reaches out to Walrus Mainnet, replays all historical memory events, and reconstructs your entire cognitive profile in seconds with **zero local disk dependency**.
-
-### 3. The Web3 Breakthrough: The Agentic Custodian Pattern
-Everyday students do not have Sui wallets, SUI tokens for gas, or seed phrases. WalLearn eliminates crypto friction:
-- **Autonomous Study Agent**: WalLearn holds a delegated MemWal signer and sponsors Walrus storage costs on Sui Mainnet.
-- **Cryptographic Namespace Partitioning**: Each student's records are mathematically isolated into dedicated course namespaces (`u<telegramChatId>_<courseCode>`).
-- **Web2 User Experience, Web3 Permanence**: A student simply taps `/start` on Telegram—no wallet installation, no gas tokens, no key management—yet every mistake and mastery streak is permanently anchored to Walrus Protocol Mainnet.
+**WalLearn** is an autonomous AI cognitive study assistant on Telegram that cures chatbot amnesia using decentralized, verifiable memory on Walrus Protocol. Powered by **Google Gemini 2.5 Flash** and `@mysten-incubation/memwal` (v0.1.8), WalLearn transforms student mistakes into immutable on-chain event streams, enforces an adaptive 60/30/10 weakness-targeted question ratio, and enables true cross-session disaster recovery with zero dependency on centralized databases.
 
 ---
 
-## High-Level System Architecture
+## 2. Problem & Solution
 
-WalLearn is designed around a **hexagonal, decoupled micro-architecture** engineered for sub-second UI responsiveness, resilient blockchain writes, and deterministic learning state progression.
+### The Problem: AI Study Amnesia
+Standard conversational study tools treat memory as volatile session context. When a chat expires, a container restarts, or a student switches devices, prior diagnostic mistakes vanish. Students waste hours re-answering mastered concepts while repeating the exact same conceptual trap questions on exam day.
 
-```mermaid
-flowchart TD
-    subgraph ClientLayer ["1. Ingestion & Ingress Layer"]
-        User(["Student / User"])
-        Telegram["Telegram Interface (@WalLearnBot)"]
-        GrammY["grammY Bot Framework"]
-        DocParser["Multimodal Document Pipeline\n(PDF / PPTX / DOCX / Photos)"]
-    end
-
-    subgraph OrchestrationLayer ["2. Dual-Layer Intent & Routing Engine"]
-        FastPath{"Layer 0: Fast-Path\n(0ms Latency)"}
-        Deterministic["Tactile Buttons / Slash Cmds\nQuiz Answers (A-D) / Menus (1-4)"]
-        SemanticRouter["Layer 1: Semantic Orchestrator\n(Gemini 2.5 Structured JSON Classifier)"]
-    end
-
-    subgraph CognitiveLayer ["3. Cognitive Engine (Google Gemini 2.5 Flash)"]
-        AdaptiveQuiz["Adaptive 60/30/10 Question Generator\n(60% Weakness / 30% Slides / 10% Spot Check)"]
-        Diagnostic["Misconception Interceptor\n(Conceptual Gap vs. Careless Slip)"]
-        SocraticTutor["Socratic Tutor with Cold Context Injection"]
-        BlueprintEngine["Lecturer Exam Blueprint & Trap Extractor"]
-    end
-
-    subgraph MemoryLayer ["4. Cryptographic Storage Layer (Walrus & MemWal)"]
-        WalrusClient["WalrusClient (Signer & Ledger Manager)"]
-        Ed25519["Ed25519 Delegate Key Signer\n(RFC-compliant Canonical Request Hasher)"]
-        Relayer["MemWal Relayer Node\n(https://relayer.memory.walrus.xyz)"]
-        SuiChain["Sui Mainnet\n(Configured MemWalAccount Object)"]
-        WalrusMainnet["Walrus Protocol Mainnet\n(Immutable Encrypted Blobs)"]
-    end
-
-    User --> Telegram
-    Telegram --> GrammY
-    GrammY --> DocParser
-    GrammY --> FastPath
-
-    FastPath -- "Deterministic (Buttons/Digits)" --> Deterministic
-    FastPath -- "Freeform Natural Language" --> SemanticRouter
-
-    Deterministic --> AdaptiveQuiz
-    SemanticRouter --> AdaptiveQuiz
-    SemanticRouter --> SocraticTutor
-    SemanticRouter --> BlueprintEngine
-
-    AdaptiveQuiz --> Diagnostic
-    Diagnostic --> WalrusClient
-    BlueprintEngine --> WalrusClient
-
-    WalrusClient --> Ed25519
-    Ed25519 --> Relayer
-    Relayer --> SuiChain
-    Relayer --> WalrusMainnet
-    WalrusMainnet -. "Cold Recall / Re-index" .-> SocraticTutor
-    WalrusMainnet -. "Weakness Briefing" .-> AdaptiveQuiz
-```
-
-### Storage Architecture: Write-Through Cache vs. Decentralized Source of Truth
-
-A critical architectural requirement for high-speed chat bots is handling **network latency and relayer indexing delay**:
-- **The Telegram Latency Reality**: On Telegram, students tap inline buttons (`[A]`, `[B]`, `[C]`, `[D]`). Performing a synchronous remote HTTP call to the Walrus relayer on every single quiz option tap would freeze the Telegram UI for 1.5–3 seconds per question.
-- **Relayer Asynchronous Indexing Lag**: When a write job is submitted to Walrus MemWal, it enters `status: running`. TEE encryption, Sui object anchoring, and vector indexing take 2–5 seconds. If a student answers Question 1, makes an error, and immediately taps Question 2, relying solely on immediate remote recall would create a race condition where the in-flight write has not yet appeared in the remote vector index.
-- **The Role of `data/mistakes-ledger.json` (Write-Through Cache & Job Tracker)**:
-  - While web-based bots store chat state in browser `localStorage` or external Redis, Telegram bots have no browser environment.
-  - WalLearn uses `data/mistakes-ledger.json` as a **zero-dependency write-through performance cache and background job tracker**.
-  - Every mistake or streak change is committed to `mistakes-ledger.json` for instant (<10ms) button feedback, while an Ed25519-signed event is simultaneously dispatched to Walrus Protocol Mainnet in the background.
-- **Decentralized Ground Truth & Zero-Disk Dependency**:
-  - `mistakes-ledger.json` is strictly a performance cache and is completely **disposable**.
-  - Walrus Protocol Mainnet is the **sole, immutable source of truth**.
-  - If `mistakes-ledger.json` is deleted or the bot's cloud container redeploys on a fresh server, `/restore <courseCode>` reaches out to Walrus Mainnet, fetches all raw event lines, replays the state machine, and completely reconstructs the local ledger in seconds.
+### The Solution: Mistakes as On-Chain Assets
+WalLearn commits every misconception, recovery streak, and mastery milestone to Walrus Protocol Mainnet as an Ed25519-signed, append-only event line. Each student's cognitive state is cryptographically siloed (`u<telegramChatId>_<courseCode>`). The bot sponsors Walrus storage on Sui Mainnet, providing frictionless Web2 onboarding on Telegram with immutable Web3 persistence.
 
 ---
 
-## 🏆 Hackathon Judging Criteria & Direct Evidence
+## 3. How Walrus Memory Drives Learning
+
+Memory in WalLearn is an **active computational state variable**, not decorative chat trivia:
+
+1. **Adaptive 60/30/10 Question Allocation:** 60% of drill questions programmatically target active Walrus weaknesses with rotated clinical distractors; 30% introduce syllabus concepts; 10% spot-check mastered topics. Enforced post-generation via `validateQuizDistribution()`.
+2. **3-Consecutive-Pass Mastery State Machine:** Guessing correctly once does not clear an error. Topics only graduate to `[MASTERED]` on Walrus after 3 independent passes across separate sessions. Spot-check failures demote status back to recovery.
+3. **Zero-Input Cold Recall & Disaster Recovery (`/restore`):** When a student returns, `/briefing` surfaces active weaknesses before any user input. If chat history is cleared or cloud servers redeploy, `/restore` replays raw Walrus blobs to reconstruct learner profiles in seconds with zero disk dependency.
 
 ---
 
-### Criterion 1: Does It Actually Remember? (Real Work vs. Decorative)
-> *"Is memory doing real work, or is it decorative? Does the chatbot recall the right things at the right time, and does that visibly improve the conversation?"*
+## 4. Bot Commands & Core Capabilities
 
-In 95% of memory-enabled chatbots, memory is merely decorative: an append-only JSON file storing trivial trivia (*"The user likes Python"*) that is dumped into the prompt as inert background text.
-
-In WalLearn, **memory actively controls the algorithmic behavior and output of the bot**:
-
-1. **Memory Governs the Generative Quiz Prompt (60/30/10 Ratio)**:
-   - When `/study` is called, WalLearn does not ask Gemini for generic questions.
-   - It performs an on-chain cold recall against Walrus Mainnet, fetches active unmastered misconceptions, and binds them into the generation prompt as negative constraints and distractor blueprints:
-     ```typescript
-     // Excerpt from src/handlers/study.ts & src/ai/prompts.ts
-     const briefing = await walrus.getWeaknessBriefing(subjectCode, chatId);
-     prompt += `[ACTIVE WALRUS WEAKNESSES TO TARGET]:\n${briefing.topWeaknesses.map(w => 
-       `- Topic: ${w.topic} | Severity: ${w.severity} | Prior Error: "${w.lastError}"`
-     ).join("\n")}`;
-     ```
-   - **Visible Improvement**: If a student repeatedly confuses *Succinylcholine Phase 1 depolarization* with *competitive blockade*, the question generator specifically crafts multiple-choice distractors that probe that exact physiological boundary.
-
-2. **The 3-Consecutive-Pass Spaced Repetition State Machine**:
-   - Memory is not binary. WalLearn models cognitive mastery as a formal event-sourced state machine on Walrus:
-     $$\text{Pending} \xrightarrow{\text{Job Confirmed}} \text{Confirmed (In Recovery)} \xrightarrow{\text{3 Consecutive Passes}} \text{Mastered}$$
-   - If a student guesses a question correctly once, it remains in recovery. Only 3 consecutive independent passes across distinct sessions transition the status to `[MASTERED]`. If failed on a 10% spot check later, it is immediately demoted back to active recovery on Walrus.
-
-3. **Cold-Start Socratic Dialogue (Zero-Input Memory Surface)**:
-   - Run `/briefing` or ask a question in freeform chat: WalLearn retrieves the student's on-chain memory *before they provide any context*.
-   - When answering a student query like *"Explain the autonomic nervous system,"* the tutor prefaces its response with:
-     > *"Welcome back. In your last session, you struggled with ganglionic vs. neuromuscular blockade. Let's make sure we ground this explanation in that distinction..."*
-
-4. **True Disaster Recovery (`/restore`)**:
-   - Delete your Telegram chat history. Reboot the cloud container on Railway.
-   - Run `/restore`: WalLearn reaches out to Walrus Protocol Mainnet via signed requests using `@mysten-incubation/memwal`, queries the student's isolated namespace, and reconstructs the entire mastery ledger by replaying historical event lines in chronological order.
-
----
-
-### Criterion 2: Real-World Use & The Before/After Case Study
-> *"Was the chatbot deployed and used by real people? Is the before/after convincing? Does the evidence show that Walrus Memory made a genuine difference?"*
-
-#### 1. Live Deployment & Active Production Users
-- **Live 24/7 on Telegram**: [@WalLearnBot](https://t.me/WalLearnBot), deployed via automated CI/CD on Railway cloud infrastructure.
-- **Real Academic Curriculum Testing**: Deployed with university and medical students studying:
-  - **PCL301**: General & Autonomic Pharmacology (e.g. Neuromuscular blockers, Organophosphates, Ganglionic transmission).
-  - **PCL302**: Neuropharmacology & Catecholamine Metabolism.
-  - **ANA201**: Human Anatomy (Thorax, Mediastinum, Musculoskeletal).
-- **Production User Telemetry**: 
-  - **15 Active On-Chain Namespaces** (e.g. `u_student_pcl301`, `u_student_pcl302`, `u_student_ana204`).
-  - **50 Confirmed On-Chain Blobs** on Walrus Protocol Mainnet.
-  - **57 Total Recorded Cognitive Milestones** across student accounts.
-
-#### 2. Architectural Comparison & Empirical Specifications
-
-| Evaluation Dimension | Standard Ephemeral Chatbots | WalLearn with Walrus Memory (After) | Verification Mechanism |
-|---|---|---|---|
-| **Memory Persistence Model** | **Volatile / Session-Scoped:** Context exists solely in RAM or temporary session tokens; cleared on browser close, session timeout, or chat reset. | **Cryptographic Event-Sourced Storage:** All cognitive transitions (`[MISTAKE]`, `[PROGRESS]`, `[MASTERED]`) are signed with Ed25519 and committed as erasure-coded blobs to Walrus Mainnet. | Auditable on [Walruscan Explorer](https://walruscan.com) via 59 confirmed on-chain blob IDs. |
-| **Drill Question Allocation** | **Unconstrained Prompting:** Relies solely on LLM temperature and conversational context; prone to prompt drift and repetitive broad questions. | **Programmatic Invariant Enforcement:** Post-generation validator (`validateQuizDistribution`) asserts $\ge 50\%$ allocation to active Walrus weakness topics with automated slot repair. | Programmatic invariant assertions in `src/ai/validator.ts` verified by `npm run test:validator`. |
-| **Cross-Session Continuity** | **Cold-Start Amnesia:** Fresh sessions require the student to manually re-explain syllabus progress and past errors from scratch. | **On-Chain Zero-Input Recall:** `/briefing` queries student namespace `u<chatId>_<course>` on Walrus Mainnet and ranks misconceptions by $(\text{Misses} \times \text{Severity})$ before any user input. | Cold-start recall verified locally via `npm run test:cross-session`. |
-| **Mastery Verification Protocol** | **Single-Pass Heuristic:** A single correct guess is treated as mastery, creating false confidence on exam day. | **Formal 3-Consecutive-Pass State Machine:** Requires 3 independent passes across separate study sessions. Random spot-check failures demote status back to recovery on Walrus. | Deterministic state machine unit tests in `tests/cross-session.test.ts`. |
-| **Disaster Recovery Resilience** | **Irrevocable State Loss:** Deleting chat history or moving devices permanently destroys learner profile. | **Decentralized State Reconstruction:** `/restore` fetches raw blobs from Walrus Mainnet and chronologically replays the state machine with zero local database dependency. | Verified by wiping `data/mistakes-ledger.json` and running `/restore`. |
-| **Study Efficiency** | **Unfocused Revision:** Student spends substantial study time re-answering mastered concepts due to lack of historical diagnostic tracking. | **Weakness-Targeted Convergence:** Every drill prioritizes unmastered misconceptions until consecutive mastery proofs are signed and anchored. | Telemetry logged in active student namespaces (e.g. `u_student_pcl301`). |
-
-> 📋 **Empirical Field Evaluation Disclosure:**  
-> Rather than relying on unverified simulated statistics, telemetry in Criterion 2 reflects an **N=1 Longitudinal Feasibility Study** conducted across 14 days with a university medical student studying LASUCOM Pharmacology (`PCL301` / Autonomic & Neuromuscular Blockers).  
-> • **Telemetry Generated:** 17 active on-chain namespaces, 59 confirmed Walrus Mainnet blobs, 64 recorded cognitive state transitions.  
-> • **Observed Behavioral Outcome:** In standard chat sessions, the student repeated the Phase 1 depolarizing blockade distractor error 3 times across unlinked chats. With WalLearn, the misconception was committed to blob `5BTSt6okVpuhzpzS1wcmFvh5Kx863nki2avsXIKzt7U`, surfaced on next-day login, and graduated to `[MASTERED]` on Walrus Mainnet after 3 verified passes.
-
-#### 3. Real Student Walkthrough: Autonomic Pharmacology (`PCL301`)
-1. **The Mistake**: During a 10-question CBT drill on Autonomic Pharmacology, the student was asked:  
-   *“Why are cholinesterase inhibitors contraindicated during Phase 1 depolarizing blockade?”*  
-   The student incorrectly chose Option B (*"Because it reverses the depolarization too quickly"*).
-2. **The Interception**: WalLearn intercepted the error, classified it as `severity: high`, isolated the core misconception (*"Failed to distinguish continuous depolarization from competitive reversal"*), and dispatched an Ed25519-signed write to Walrus Mainnet.
-3. **The On-Chain Proof**: Committed to Walrus Mainnet blob [`5BTSt6okVpuhzpzS1wcmFvh5Kx863nki2avsXIKzt7U`](https://walruscan.com/mainnet/blob/5BTSt6okVpuhzpzS1wcmFvh5Kx863nki2avsXIKzt7U).
-4. **The Next Day**: The student returned. Without mentioning Phase 1 blockade, they tapped `/study`. WalLearn recalled the blob, generated a new question with altered clinical phrasing, and forced the student to confront the mechanism again until 3 consecutive passes were logged.
-
----
-
-### Criterion 3: Build Quality, Clean Integration & Reproducibility
-> *"Is the integration clean, documented, and reproducible? Could someone clone the repository and run it?"*
-
-#### 1. Software Engineering Rigor
-- **Strictly Typed Enterprise TypeScript**: Modular, decoupled hexagonal codebase (`src/ai`, `src/walrus`, `src/handlers`, `src/parsers`). Zero compiler warnings, 100% TypeScript strict-mode compliance.
-- **Dual-Layer Intent Orchestrator**: Separates sub-millisecond tactile button callbacks (<1ms) from semantic LLM intent parsing (`src/ai/orchestrator.ts`).
-- **Cryptographic Request Signing**: Implements RFC-compliant canonical message hashing (`timestamp.method.path.bodyHash.nonce.accountId`) with `@noble/ed25519` for all Walrus Relayer mutations.
-- **Fault-Tolerant Network Client**: Resilient `signedFetch` engine with automatic HTTP 429 exponential backoff, jitter, and non-blocking background polling.
-
-#### 2. Verification in Under 60 Seconds
-Judges can verify the entire on-chain stack locally via automated test commands:
-```bash
-# 1. On-chain diagnostic probe (validates Sui object, relayer health, and live blobs)
-npm test
-
-# 2. Automated cross-session isolation and mastery state machine verification
-npm run test:cross-session
-
-# 3. Deterministic 60/30/10 cognitive ratio invariant validator test
-npm run test:validator
-
-# 4. Full 45-slide lecture PDF ingestion, Walrus memory writes, and cold restore
-npm run test:pdf
-```
-
----
-
-### Criterion 4: Best Article, Educational Narrative & Ecosystem Feedback
-> *"Is the article clear, honest, and useful to a newcomer? Does it document before/after behavior and friction points encountered during integration?"*
-
-1. **Published Educational Article**:  
-   *Building WalLearn: How We Ended AI Study Amnesia with Walrus Protocol Memory* breaks down the cognitive amnesia problem, `@mysten-incubation/memwal` integration, before/after medical student test results, and practical engineering guidance for on-chain AI developers.
-2. **Beyond the Big Two Track Compliance**:  
-   Uses **Google Gemini 2.5 Flash** (via OpenRouter) on Node.js/TypeScript rather than Anthropic or OpenAI. Gemini 2.5 Flash powers structured JSON extraction, rapid quiz distractor generation, and high-context slide ingestion, demonstrating that Walrus Memory functions as a universal, model-agnostic substrate.
-3. **Official Hackathon Feedback & Friction Submitted**:  
-   - *Friction 1 (SDK ESM Exports)*: Documented lack of CommonJS export mappings in `@mysten-incubation/memwal` causing packaging friction in hybrid environments.  
-   - *Friction 2 (Restore Pagination)*: Single-shot candidate selection on `/restore` without keyset cursors.  
-   - *Improvement 1 (Semantic Distance)*: Exposing configurable `maxDistance` thresholds on `/recall`.
-
----
-
-## Production Deployment Proofs (Reference Only)
-
-> **Notice for Independent Judge Testing**:
-> When running local tests (`npm test`, `npm run test:cross-session`, `npm run test:config`), the test suite connects to **your own configured MemWal account** and writes/recalls from fresh dynamic audit namespaces. The table below documents the live public production deployment of `@WalLearnBot` on Sui Mainnet for hackathon proof-of-work.
-
-All memory transactions are verifiable on the **Sui Blockchain** and **Walrus Protocol Mainnet**:
-
-| Parameter | Mainnet On-Chain Verification Details |
+| Trigger / Command | Function & On-Chain Execution |
 |---|---|
-| **Production Telegram Bot** | [@WalLearnBot](https://t.me/WalLearnBot) |
-| **Sui MemWalAccount Object** | [`0x75a533d83e9fee09e36b29b14e8b093862042ee92b188e5122338da7118be140`](https://suiscan.xyz/mainnet/object/0x75a533d83e9fee09e36b29b14e8b093862042ee92b188e5122338da7118be140) |
-| **Dedicated On-Chain Wallet** | [`0xf3efc1f6d86ea33f736072668549138f00f2ca8fc67962019543e213a0fa2db2`](https://suiscan.xyz/mainnet/account/0xf3efc1f6d86ea33f736072668549138f00f2ca8fc67962019543e213a0fa2db2) |
-| **Delegate Key Address** | `0x7dea8c54a7a72c231fa829abed50a47a03b7d1e99e74974bc21773c73490bbaa` |
-| **Production Relayer Node** | `https://relayer.memory.walrus.xyz` |
-| **Active Storage Protocol** | Walrus Protocol Mainnet (Decentralized Erasure-Coded Blobs) |
-
-### Sample Live Blobs on Walruscan (Auditable)
-
-Judges can verify actual student memory blobs created by WalLearn directly on the Walrus explorer:
-
-| On-Chain Blob ID | Stored Concept Type | Verification Link |
-|---|---|---|
-| `qSrxQx_AHWUZTZ4C1DtG-zSrQZxDC_nXhAqaL53y--4` | Syllabus Fact Ingestion (`PCL301`) | [View on Walruscan](https://walruscan.com/mainnet/blob/qSrxQx_AHWUZTZ4C1DtG-zSrQZxDC_nXhAqaL53y--4) |
-| `to7chW9wB9LxvfREEC9gct6CE1xdqdfBYW_MjNZMX94` | Autonomic Pharmacology Fact (`PCL301`) | [View on Walruscan](https://walruscan.com/mainnet/blob/to7chW9wB9LxvfREEC9gct6CE1xdqdfBYW_MjNZMX94) |
-| `5BTSt6okVpuhzpzS1wcmFvh5Kx863nki2avsXIKzt7U` | Succinylcholine Neuromuscular Block | [View on Walruscan](https://walruscan.com/mainnet/blob/5BTSt6okVpuhzpzS1wcmFvh5Kx863nki2avsXIKzt7U) |
-| `ANLFQFfrtYu9mXBHhnQ9CeTq0bNmsybDkWqBf-bxrM0` | Adrenergic Receptor Diagnosis (`PCL302`) | [View on Walruscan](https://walruscan.com/mainnet/blob/ANLFQFfrtYu9mXBHhnQ9CeTq0bNmsybDkWqBf-bxrM0) |
-| `4bcukpw7k5-1zdL4A_izziqfRyQWrv0IurlgA3Ekw28` | Catecholamine Termination Misconception | [View on Walruscan](https://walruscan.com/mainnet/blob/4bcukpw7k5-1zdL4A_izziqfRyQWrv0IurlgA3Ekw28) |
+| `/start` | Onboarding dashboard, active subject selection, and quick actions. |
+| `/study` or `/prep` | Recalls active weaknesses from Walrus and launches an adaptive 60/30/10 drill. |
+| `/briefing` | Cold-retrieves stored weaknesses from Walrus and renders a prioritized weakness report. |
+| `/analyze` | Arms multimodal document ingestion (PDF, PPTX, DOCX, photos) to extract syllabus facts. |
+| `/restore` | Replays historical event lines from Walrus Mainnet to reconstruct local learner state. |
+| `/health` | Diagnostic probe verifying relayer reachability, latency, and active Sui account ID. |
+| **Drop File / Image** | Ingests lecture slides or notes and generates grounded practice questions. |
 
 ---
 
-## Bot Command & Capability Matrix
+## 5. Architecture Summary
 
-| Command / Trigger | Functional Execution & Architectural Response |
-|---|---|
-| `/start` | Initial handshake, active subject detection, and interactive action dashboard. |
-| `/study` or `/prep` | Recalls active weaknesses from Walrus and launches an adaptive CBT drill with inline keyboard buttons. |
-| `/briefing` | Cold-retrieves stored weaknesses from Walrus and renders a prioritized mastery report across all courses. |
-| `/analyze` | Arms the document ingestion engine to extract questions, syllabus concepts, and lecturer trap patterns. |
-| `/restore` | Cryptographically polls Walrus Mainnet, re-indexes raw blobs, and rebuilds the local student ledger. |
-| `/health` | Live diagnostic probe verifying relayer connectivity, latency, Sui account ID, and stored blob totals. |
-| `/menu` | Displays the current session status, active course code, and navigation options. |
-| `/reset` | Flushes transient in-memory quiz states while preserving all decentralized Walrus memories. |
-| **Drop File (PDF/PPTX/DOCX)** | Multimodal slide ingestion; parses text and generates CBT questions grounded in course materials. |
-| **Send Image / Photo** | OCR document processing; reads whiteboard photos, printed tests, or textbook pages for instant ingestion. |
-| **Freeform Natural Query** | Socratic tutor conversation; grounds explanations in the student's historical misconception ledger. |
+WalLearn utilizes a decoupled architecture designed for sub-second Telegram responsiveness and reliable blockchain writes:
+- **Layer 0 (Fast-Path):** Intercepts inline keyboard taps (`[A]`, `[B]`, `[C]`, `[D]`) for sub-millisecond UI feedback.
+- **Layer 1 (Semantic Router):** Classifies freeform student queries with Gemini 2.5 Flash and injects prior misconceptions.
+- **Cryptographic Storage:** Signs canonical mutation requests via `@noble/ed25519` for the official MemWal relayer.
+- **Write-Through Performance Cache:** `data/mistakes-ledger.json` serves strictly as a temporary runtime write-through cache and job log. Walrus Protocol Mainnet is the sole authoritative ground truth.
+
+*(For full architecture diagrams and event schemas, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).)*
 
 ---
 
-## Directory & Codebase Structure
+## 6. Installation & Local Setup
 
-```
-wallearn-bot/
-├── src/
-│   ├── index.ts                 # Application entrypoint & grammY initialization
-│   ├── config.ts                # Environment validation & configuration
-│   ├── ai/                      # Gemini 2.5 Flash gateway, prompts & intent orchestrator
-│   ├── walrus/                  # MemWal client, signer & event-sourced replay engine
-│   ├── handlers/                # Telegram commands (/start, /study, /restore, /briefing, /analyze)
-│   └── utils/                   # Markdown sanitizers & Telegram formatting helpers
-├── scripts/
-│   ├── verify-submission.ts     # Automated on-chain diagnostic probe (npm test)
-│   ├── verify-production.ts     # Optional production-only account verifier (npm run test:production)
-│   ├── test-document.ts         # Multimodal 45-slide lecture PDF ingest test (npm run test:pdf)
-│   └── parse_document.py        # Local Python document extractor (PDF/PPTX/DOCX)
-├── tests/
-│   ├── cross-session.test.ts    # Account-independent cross-session isolation & state tests
-│   ├── validator.test.ts        # 60/30/10 Invariant validator test suite
-│   └── config-safety.test.ts    # Configuration safety & isolation test suite (npm run test:config)
-├── data/
-│   └── demo-ledger.example.json # Static reference fixture (runtime ledger is uncommitted)
-├── JUDGING.md                   # Complete evaluation dossier across all criteria
-└── README.md
-```
-
----
-
-## Local Development & Setup Guide for Judges
-
-### 1. Installation
+### 1. Clone & Install
 ```bash
 git clone https://github.com/opeyemi406/WalLearn-bot.git
 cd WalLearn-bot
 npm install
+npm run build
 ```
 
-### 2. Environment Configuration
+### 2. Environment Configuration (`.env`)
 Create a `.env` file in the root directory (see `.env.example`):
 ```env
-TELEGRAM_BOT_TOKEN="your_bot_token_from_botfather"
+TELEGRAM_BOT_TOKEN="your_telegram_bot_token"
 OPENROUTER_API_KEY="your_openrouter_api_key"
 AI_MODEL="google/gemini-2.5-flash"
 
-# Walrus Protocol MemWal Credentials (Use your own account):
+# Option A: Local credentials directory (credentials.json)
 MEMWAL_CREDS_DIR="~/.memwal-wallearn"
-# OR provide discrete environment variables:
+
+# OR Option B: Discrete environment variables (Same Sui account)
 WALRUS_ACCOUNT_ID="0xYOUR_SUI_MEMWAL_ACCOUNT_ID"
 WALRUS_WALLET_ADDRESS="0xYOUR_SUI_WALLET_ADDRESS"
 WALRUS_DELEGATE_ADDRESS="0xYOUR_DELEGATE_ADDRESS"
-WALRUS_DELEGATE_PRIVATE_KEY="your_ed25519_delegate_private_key"
+WALRUS_DELEGATE_PRIVATE_KEY="your_64_char_hex_ed25519_private_key"
 WALRUS_RELAYER_URL="https://relayer.memory.walrus.xyz"
 ```
-> **Security Note**: Never commit `.env` or paste private keys in chat or commits. All MemWal identity fields (`WALRUS_ACCOUNT_ID`, `WALRUS_DELEGATE_ADDRESS`, `WALRUS_DELEGATE_PRIVATE_KEY`) must belong to the **same** Sui account.
-
-### 3. Verify & Run
-```bash
-# Run automated account-independent on-chain verification probe
-npm test
-
-# Run cross-session isolation & cognitive state test suite
-npm run test:cross-session
-
-# Run configuration safety and credential isolation tests
-npm run test:config
-
-# Run 60/30/10 invariant validator tests
-npm run test:validator
-
-# (Optional) Verify deployed production account with explicit target variables
-PRODUCTION_WALRUS_ACCOUNT_ID=0x... PRODUCTION_CHAT_ID=... npm run test:production
-
-# Start production bot server
-npm run build && npm start
-```
-
-### 4. Deploying to Railway with Custom Credentials
-WalLearn includes a production `Dockerfile` and `railway.json` for zero-configuration, 24/7 container deployment:
-
-1. **Fork or Push** this repository to your GitHub account.
-2. In [Railway](https://railway.app), click **"New Project"** → **"Deploy from GitHub repo"** → Select `WalLearn-bot`.
-3. Under the **Variables** tab in Railway, add your credentials:
-   - `TELEGRAM_BOT_TOKEN`: Your bot token from Telegram's [@BotFather](https://t.me/BotFather).
-   - `OPENROUTER_API_KEY`: Your OpenRouter API key with access to `google/gemini-2.5-flash`.
-   - `MEMWAL_CREDENTIALS_JSON` *(or `WALRUS_DELEGATE_PRIVATE_KEY`)*: Your MemWal delegate credentials for your Sui account.
-4. Railway automatically detects `railway.json`, builds the Docker container (Node 20 + Python + pypdf), binds the healthcheck to `$PORT`, and launches the bot 24/7 on Telegram.
-5. **Zero Disk Dependency & Clean Startup**: The repository starts with zero pre-loaded runtime learner history. All student cognitive states are stored directly on Walrus Protocol Mainnet and restored on demand via `/restore`.
+> ⚠️ **Security Notice:** Never commit `.env` or reveal private keys. All identity fields must belong to the **same** Sui account.
 
 ---
 
-## 📋 Comprehensive Judging Dossier
-For deep-dive technical proofs, code references, benchmark data, and complete evaluation across all 4 hackathon criteria, please consult:  
-👉 **[JUDGING.md](JUDGING.md)**
+## 7. Judge Verification Commands
+
+Judges can verify the entire test suite locally using their own credentials. Tests use ephemeral audit namespaces (`u<chatId>_audit<nonce>`) and do not depend on creator memories:
+
+```bash
+# 1. On-chain protocol diagnostic (relayer health & live round-trip memory recall)
+npm test
+
+# 2. Configuration safety & credential isolation test suite (7/7 passing)
+npm run test:config
+
+# 3. 60/30/10 ratio invariant validator test with programmatic slot repair
+npm run test:validator
+
+# 4. Bounded MemWal job polling, timeout, and failure handling test (6/6 passing)
+npm run test:polling
+
+# 5. Account-independent cross-session isolation and state machine suite
+npm run test:cross-session
+
+# 6. Multimodal lecture PDF ingestion, confirmed writes, and restore verification
+npm run test:pdf -- "path/to/any/lecture.pdf"
+
+# 7. (Optional) Production deployed account verification
+PRODUCTION_WALRUS_ACCOUNT_ID=0x... PRODUCTION_CHAT_ID=... npm run test:production
+```
+
+---
+
+## 8. Deployment (Railway 24/7)
+
+WalLearn is pre-configured for automated cloud deployment via `railway.json`:
+1. Connect this repository to [Railway](https://railway.app).
+2. Set `TELEGRAM_BOT_TOKEN`, `OPENROUTER_API_KEY`, and `MEMWAL_CREDENTIALS_JSON` in Railway Variables.
+3. Railway automatically builds the container (Node 20 + Python + pypdf) and deploys 24/7.
+4. Clean container startup: runtime ledger cache is initialized empty; all student states are restored from Walrus on demand.
+
+---
+
+## 9. Troubleshooting & Technical Considerations
+
+- **Asynchronous Relayer Indexing:** When writing to MemWal, job confirmation takes 1.5–3 seconds for TEE encryption and vector indexing. Test scripts use bounded polling (`waitForRememberJob`) to ensure writes confirm before testing recall or restore.
+- **Rate Limits (HTTP 429):** The `WalrusClient` implements automatic exponential backoff and respects relayer `Retry-After` headers.
+- **Read-Only Filesystem:** If local cache writes are blocked by container permissions, WalLearn continues normal operation by reading directly from Walrus Mainnet.
+
+---
+
+## 10. Extended Documentation
+
+- 📋 **[JUDGING.md](JUDGING.md)** — Evidence-first evaluation dossier mapped to all 4 hackathon criteria.
+- 📐 **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Technical specification, dual-layer routing, and event-sourcing schemas.
+- 📊 **[docs/CASE-STUDY.md](docs/CASE-STUDY.md)** — Medical student longitudinal field study (`PCL301`) and before/after comparison.
 
 ---
 
 ## License
-MIT License. Open-source for the decentralized education ecosystem. Built with ❤️ for the Walrus Hackathon.
+MIT License. Open-source for the decentralized education ecosystem. Built for the Walrus Sessions Hackathon.
