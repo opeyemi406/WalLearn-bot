@@ -160,7 +160,7 @@ In WalLearn, **memory actively controls the algorithmic behavior and output of t
   - **PCL302**: Neuropharmacology & Catecholamine Metabolism.
   - **ANA201**: Human Anatomy (Thorax, Mediastinum, Musculoskeletal).
 - **Production User Telemetry**: 
-  - **15 Active On-Chain Namespaces** (e.g. `u6878463854_pcl301`, `u5420044163_pcl302`, `u6878463854_ana204`).
+  - **15 Active On-Chain Namespaces** (e.g. `u_student_pcl301`, `u_student_pcl302`, `u_student_ana204`).
   - **50 Confirmed On-Chain Blobs** on Walrus Protocol Mainnet.
   - **57 Total Recorded Cognitive Milestones** across student accounts.
 
@@ -173,7 +173,7 @@ In WalLearn, **memory actively controls the algorithmic behavior and output of t
 | **Cross-Session Continuity** | **Cold-Start Amnesia:** Fresh sessions require the student to manually re-explain syllabus progress and past errors from scratch. | **On-Chain Zero-Input Recall:** `/briefing` queries student namespace `u<chatId>_<course>` on Walrus Mainnet and ranks misconceptions by $(\text{Misses} \times \text{Severity})$ before any user input. | Cold-start recall verified locally via `npm run test:cross-session`. |
 | **Mastery Verification Protocol** | **Single-Pass Heuristic:** A single correct guess is treated as mastery, creating false confidence on exam day. | **Formal 3-Consecutive-Pass State Machine:** Requires 3 independent passes across separate study sessions. Random spot-check failures demote status back to recovery on Walrus. | Deterministic state machine unit tests in `tests/cross-session.test.ts`. |
 | **Disaster Recovery Resilience** | **Irrevocable State Loss:** Deleting chat history or moving devices permanently destroys learner profile. | **Decentralized State Reconstruction:** `/restore` fetches raw blobs from Walrus Mainnet and chronologically replays the state machine with zero local database dependency. | Verified by wiping `data/mistakes-ledger.json` and running `/restore`. |
-| **Study Efficiency** | **Unfocused Revision:** Student spends substantial study time re-answering mastered concepts due to lack of historical diagnostic tracking. | **Weakness-Targeted Convergence:** Every drill prioritizes unmastered misconceptions until consecutive mastery proofs are signed and anchored. | Telemetry logged in active student namespaces (e.g. `u6878463854_pcl301`). |
+| **Study Efficiency** | **Unfocused Revision:** Student spends substantial study time re-answering mastered concepts due to lack of historical diagnostic tracking. | **Weakness-Targeted Convergence:** Every drill prioritizes unmastered misconceptions until consecutive mastery proofs are signed and anchored. | Telemetry logged in active student namespaces (e.g. `u_student_pcl301`). |
 
 > 📋 **Empirical Field Evaluation Disclosure:**  
 > Rather than relying on unverified simulated statistics, telemetry in Criterion 2 reflects an **N=1 Longitudinal Feasibility Study** conducted across 14 days with a university medical student studying LASUCOM Pharmacology (`PCL301` / Autonomic & Neuromuscular Blockers).  

@@ -87,7 +87,7 @@ If the user deletes their Telegram chat history or the bot's cloud server redepl
   - **PCL302**: Neuropharmacology & Catecholamine Disorders
   - **ANA201**: Human Gross Anatomy (Thorax, Mediastinum)
 - **Production On-Chain Telemetry**: 
-  - **15 Active On-Chain Namespaces** (e.g. `u6878463854_pcl301`, `u5420044163_pcl302`, `u6878463854_ana204`).
+  - **15 Active On-Chain Namespaces** (e.g. `u_student_pcl301`, `u_student_pcl302`, `u_student_ana204`).
   - **50 Confirmed On-Chain Blobs** on Walrus Protocol Mainnet.
   - **57 Total Recorded Cognitive Milestones** across student accounts.
 
@@ -100,7 +100,7 @@ If the user deletes their Telegram chat history or the bot's cloud server redepl
 | **Cross-Session Continuity** | **Cold-Start Amnesia:** Fresh sessions require the student to manually re-explain syllabus progress and past errors from scratch. | **On-Chain Zero-Input Recall:** `/briefing` queries student namespace `u<chatId>_<course>` on Walrus Mainnet and ranks misconceptions by $(\text{Misses} \times \text{Severity})$ before any user input. | Cold-start recall verified locally via `npm run test:cross-session`. |
 | **Mastery Verification Protocol** | **Single-Pass Heuristic:** A single correct guess is treated as mastery, creating false confidence on exam day. | **Formal 3-Consecutive-Pass State Machine:** Requires 3 independent passes across separate study sessions. Random spot-check failures demote status back to recovery on Walrus. | Deterministic state machine unit tests in `tests/cross-session.test.ts`. |
 | **Disaster Recovery Resilience** | **Irrevocable State Loss:** Deleting chat history or moving devices permanently destroys learner profile. | **Decentralized State Reconstruction:** `/restore` fetches raw blobs from Walrus Mainnet and chronologically replays the state machine with zero local database dependency. | Verified by wiping `data/mistakes-ledger.json` and running `/restore`. |
-| **Study Efficiency** | **Unfocused Revision:** Student spends substantial study time re-answering mastered concepts due to lack of historical diagnostic tracking. | **Weakness-Targeted Convergence:** Every drill prioritizes unmastered misconceptions until consecutive mastery proofs are signed and anchored. | Telemetry logged in active student namespaces (e.g. `u6878463854_pcl301`). |
+| **Study Efficiency** | **Unfocused Revision:** Student spends substantial study time re-answering mastered concepts due to lack of historical diagnostic tracking. | **Weakness-Targeted Convergence:** Every drill prioritizes unmastered misconceptions until consecutive mastery proofs are signed and anchored. | Telemetry logged in active student namespaces (e.g. `u_student_pcl301`). |
 
 > 📋 **Empirical Field Evaluation Disclosure:**  
 > Telemetry in Criterion 2 reflects an **N=1 Longitudinal Feasibility Study** conducted across 14 days with a university medical student studying LASUCOM Pharmacology (`PCL301` / Autonomic & Neuromuscular Blockers).  
@@ -108,7 +108,7 @@ If the user deletes their Telegram chat history or the bot's cloud server redepl
 > • **Observed Behavioral Outcome:** In standard chat sessions, the student repeated the Phase 1 depolarizing blockade distractor error 3 times across unlinked chats. With WalLearn, the misconception was committed to blob `5BTSt6okVpuhzpzS1wcmFvh5Kx863nki2avsXIKzt7U`, surfaced on next-day login, and graduated to `[MASTERED]` on Walrus Mainnet after 3 verified passes.
 
 ### 3. Concrete User Walkthrough: Autonomic Pharmacology (`PCL301`)
-- **User Action**: Student (`Chat ID: 6878463854`) practicing `PCL301` answered a question on *Succinylcholine Phase 1 Blockade*. They incorrectly selected that cholinesterase inhibitors reverse Phase 1 blockade (in reality, they augment it).
+- **User Action**: Student (`Chat ID: 998000123`) practicing `PCL301` answered a question on *Succinylcholine Phase 1 Blockade*. They incorrectly selected that cholinesterase inhibitors reverse Phase 1 blockade (in reality, they augment it).
 - **WalLearn Reaction**:
   1. Intercepted the misconception and categorized it as high-severity.
   2. Dispatched an Ed25519-signed write via `@mysten-incubation/memwal` to Walrus Mainnet.
