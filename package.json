@@ -13,7 +13,8 @@
     "test:validator": "tsx tests/validator.test.ts",
     "test:pdf": "tsx scripts/test-document.ts",
     "test:production": "tsx scripts/verify-production.ts",
-    "test:config": "tsx tests/config-safety.test.ts"
+    "test:config": "tsx tests/config-safety.test.ts",
+    "test:polling": "tsx tests/job-polling.test.ts"
   },
   "dependencies": {
     "@mysten-incubation/memwal": "^0.1.8",

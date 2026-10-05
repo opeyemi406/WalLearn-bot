@@ -4,7 +4,14 @@ import crypto from "crypto";
 import { signAsync } from "@noble/ed25519";
 import { MemWal } from "@mysten-incubation/memwal";
 import { config, resolveCredsDir } from "../config.js";
-import { MistakeEntry, WeaknessBriefing, WeaknessItem, StoredBlobRecord } from "./types.js";
+import {
+  MistakeEntry,
+  WeaknessBriefing,
+  WeaknessItem,
+  StoredBlobRecord,
+  WaitForRememberJobOptions,
+  WaitForRememberJobResult,
+} from "./types.js";
 import {
   formatMistake,
   formatProgress,
@@ -885,77 +892,107 @@ export class WalrusClient {
   }
 
   /**
-   * Actively wait for a MemWal write job to complete and confirm a Walrus blob ID.
+   * One-shot status lookup for a MemWal remember job.
    */
-  public async waitForJobCompletion(jobId: string, maxAttempts = 10, intervalMs = 2500): Promise<{ status: string; blobId?: string }> {
-    for (let i = 0; i < maxAttempts; i++) {
+  public async getRememberStatus(jobId: string): Promise<{ status: string; blob_id?: string; error?: string }> {
+    if (this.sdk) {
       try {
-        if (this.sdk) {
-          const data = await this.sdk.getRememberStatus(jobId);
-          if (data.status === "done" && data.blob_id) {
-            const rec = this.ledger.find((r) => r.jobId === jobId);
-            if (rec) {
-              rec.blobId = data.blob_id;
-              this.saveLedger();
-            }
-            return { status: "done", blobId: data.blob_id };
-          }
-        } else {
-          const res = await this.signedFetch("GET", `/api/remember/${jobId}`, "");
-          if (res.ok) {
-            const data = (await res.json()) as { status?: string; blob_id?: string };
-            if (data.status === "done" && data.blob_id) {
-              const rec = this.ledger.find((r) => r.jobId === jobId);
-              if (rec) {
-                rec.blobId = data.blob_id;
-                this.saveLedger();
-              }
-              return { status: "done", blobId: data.blob_id };
-            }
-          }
-        }
-      } catch {
-        // transient error, retry
+        const data = await this.sdk.getRememberStatus(jobId);
+        return { status: data.status, blob_id: data.blob_id, error: data.error };
+      } catch (err) {
+        return { status: "error", error: (err as Error).message };
       }
-      await sleep(intervalMs);
     }
-    return { status: "pending" };
+    try {
+      const res = await this.signedFetch("GET", `/api/remember/${jobId}`, "");
+      if (res.ok) {
+        const data = (await res.json()) as { status?: string; blob_id?: string; error?: string };
+        return { status: data.status || "unknown", blob_id: data.blob_id, error: data.error };
+      }
+      return { status: "error", error: `HTTP ${res.status}` };
+    } catch (err) {
+      return { status: "error", error: (err as Error).message };
+    }
+  }
+
+  /**
+   * Reliable bounded polling for MemWal remember jobs.
+   * Stops when confirmed/completed or failed/timed out.
+   */
+  public async waitForRememberJob(
+    jobId: string,
+    options?: WaitForRememberJobOptions
+  ): Promise<WaitForRememberJobResult> {
+    const pollIntervalMs = options?.pollIntervalMs ?? 2500;
+    const timeoutMs = options?.timeoutMs ?? 60_000;
+    const maxAttempts = options?.maxAttempts ?? Math.ceil(timeoutMs / pollIntervalMs);
+    const deadline = Date.now() + timeoutMs;
+
+    let attempts = 0;
+
+    while (Date.now() < deadline && attempts < maxAttempts) {
+      attempts++;
+      try {
+        const data = await this.getRememberStatus(jobId);
+        if (data.status === "done" && data.blob_id) {
+          const rec = this.ledger.find((r) => r.jobId === jobId);
+          if (rec) {
+            rec.blobId = data.blob_id;
+            this.saveLedger();
+          }
+          return { status: "done", blobId: data.blob_id, jobId, attempts };
+        }
+        if (data.status === "failed") {
+          return {
+            status: "failed",
+            jobId,
+            error: data.error || "Job reported failed status on Walrus relayer",
+            attempts,
+          };
+        }
+      } catch (err) {
+        const msg = (err as Error).message || "Transient polling error";
+        if (attempts >= maxAttempts || Date.now() >= deadline) {
+          return { status: "error", jobId, error: msg, attempts };
+        }
+      }
+
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) break;
+      await sleep(Math.min(pollIntervalMs, remaining));
+    }
+
+    return {
+      status: "timeout",
+      jobId,
+      error: `Job ${jobId} timed out after ${attempts} attempts (${timeoutMs}ms)`,
+      attempts,
+    };
+  }
+
+  /**
+   * Backward-compatible alias for waitForRememberJob.
+   */
+  public async waitForJobCompletion(
+    jobId: string,
+    maxAttempts = 10,
+    intervalMs = 2500
+  ): Promise<{ status: string; blobId?: string; error?: string }> {
+    const res = await this.waitForRememberJob(jobId, {
+      pollIntervalMs: intervalMs,
+      timeoutMs: maxAttempts * intervalMs,
+      maxAttempts,
+    });
+    return { status: res.status, blobId: res.blobId, error: res.error };
   }
 
   /** Resolve blob IDs for recent jobs. Only fills blobId; never changes learning state. */
   private async pollJobCompletion(jobId: string, maxAttempts = 4) {
-    const delays = [4000, 8000, 12000, 16000];
-    for (let i = 0; i < maxAttempts; i++) {
-      await sleep(delays[i] || 6000);
-      try {
-        if (this.sdk) {
-          const data = await this.sdk.getRememberStatus(jobId);
-          if (data.status === "done" && data.blob_id) {
-            const rec = this.ledger.find((r) => r.jobId === jobId);
-            if (rec) {
-              rec.blobId = data.blob_id;
-              this.saveLedger();
-            }
-            return;
-          }
-        } else {
-          const res = await this.signedFetch("GET", `/api/remember/${jobId}`, "");
-          if (res.ok) {
-            const data = (await res.json()) as { status?: string; blob_id?: string };
-            if (data.status === "done" && data.blob_id) {
-              const rec = this.ledger.find((r) => r.jobId === jobId);
-              if (rec) {
-                rec.blobId = data.blob_id;
-                this.saveLedger();
-              }
-              return;
-            }
-          }
-        }
-      } catch {
-        // transient; retry
-      }
-    }
+    await this.waitForRememberJob(jobId, {
+      pollIntervalMs: 4000,
+      timeoutMs: maxAttempts * 4000,
+      maxAttempts,
+    });
   }
 
   async getLedger(chatId?: number): Promise<StoredBlobRecord[]> {

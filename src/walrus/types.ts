@@ -44,3 +44,18 @@ export interface StoredBlobRecord {
   unverified?: boolean; // set when the relayer cannot confirm the blob
   status: "pending" | "confirmed" | "recovering" | "mastered";
 }
+
+export interface WaitForRememberJobOptions {
+  pollIntervalMs?: number; // default: 2500ms
+  timeoutMs?: number;      // default: 60000ms
+  maxAttempts?: number;    // optional maximum attempts
+}
+
+export interface WaitForRememberJobResult {
+  status: "done" | "failed" | "timeout" | "error" | "pending";
+  blobId?: string;
+  jobId: string;
+  error?: string;
+  attempts?: number;
+}
+
