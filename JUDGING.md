@@ -3,9 +3,9 @@
 > **Hackathon Track:** Walrus Sessions: *Chatbots That Remember* (DeepSurge)  
 > **Bot Handle:** [@WalLearnBot](https://t.me/WalLearnBot)  
 > **Repository:** [opeyemi406/WalLearn-bot](https://github.com/opeyemi406/WalLearn-bot)  
-> **Live On-Chain Sui Object:** [`0x75a533d83e9fee09e36b29b14e8b093862042ee92b188e5122338da7118be140`](https://suiscan.xyz/mainnet/object/0x75a533d83e9fee09e36b29b14e8b093862042ee92b188e5122338da7118be140)  
-> **Dedicated Sessions Wallet:** [`0xf3efc1f6d86ea33f736072668549138f00f2ca8fc67962019543e213a0fa2db2`](https://suiscan.xyz/mainnet/account/0xf3efc1f6d86ea33f736072668549138f00f2ca8fc67962019543e213a0fa2db2)  
-> **Primary AI Model:** `google/gemini-2.5-flash` via OpenRouter (Beyond the Big Two Track)
+> **Primary AI Model:** `google/gemini-2.5-flash` via OpenRouter (Beyond the Big Two Track)  
+> **Reference Deployed Instance (Proof of Deployment):** Sui Object [`0x75a533d83e9fee09e36b29b14e8b093862042ee92b188e5122338da7118be140`](https://suiscan.xyz/mainnet/object/0x75a533d83e9fee09e36b29b14e8b093862042ee92b188e5122338da7118be140)  
+> 🛡️ **Judge Testing Isolation**: Independent checkouts use the judge's own credentials in `.env`. Local test suites (`npm test`, `npm run test:cross-session`) generate isolated temporary namespaces on the judge's account and do not depend on the creator's historical learner data.
 
 ---
 
@@ -240,9 +240,11 @@ As required by the hackathon submission guidelines, we submitted feedback coveri
 
 ---
 
-## Auditable On-Chain Artifacts
+## Auditable Production Artifacts (Deployed Bot Proofs)
 
-| Artifact | Identifier / Explorer URL |
+> **Notice**: The table below documents the live production deployment of `@WalLearnBot` on Sui Mainnet as proof of active hackathon deployment. When running local judge tests (`npm test`, `npm run test:cross-session`), the test suite connects to **your own configured MemWal account** and writes/recalls from fresh dynamic audit namespaces.
+
+| Artifact | Production Explorer URL |
 |---|---|
 | **Sui MemWalAccount Object** | [`0x75a533d83e9fee09e36b29b14e8b093862042ee92b188e5122338da7118be140`](https://suiscan.xyz/mainnet/object/0x75a533d83e9fee09e36b29b14e8b093862042ee92b188e5122338da7118be140) |
 | **Dedicated Sessions Wallet** | [`0xf3efc1f6d86ea33f736072668549138f00f2ca8fc67962019543e213a0fa2db2`](https://suiscan.xyz/mainnet/account/0xf3efc1f6d86ea33f736072668549138f00f2ca8fc67962019543e213a0fa2db2) |

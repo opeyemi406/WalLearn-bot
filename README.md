@@ -66,7 +66,7 @@ flowchart TD
         WalrusClient["WalrusClient (Signer & Ledger Manager)"]
         Ed25519["Ed25519 Delegate Key Signer\n(RFC-compliant Canonical Request Hasher)"]
         Relayer["MemWal Relayer Node\n(https://relayer.memory.walrus.xyz)"]
-        SuiChain["Sui Mainnet\n(MemWalAccount: 0x75a533d83e...)"]
+        SuiChain["Sui Mainnet\n(Configured MemWalAccount Object)"]
         WalrusMainnet["Walrus Protocol Mainnet\n(Immutable Encrypted Blobs)"]
     end
 
@@ -231,7 +231,10 @@ npm run test:pdf
 
 ---
 
-## On-Chain Verification & Judge Audit Table
+## Production Deployment Proofs (Reference Only)
+
+> **Notice for Independent Judge Testing**:
+> When running local tests (`npm test`, `npm run test:cross-session`, `npm run test:config`), the test suite connects to **your own configured MemWal account** and writes/recalls from fresh dynamic audit namespaces. The table below documents the live public production deployment of `@WalLearnBot` on Sui Mainnet for hackathon proof-of-work.
 
 All memory transactions are verifiable on the **Sui Blockchain** and **Walrus Protocol Mainnet**:
 
