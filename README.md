@@ -56,7 +56,7 @@ This is decentralized memory doing real, measurable cognitive work in the hands 
 
 ## High-Level System Architecture
 
-WalLearn is designed around a **hexagonal, decoupled micro-architecture** engineered for sub-second UI responsiveness, resilient blockchain writes, and deterministic learning state progression.
+WalLearn is designed around a **hexagonal, decoupled micro-architecture** engineered for sub-second UI responsiveness, resilient blockchain writes, and deterministic learning state progression. WalLearn is 100% self-contained, fully portable, and can rebuild its entire state directly from Walrus Protocol Mainnet at any time without any external SQL database dependency.
 
 ```mermaid
 flowchart TD
