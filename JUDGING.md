@@ -26,6 +26,17 @@ WalLearn demonstrates that decentralized memory on Walrus Protocol can serve as 
 | **3. Build Quality & Reproducibility** | Official MemWal SDK, clean architecture, automated tests. | Official `@mysten-incubation/memwal` (v0.1.8), Ed25519 canonical request signer, bounded job waiting, strict credential isolation. | `npm test`<br>`npm run test:config`<br>`npm run test:polling`<br>`npm run test:pdf` |
 | **4. Best Article & Ecosystem Feedback** | Clear educational article and actionable feedback. | Published Medium article on building with MemWal; structured feedback on SDK ESM exports, cursor pagination on restore, and semantic distance filters. | Published Article<br>See Section 6 below |
 
+### Before vs. After Comparative Matrix (Criterion 2 Evidence)
+
+| Evaluation Dimension | Standard Ephemeral Chatbots (Before) | WalLearn with Walrus Memory (After) | Verification Mechanism |
+|---|---|---|---|
+| **Memory Model** | **Volatile Context:** State cleared on session timeout or container restart. | **Cryptographic Event Streams:** State transitions committed to Walrus Mainnet. | Auditable on Walruscan (59 on-chain blobs). |
+| **Drill Allocation** | **Unconstrained Prompting:** Repetitive questions prone to prompt drift. | **Algorithmic Invariant:** $\ge 50\%$ allocation to active Walrus weakness topics. | Programmatic validator (`npm run test:validator`). |
+| **Continuity** | **Cold-Start Amnesia:** User must re-explain mistakes from the beginning. | **Zero-Input Recall:** `/briefing` surfaces weaknesses before any prompt. | Verified locally (`npm run test:cross-session`). |
+| **Mastery Verification** | **Single-Pass Heuristic:** One correct guess marks topic mastered. | **3-Consecutive-Pass Rule:** 3 verified passes across distinct sessions. | Deterministic state machine unit tests. |
+| **Disaster Recovery** | **Irrevocable Loss:** Deleted chat history permanently destroys profile. | **Decentralized State Replay:** `/restore` rebuilds state from Walrus blobs. | Verified by wiping cache and running `/restore`. |
+| **Study Efficiency** | **Unfocused Revision:** Student repeats known mistakes on exam day. | **Targeted Convergence:** Drills prioritize unmastered clinical misconceptions. | Medical student field study ([docs/CASE-STUDY.md](docs/CASE-STUDY.md)). |
+
 ---
 
 ## 3. Verification Quick-Start for Judges
