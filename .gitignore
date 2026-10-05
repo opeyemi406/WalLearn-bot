@@ -6,3 +6,5 @@ data/user-profiles.json
 *.pdf
 *.pptx
 *.docx
+!tests/fixtures/*
+

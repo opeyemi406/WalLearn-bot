@@ -7,7 +7,7 @@ import { parseSubjectInput, setUserSubject } from "../src/state.js";
 import { buildQuizGeneratorPrompt } from "../src/ai/prompts.js";
 import { askAi } from "../src/ai/client.js";
 
-const DEFAULT_SAMPLE_PDF = "/Users/eazitech/.gemini/antigravity/brain/f4c51db5-717f-42a1-ad8a-06a80096d020/.user_uploaded/media_1791157022642.pdf";
+const DEFAULT_SAMPLE_PDF = path.join(process.cwd(), "tests/fixtures/sample-lecture.pdf");
 
 async function main() {
   const targetFile = process.argv[2] || (fs.existsSync(DEFAULT_SAMPLE_PDF) ? DEFAULT_SAMPLE_PDF : "");
