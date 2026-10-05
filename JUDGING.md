@@ -142,6 +142,9 @@ npm test
 
 # 4. Run automated cross-session test suite
 npm run test:cross-session
+
+# 5. Run end-to-end CLI document & MemWal test on any lecture PDF
+npm run test:pdf [path/to/lecture.pdf]
 ```
 
 #### Diagnostic Output (`npm test`):

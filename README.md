@@ -212,6 +212,8 @@ git clone https://github.com/opeyemi406/WalLearn-bot.git
 cd WalLearn-bot
 npm install
 npm test
+npm run test:cross-session
+npm run test:pdf [path/to/lecture.pdf]
 ```
 The automated test script (`scripts/verify-submission.ts`) immediately executes:
 1. Validates Sui on-chain account object and credentials.
