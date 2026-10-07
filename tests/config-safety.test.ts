@@ -25,45 +25,43 @@ async function runConfigSafetyTests() {
     }
 
     // -------------------------------------------------------------------------
-    // Test 2: Incomplete credentials (missing WALRUS_ACCOUNT_ID) must be rejected
+    // Test 2: Incomplete credentials (missing MEMWAL_ACCOUNT_ID) must be rejected
     // -------------------------------------------------------------------------
-    console.log("\n▶ Test 2: Missing WALRUS_ACCOUNT_ID must throw explicit configuration error");
+    console.log("\n▶ Test 2: Missing MEMWAL_ACCOUNT_ID must throw explicit configuration error");
     {
       delete process.env.MEMWAL_CREDENTIALS_JSON;
+      delete process.env.MEMWAL_ACCOUNT_ID;
       delete process.env.WALRUS_ACCOUNT_ID;
-      process.env.WALRUS_DELEGATE_PRIVATE_KEY = "dummy_private_key";
-      process.env.WALRUS_DELEGATE_ADDRESS = "0xdummy_delegate";
+      process.env.MEMWAL_PRIVATE_KEY = "1111111111111111111111111111111111111111111111111111111111111111";
 
       let threw = false;
       try {
         new WalrusClient();
       } catch (err) {
         threw = true;
-        assert((err as Error).message.includes("WALRUS_ACCOUNT_ID"), "Error message must specify missing WALRUS_ACCOUNT_ID");
+        assert((err as Error).message.includes("MEMWAL_ACCOUNT_ID"), "Error message must specify missing MEMWAL_ACCOUNT_ID");
       }
-      assert(threw, "WalrusClient must throw when WALRUS_ACCOUNT_ID is missing for a private key");
-      console.log("  ✅ Missing WALRUS_ACCOUNT_ID correctly rejected without defaulting to creator.");
+      assert(threw, "WalrusClient must throw when MEMWAL_ACCOUNT_ID is missing for a private key");
+      console.log("  ✅ Missing MEMWAL_ACCOUNT_ID correctly rejected without defaulting to creator.");
     }
 
     // -------------------------------------------------------------------------
-    // Test 3: Incomplete credentials (missing WALRUS_DELEGATE_ADDRESS) must be rejected
+    // Test 3: Discrete MEMWAL credentials auto-derive public key and initialize
     // -------------------------------------------------------------------------
-    console.log("\n▶ Test 3: Missing WALRUS_DELEGATE_ADDRESS must throw explicit configuration error");
+    console.log("\n▶ Test 3: Discrete MEMWAL credentials auto-derive public key cleanly");
     {
       delete process.env.MEMWAL_CREDENTIALS_JSON;
-      process.env.WALRUS_ACCOUNT_ID = "0x9999999999999999999999999999999999999999999999999999999999999999";
-      process.env.WALRUS_DELEGATE_PRIVATE_KEY = "dummy_private_key";
+      delete process.env.MEMWAL_DELEGATE_ADDRESS;
       delete process.env.WALRUS_DELEGATE_ADDRESS;
+      process.env.MEMWAL_ACCOUNT_ID = "0x9999999999999999999999999999999999999999999999999999999999999999";
+      process.env.MEMWAL_PRIVATE_KEY = "1111111111111111111111111111111111111111111111111111111111111111";
+      process.env.MEMWAL_SERVER_URL = "https://relayer.memory.walrus.xyz";
 
-      let threw = false;
-      try {
-        new WalrusClient();
-      } catch (err) {
-        threw = true;
-        assert((err as Error).message.includes("WALRUS_DELEGATE_ADDRESS"), "Error message must specify missing WALRUS_DELEGATE_ADDRESS");
-      }
-      assert(threw, "WalrusClient must throw when WALRUS_DELEGATE_ADDRESS is missing");
-      console.log("  ✅ Missing WALRUS_DELEGATE_ADDRESS correctly rejected.");
+      const client = new WalrusClient();
+      assert.strictEqual(client.hasCredentials(), true, "WalrusClient must report hasCredentials() true");
+      const health = await client.getHealth();
+      assert.strictEqual(health.accountId, "0x9999999999999999999999999999999999999999999999999999999999999999");
+      console.log("  ✅ Discrete MEMWAL credentials initialize cleanly with auto-derived public key.");
     }
 
     // -------------------------------------------------------------------------
@@ -87,9 +85,15 @@ async function runConfigSafetyTests() {
     {
       // Reset environment to unauthenticated
       delete process.env.MEMWAL_CREDENTIALS_JSON;
+      delete process.env.MEMWAL_PRIVATE_KEY;
+      delete process.env.MEMWAL_ACCOUNT_ID;
+      delete process.env.MEMWAL_SERVER_URL;
+      delete process.env.MEMWAL_DELEGATE_ADDRESS;
+      delete process.env.MEMWAL_WALLET_ADDRESS;
       delete process.env.WALRUS_DELEGATE_PRIVATE_KEY;
       delete process.env.WALRUS_ACCOUNT_ID;
       delete process.env.WALRUS_DELEGATE_ADDRESS;
+      delete process.env.WALRUS_RELAYER_URL;
       process.env.MEMWAL_CREDS_DIR = "/tmp/non-existent-creds-dir";
 
       const client = new WalrusClient();
@@ -120,9 +124,15 @@ async function runConfigSafetyTests() {
     console.log("\n▶ Test 7: Unauthenticated mode runs gracefully without crashing");
     {
       delete process.env.MEMWAL_CREDENTIALS_JSON;
+      delete process.env.MEMWAL_PRIVATE_KEY;
+      delete process.env.MEMWAL_ACCOUNT_ID;
+      delete process.env.MEMWAL_SERVER_URL;
+      delete process.env.MEMWAL_DELEGATE_ADDRESS;
+      delete process.env.MEMWAL_WALLET_ADDRESS;
       delete process.env.WALRUS_DELEGATE_PRIVATE_KEY;
       delete process.env.WALRUS_ACCOUNT_ID;
       delete process.env.WALRUS_DELEGATE_ADDRESS;
+      delete process.env.WALRUS_RELAYER_URL;
       process.env.MEMWAL_CREDS_DIR = "/tmp/non-existent-creds-dir";
 
       const unauthClient = new WalrusClient();

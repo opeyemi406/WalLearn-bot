@@ -43,7 +43,7 @@ WalLearn demonstrates that decentralized memory on Walrus Protocol can serve as 
 
 ### Verification Modes:
 - **Mode A: Independent Judge Verification (Default):** Runs against the judge's own configured MemWal account in `.env`. Generates dynamic, isolated test namespaces (`u<chatId>_audit<nonce>`) and writes/recalls fresh test events. Has zero dependency on creator data.
-- **Mode B: Reference Production Verification (Optional):** Validates the deployed hackathon instance via `PRODUCTION_WALRUS_ACCOUNT_ID=0x... npm run test:production`.
+- **Mode B: Reference Production Verification (Optional):** Validates the deployed hackathon instance via `PRODUCTION_MEMWAL_ACCOUNT_ID=0x... npm run test:production`.
 
 ```bash
 # 1. Configuration safety & zero creator fallback test (7/7 passing)

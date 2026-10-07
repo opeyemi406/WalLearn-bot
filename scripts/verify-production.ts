@@ -6,17 +6,21 @@ async function verifyProduction() {
   console.log("🚀 WalLearn Production Deployment Verification Diagnostic");
   console.log("============================================================\n");
 
-  const targetAccountId = process.env.PRODUCTION_WALRUS_ACCOUNT_ID || process.env.WALRUS_ACCOUNT_ID;
+  const targetAccountId =
+    process.env.PRODUCTION_MEMWAL_ACCOUNT_ID ||
+    process.env.PRODUCTION_WALRUS_ACCOUNT_ID ||
+    process.env.MEMWAL_ACCOUNT_ID ||
+    process.env.WALRUS_ACCOUNT_ID;
   const targetChatId = process.env.PRODUCTION_CHAT_ID ? parseInt(process.env.PRODUCTION_CHAT_ID, 10) : undefined;
   const targetCourse = process.env.PRODUCTION_COURSE || "pcl301";
 
   if (!targetAccountId || !targetChatId) {
     console.log("ℹ️ Production verification requires explicit target environment variables:");
-    console.log("   • PRODUCTION_WALRUS_ACCOUNT_ID (e.g. 0x...)");
+    console.log("   • PRODUCTION_MEMWAL_ACCOUNT_ID (e.g. 0x...)");
     console.log("   • PRODUCTION_CHAT_ID (e.g. your Telegram user/chat ID)");
     console.log("   • PRODUCTION_COURSE (e.g. pcl301, optional, defaults to pcl301)\n");
     console.log("Usage example:");
-    console.log("  PRODUCTION_WALRUS_ACCOUNT_ID=0x... PRODUCTION_CHAT_ID=12345678 npm run test:production\n");
+    console.log("  PRODUCTION_MEMWAL_ACCOUNT_ID=0x... PRODUCTION_CHAT_ID=12345678 npm run test:production\n");
     console.log("For default judge testing and fresh account verification, run:");
     console.log("  npm test");
     console.log("  npm run test:cross-session\n");

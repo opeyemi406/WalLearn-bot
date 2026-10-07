@@ -160,7 +160,10 @@ async function runCrossSessionTests() {
 
     if (rememberResult.jobId) {
       console.log(`  • Polling job confirmation on Walrus Protocol...`);
-      const pollStatus = await walrus.waitForJobCompletion(rememberResult.jobId, 8, 2000);
+      const pollStatus = await walrus.waitForRememberJob(rememberResult.jobId, {
+        pollIntervalMs: 2500,
+        timeoutMs: 60_000,
+      });
       if (pollStatus.blobId) {
         console.log(`  • Blob confirmed on Walrus: https://walruscan.com/mainnet/blob/${pollStatus.blobId}`);
       }
@@ -174,8 +177,8 @@ async function runCrossSessionTests() {
       { fallbackToLocal: false, limit: 10 }
     );
 
-    // Background vector indexing at relayer can take 2-4 seconds; poll if not immediately returned
-    for (let attempt = 0; attempt < 5 && (!studentRecall.texts || studentRecall.texts.length === 0); attempt++) {
+    // Background vector indexing at relayer can take a few seconds; poll if not immediately returned
+    for (let attempt = 0; attempt < 8 && (!studentRecall.texts || studentRecall.texts.length === 0); attempt++) {
       await new Promise((r) => setTimeout(r, 2000));
       studentRecall = await walrus.recallDetailed(
         testFact,

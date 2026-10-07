@@ -1,9 +1,14 @@
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
-import { signAsync } from "@noble/ed25519";
+import * as ed from "@noble/ed25519";
 import { MemWal } from "@mysten-incubation/memwal";
 import { config, resolveCredsDir } from "../config.js";
+
+if (!ed.hashes?.sha512) {
+  ed.hashes.sha512 = (...m: Uint8Array[]) =>
+    crypto.createHash("sha512").update(Buffer.concat(m.map((b) => Buffer.from(b)))).digest();
+}
 import {
   MistakeEntry,
   WeaknessBriefing,
@@ -33,7 +38,8 @@ import {
  */
 
 const LEDGER_FILE = path.join(config.dataDir, "mistakes-ledger.json");
-const RELAYER_URL = config.walrusRelayerUrl.replace(/\/$/, "");
+const getRelayerUrl = () =>
+  (process.env.MEMWAL_SERVER_URL || process.env.WALRUS_RELAYER_URL || config.memwalServerUrl || config.walrusRelayerUrl || "https://relayer.memory.walrus.xyz").replace(/\/$/, "");
 const REQUEST_TIMEOUT_MS = 20_000;
 const SYNC_TTL_MS = 5 * 60 * 1000; // re-sync from Walrus at most every 5 minutes per learner+course
 const FRESH_WRITE_MS = 2 * 60 * 1000; // do not let a stale remote index overwrite a just-written local change
@@ -108,36 +114,56 @@ export class WalrusClient {
         } catch (jsonErr) {
           throw new Error(`Failed to parse MEMWAL_CREDENTIALS_JSON: ${(jsonErr as Error).message}`);
         }
-        if (!parsed.accountId || !parsed.delegatePrivateKey) {
+        const privateKey = (parsed.delegatePrivateKey || parsed.privateKey || "").trim();
+        const accountId = (parsed.accountId || "").trim();
+        if (!accountId || !privateKey) {
           throw new Error("Invalid MEMWAL_CREDENTIALS_JSON: missing required fields 'accountId' and 'delegatePrivateKey'.");
         }
+        let pubHex = (parsed.delegatePublicKeyHex || parsed.delegateAddress || "").trim();
+        if (pubHex.startsWith("0x")) pubHex = pubHex.slice(2);
+        if (!pubHex && privateKey) {
+          try {
+            pubHex = toHex(ed.getPublicKey(fromHex(privateKey)));
+          } catch {
+            // fallback
+          }
+        }
         this.creds = {
-          accountId: parsed.accountId,
-          delegatePrivateKey: parsed.delegatePrivateKey,
-          delegatePublicKeyHex: parsed.delegatePublicKeyHex || parsed.delegateAddress || "",
+          accountId,
+          delegatePrivateKey: privateKey,
+          delegatePublicKeyHex: pubHex,
           walletAddress: parsed.walletAddress || "",
         };
-      } else if (process.env.WALRUS_DELEGATE_PRIVATE_KEY) {
-        const accountId = (process.env.WALRUS_ACCOUNT_ID || "").trim();
-        const delegateAddress = (process.env.WALRUS_DELEGATE_ADDRESS || "").trim();
-        const walletAddress = (process.env.WALRUS_WALLET_ADDRESS || "").trim();
+      } else if (process.env.MEMWAL_PRIVATE_KEY || process.env.WALRUS_DELEGATE_PRIVATE_KEY) {
+        const privateKey = (process.env.MEMWAL_PRIVATE_KEY || process.env.WALRUS_DELEGATE_PRIVATE_KEY || "").trim();
+        const accountId = (process.env.MEMWAL_ACCOUNT_ID || process.env.WALRUS_ACCOUNT_ID || "").trim();
+        const delegateAddress = (process.env.MEMWAL_DELEGATE_ADDRESS || process.env.WALRUS_DELEGATE_ADDRESS || "").trim();
+        const walletAddress = (process.env.MEMWAL_WALLET_ADDRESS || process.env.WALRUS_WALLET_ADDRESS || "").trim();
 
         const missing: string[] = [];
-        if (!accountId) missing.push("WALRUS_ACCOUNT_ID");
-        if (!delegateAddress) missing.push("WALRUS_DELEGATE_ADDRESS");
+        if (!accountId) missing.push("MEMWAL_ACCOUNT_ID");
 
         if (missing.length > 0) {
           throw new Error(
-            `Incomplete Walrus credentials: WALRUS_DELEGATE_PRIVATE_KEY is provided, but required identity field(s) [${missing.join(
+            `Incomplete MemWal credentials: MEMWAL_PRIVATE_KEY is provided, but required identity field(s) [${missing.join(
               ", "
-            )}] are missing. Never pair a delegate private key with an unspecified or mismatched account.`
+            )}] are missing. Never pair a private key with an unspecified or mismatched account.`
           );
+        }
+
+        let pubHex = delegateAddress.startsWith("0x") ? delegateAddress.slice(2) : delegateAddress;
+        if (!pubHex && privateKey) {
+          try {
+            pubHex = toHex(ed.getPublicKey(fromHex(privateKey)));
+          } catch {
+            // fallback
+          }
         }
 
         this.creds = {
           accountId,
-          delegatePrivateKey: process.env.WALRUS_DELEGATE_PRIVATE_KEY.trim(),
-          delegatePublicKeyHex: delegateAddress,
+          delegatePrivateKey: privateKey,
+          delegatePublicKeyHex: pubHex,
           walletAddress: walletAddress || "",
         };
       } else {
@@ -155,13 +181,24 @@ export class WalrusClient {
           } catch (jsonErr) {
             throw new Error(`Failed to parse ${credsPath}: ${(jsonErr as Error).message}`);
           }
-          if (!parsed.accountId || !parsed.delegatePrivateKey) {
+          const privateKey = (parsed.delegatePrivateKey || parsed.privateKey || "").trim();
+          const accountId = (parsed.accountId || "").trim();
+          if (!accountId || !privateKey) {
             throw new Error(`Invalid credentials file at ${credsPath}: missing 'accountId' and 'delegatePrivateKey'.`);
           }
+          let pubHex = (parsed.delegatePublicKeyHex || parsed.delegateAddress || "").trim();
+          if (pubHex.startsWith("0x")) pubHex = pubHex.slice(2);
+          if (!pubHex && privateKey) {
+            try {
+              pubHex = toHex(ed.getPublicKey(fromHex(privateKey)));
+            } catch {
+              // fallback
+            }
+          }
           this.creds = {
-            accountId: parsed.accountId,
-            delegatePrivateKey: parsed.delegatePrivateKey,
-            delegatePublicKeyHex: parsed.delegatePublicKeyHex || parsed.delegateAddress || "",
+            accountId,
+            delegatePrivateKey: privateKey,
+            delegatePublicKeyHex: pubHex,
             walletAddress: parsed.walletAddress || "",
           };
         } else {
@@ -176,9 +213,9 @@ export class WalrusClient {
         this.sdk = MemWal.create({
           key: this.creds.delegatePrivateKey,
           accountId: this.creds.accountId,
-          serverUrl: RELAYER_URL,
+          serverUrl: getRelayerUrl(),
         });
-        console.log(`✅ Loaded Walrus credentials & initialized MemWal SDK for account: ${this.creds.accountId.slice(0, 12)}...`);
+        console.log(`✅ Loaded MemWal credentials & initialized SDK for account: ${this.creds.accountId.slice(0, 12)}...`);
       } else {
         this.creds = null;
         this.sdk = null;
@@ -186,7 +223,7 @@ export class WalrusClient {
     } catch (e) {
       this.creds = null;
       this.sdk = null;
-      console.error("Configuration notice in Walrus credentials:", (e as Error).message);
+      console.error("Configuration notice in MemWal credentials:", (e as Error).message);
       throw e;
     }
   }
@@ -219,20 +256,30 @@ export class WalrusClient {
   private async signRequest(method: string, reqPath: string, bodyStr: string = "") {
     if (!this.creds) {
       this.loadCredentials();
-      if (!this.creds) throw new Error("Missing Walrus credentials (see README: MemWal setup)");
+      if (!this.creds) throw new Error("Missing MemWal credentials (see README: MemWal setup)");
     }
     const timestamp = Math.floor(Date.now() / 1000).toString();
     const nonce = crypto.randomUUID();
     const bodyHash = crypto.createHash("sha256").update(bodyStr).digest("hex");
     const accountId = this.creds.accountId;
 
+    let pubKey = this.creds.delegatePublicKeyHex;
+    if (!pubKey && this.creds.delegatePrivateKey) {
+      try {
+        pubKey = toHex(ed.getPublicKey(fromHex(this.creds.delegatePrivateKey)));
+        this.creds.delegatePublicKeyHex = pubKey;
+      } catch {
+        // fallback
+      }
+    }
+
     // Canonical message: timestamp.method.path.bodyHash.nonce.accountId
     const canonicalMsg = `${timestamp}.${method}.${reqPath}.${bodyHash}.${nonce}.${accountId}`;
-    const sig = await signAsync(new TextEncoder().encode(canonicalMsg), fromHex(this.creds.delegatePrivateKey));
+    const sig = await ed.signAsync(new TextEncoder().encode(canonicalMsg), fromHex(this.creds.delegatePrivateKey));
 
     return {
       "content-type": "application/json",
-      "x-public-key": this.creds.delegatePublicKeyHex,
+      "x-public-key": pubKey,
       "x-signature": toHex(sig),
       "x-timestamp": timestamp,
       "x-nonce": nonce,
@@ -245,7 +292,7 @@ export class WalrusClient {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       const headers = await this.signRequest(method, reqPath, bodyStr);
       try {
-        const res = await fetch(`${RELAYER_URL}${reqPath}`, {
+        const res = await fetch(`${getRelayerUrl()}${reqPath}`, {
           method,
           headers,
           body: bodyStr || undefined,

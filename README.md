@@ -86,11 +86,9 @@ AI_MODEL="google/gemini-2.5-flash"
 MEMWAL_CREDS_DIR="~/.memwal-wallearn"
 
 # OR Option B: Discrete environment variables (Same Sui account)
-WALRUS_ACCOUNT_ID="0xYOUR_SUI_MEMWAL_ACCOUNT_ID"
-WALRUS_WALLET_ADDRESS="0xYOUR_SUI_WALLET_ADDRESS"
-WALRUS_DELEGATE_ADDRESS="0xYOUR_DELEGATE_ADDRESS"
-WALRUS_DELEGATE_PRIVATE_KEY="your_64_char_hex_ed25519_private_key"
-WALRUS_RELAYER_URL="https://relayer.memory.walrus.xyz"
+MEMWAL_PRIVATE_KEY="your_64_char_hex_ed25519_private_key"
+MEMWAL_ACCOUNT_ID="0xYOUR_SUI_MEMWAL_ACCOUNT_ID"
+MEMWAL_SERVER_URL="https://relayer.memory.walrus.xyz"
 ```
 > ⚠️ **Security Notice:** Never commit `.env` or reveal private keys. All identity fields must belong to the **same** Sui account.
 
@@ -120,7 +118,7 @@ npm run test:cross-session
 npm run test:pdf -- "path/to/any/lecture.pdf"
 
 # 7. (Optional) Production deployed account verification
-PRODUCTION_WALRUS_ACCOUNT_ID=0x... PRODUCTION_CHAT_ID=... npm run test:production
+PRODUCTION_MEMWAL_ACCOUNT_ID=0x... PRODUCTION_CHAT_ID=... npm run test:production
 ```
 
 ---

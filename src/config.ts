@@ -20,10 +20,16 @@ export const config = {
   aiModel: process.env.AI_MODEL || "google/gemini-2.5-flash",
 
   memwalCredsDir: resolveCredsDir(process.env.MEMWAL_CREDS_DIR),
-  walrusAccountId: process.env.WALRUS_ACCOUNT_ID || "",
-  walrusWalletAddress: process.env.WALRUS_WALLET_ADDRESS || "",
-  walrusDelegateAddress: process.env.WALRUS_DELEGATE_ADDRESS || "",
-  walrusRelayerUrl: process.env.WALRUS_RELAYER_URL || "https://relayer.memory.walrus.xyz",
+  memwalAccountId: process.env.MEMWAL_ACCOUNT_ID || process.env.WALRUS_ACCOUNT_ID || "",
+  memwalServerUrl: process.env.MEMWAL_SERVER_URL || process.env.WALRUS_RELAYER_URL || "https://relayer.memory.walrus.xyz",
+  memwalWalletAddress: process.env.MEMWAL_WALLET_ADDRESS || process.env.WALRUS_WALLET_ADDRESS || "",
+  memwalDelegateAddress: process.env.MEMWAL_DELEGATE_ADDRESS || process.env.WALRUS_DELEGATE_ADDRESS || "",
+
+  // Backward-compatibility aliases
+  walrusAccountId: process.env.MEMWAL_ACCOUNT_ID || process.env.WALRUS_ACCOUNT_ID || "",
+  walrusWalletAddress: process.env.MEMWAL_WALLET_ADDRESS || process.env.WALRUS_WALLET_ADDRESS || "",
+  walrusDelegateAddress: process.env.MEMWAL_DELEGATE_ADDRESS || process.env.WALRUS_DELEGATE_ADDRESS || "",
+  walrusRelayerUrl: process.env.MEMWAL_SERVER_URL || process.env.WALRUS_RELAYER_URL || "https://relayer.memory.walrus.xyz",
 
   defaultSubject: "pcl301",
   dataDir: path.resolve(process.cwd(), "data"),
