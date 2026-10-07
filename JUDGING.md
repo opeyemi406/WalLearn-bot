@@ -124,6 +124,7 @@ The table below documents the live public production deployment of `@WalLearnBot
 ## 9. Extended Documentation Links
 
 - 📖 **[README.md](README.md)** — Project overview, bot commands, and onboarding guide.
+- ✍️ **[docs/ARTICLE.md](docs/ARTICLE.md)** — Comprehensive technical article for Medium / Inkray explaining architecture, field evidence, and metrics.
 - 🔗 **[WALRUS_BLOBS.md](WALRUS_BLOBS.md)** — Audit log of 72+ confirmed Walrus Mainnet blob receipts with clickable explorer links.
 - 📐 **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Complete architectural diagrams, event schemas, and signer specs.
 - 📊 **[docs/CASE-STUDY.md](docs/CASE-STUDY.md)** — Medical student longitudinal field study (`PCL301`) and comparative analysis.

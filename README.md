@@ -144,6 +144,7 @@ WalLearn is pre-configured for automated cloud deployment via `railway.json`:
 ## 10. Extended Documentation
 
 - 📋 **[JUDGING.md](JUDGING.md)** — Evidence-first evaluation dossier mapped to all 4 hackathon criteria.
+- ✍️ **[docs/ARTICLE.md](docs/ARTICLE.md)** — Comprehensive technical article for Medium / Inkray explaining architecture, field evidence, and metrics.
 - 🔗 **[WALRUS_BLOBS.md](WALRUS_BLOBS.md)** — Audit log of 72+ confirmed Walrus Mainnet blob receipts with clickable explorer links.
 - 📐 **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Technical specification, dual-layer routing, and event-sourcing schemas.
 - 📊 **[docs/CASE-STUDY.md](docs/CASE-STUDY.md)** — Medical student longitudinal field study (`PCL301`) and before/after comparison.
