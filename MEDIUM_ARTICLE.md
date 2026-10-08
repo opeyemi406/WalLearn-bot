@@ -57,12 +57,14 @@ Medical students do not study from generic textbooks alone; they study from thei
 
 ### The 60/30/10 Cognitive Invariant
 When a student requests a study drill (`/study`), WalLearn does not generate a random quiz. An internal validator mathematically enforces a **60/30/10 distribution**:
+
 - **60% Weakness-Targeted:** Questions deliberately crafted around the student's active, unmastered misconceptions recalled from Walrus.
 - **30% Curriculum Breadth:** Fresh syllabus concepts to expand clinical coverage.
 - **10% Retention Checks:** Spot-checking previously mastered topics to prevent psychological decay.
 
 ### The 3-Consecutive-Pass Mastery Rule
 Guessing correctly once on a multiple-choice question does not equal clinical mastery. WalLearn enforces a formal **3-consecutive-pass state machine**:
+
 - **Streak 0:** Active misconception identified.
 - **Streak 1 & 2:** Re-tested in subsequent distinct study sessions with rotated distractors and new clinical vignettes.
 - **Streak 3:** Graduated to **Mastered** on Walrus Protocol.
@@ -168,27 +170,25 @@ We also engineered automatic public key derivation so that users only need to co
 
 To appreciate the impact of Walrus Protocol, observe how WalLearn transformed:
 
-### Comparison Overview:
+### 1. Cross-Session Continuity
+- **Before Memory:** *Cold-Start Amnesia.* Every `/start` was a blank slate. The student had to manually re-explain past struggles.
+- **With Walrus Memory:** *Zero-Input Recall.* `/briefing` queries Walrus Mainnet before the student types a word, ranking active misconceptions by `(Misses × Severity)`.
 
-- **Cross-Session Continuity:**
-  - *Before Memory:* **Cold-Start Amnesia.** Every `/start` was a blank slate. The student had to manually re-explain past struggles.
-  - *With Walrus Memory:* **Zero-Input Recall.** `/briefing` queries Walrus Mainnet before the student types a word, ranking active misconceptions by `(Misses × Severity)`.
+### 2. Drill Generation
+- **Before Memory:** *Random Generation.* Generated arbitrary questions based only on generic subject prompts.
+- **With Walrus Memory:** *Invariant Ingestion.* Invariant validator enforces ≥ 50% active weakness allocation and rotates distractors based on on-chain history.
 
-- **Drill Generation:**
-  - *Before Memory:* **Random Generation.** Generated arbitrary questions based only on generic subject prompts.
-  - *With Walrus Memory:* **Invariant Ingestion.** Invariant validator enforces ≥ 50% active weakness allocation and rotates distractors based on on-chain history.
+### 3. Mastery Verification
+- **Before Memory:** *Single-Pass Heuristic.* One lucky guess marked a topic "learned," causing false confidence on exam day.
+- **With Walrus Memory:** *3-Consecutive-Pass State Machine.* Requires 3 independent passes across separate study sessions before signing a `[MASTERED]` event.
 
-- **Mastery Verification:**
-  - *Before Memory:* **Single-Pass Heuristic.** One lucky guess marked a topic "learned," causing false confidence on exam day.
-  - *With Walrus Memory:* **3-Consecutive-Pass State Machine.** Requires 3 independent passes across separate study sessions before signing a `[MASTERED]` event.
+### 4. Disaster Recovery
+- **Before Memory:** *Catastrophic Loss.* If the bot restarted or local disk cleared, all student learning history was permanently gone.
+- **With Walrus Memory:** *Decentralized State Replay.* If local storage is deleted, `/restore` queries Walrus blobs and replays all events from scratch.
 
-- **Disaster Recovery:**
-  - *Before Memory:* **Catastrophic Loss.** If the bot restarted or local disk cleared, all student learning history was permanently gone.
-  - *With Walrus Memory:* **Decentralized State Replay.** If local storage is deleted, `/restore` queries Walrus blobs and replays all events from scratch.
-
-- **Data Ownership:**
-  - *Before Memory:* **Centralized Silo.** Data trapped in private databases; non-portable and proprietary.
-  - *With Walrus Memory:* **Self-Sovereign Memory.** Student owns their encrypted blobs on Sui Mainnet via their own wallet address.
+### 5. Data Ownership
+- **Before Memory:** *Centralized Silo.* Data trapped in private databases; non-portable and proprietary.
+- **With Walrus Memory:** *Self-Sovereign Memory.* Student owns their encrypted blobs on Sui Mainnet via their own wallet address.
 
 ---
 

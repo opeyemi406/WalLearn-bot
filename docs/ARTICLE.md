@@ -62,12 +62,14 @@ Medical students do not study from generic textbooks alone; they study from thei
 
 ### The 60/30/10 Cognitive Invariant
 When a student requests a study drill (`/study`), WalLearn does not generate a random quiz. An internal validator (`src/ai/validator.ts`) mathematically enforces a **60/30/10 distribution**:
+
 - **60% Weakness-Targeted:** Questions deliberately crafted around the student's active, unmastered misconceptions recalled from Walrus.
 - **30% Curriculum Breadth:** Fresh syllabus concepts to expand clinical coverage.
 - **10% Retention Checks:** Spot-checking previously mastered topics to prevent psychological decay.
 
 ### The 3-Consecutive-Pass Mastery Rule
 Guessing correctly once on a multiple-choice question does not equal clinical mastery. WalLearn enforces a formal **3-consecutive-pass state machine**:
+
 - **Streak 0:** Active misconception identified.
 - **Streak 1 & 2:** Re-tested in subsequent distinct study sessions with rotated distractors and new clinical vignettes.
 - **Streak 3:** Graduated to **Mastered** on Walrus Protocol.
