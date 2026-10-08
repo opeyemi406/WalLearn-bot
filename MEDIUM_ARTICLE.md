@@ -1,6 +1,6 @@
-# Building WalLearn: How We Solved Chatbot Amnesia for Medical Students Using Walrus Protocol & Sui
+# Building WalLearn: How We Solved Chatbot Amnesia for University Students Using Walrus Protocol & Sui
 
-### An event-sourced cognitive architecture that ensures an aspiring doctor never fails the same clinical question twice.
+### An event-sourced cognitive architecture that ensures a university student never fails the same exam question twice.
 
 ---
 
@@ -13,7 +13,7 @@
 
 Every developer who has built an AI tutor or educational chatbot has hit the same invisible brick wall: **Chatbot Amnesia**.
 
-You sit down with a student. The student spends two hours working through tough clinical case vignettes. The model correctly identifies that the student consistently confuses **Phase 1 depolarizing neuromuscular blockade** with **Phase 2 desensitization block** when administering succinylcholine. The chatbot corrects them, offers a helpful explanation, and the session ends.
+You sit down with a student. The student spends two hours working through tough practice questions. The model correctly identifies that the student consistently confuses two core concepts in their course. The chatbot corrects them, offers a helpful explanation, and the session ends.
 
 The next morning, the student opens the chat:
 > *"Quiz me on pharmacology."*
@@ -21,9 +21,9 @@ The next morning, the student opens the chat:
 The chatbot cheerfully replies:
 > *"Sure! What would you like to study today?"*
 
-Everything is gone. The chatbot has forgotten the student's struggle, their repeated mistakes, their streak count, and their clinical blind spots. 
+Everything is gone. The chatbot has forgotten the student's struggle, their repeated mistakes, their streak count, and their academic blind spots. 
 
-In casual chat, amnesia is mildly annoying. In **high-stakes medical education**, it is fatal. Medical students preparing for licensing board examinations (USMLE, PLAB, MBBS) cannot afford generic flashcards. They need an adaptive system that **ruthlessly targets their personal misconceptions** and refuses to let them fail the same question twice.
+In casual chat, amnesia is mildly annoying. In **high-stakes university education**, it is fatal. University students preparing for semester finals, midterms, and CBT exams cannot afford generic flashcards. They need an adaptive system that **ruthlessly targets their personal misconceptions** and refuses to let them fail the same question twice.
 
 Traditional Web2 solutions rely on centralized PostgreSQL databases or hosted vector cloud instances. But these create custodial data silos: if the application server shuts down or the database resets, years of student learning telemetry vanish. Furthermore, students do not own their cognitive data.
 
@@ -33,7 +33,7 @@ This is why we built **WalLearn**: an intelligent study companion with **soverei
 
 ## 2. What WalLearn Does: Pedagogical Rigor Meets Multimodal AI
 
-WalLearn is not another ChatGPT wrapper. It is an autonomous medical exam drill engine built around three pedagogical pillars:
+WalLearn is not another ChatGPT wrapper. It is an autonomous exam drill engine built around three pedagogical pillars:
 
 ```text
 ┌────────────────────────────────────────────────────────┐
@@ -44,7 +44,7 @@ WalLearn is not another ChatGPT wrapper. It is an autonomous medical exam drill 
           │      Extracts high-yield facts directly from lecture decks
           │
           ├── 2. 60/30/10 Invariant Question Allocator
-          │      • 60% Active unmastered clinical weaknesses
+          │      • 60% Active unmastered academic weaknesses
           │      • 30% Broad curriculum syllabus coverage
           │      • 10% Spaced retention spot-checks
           │
@@ -53,20 +53,20 @@ WalLearn is not another ChatGPT wrapper. It is an autonomous medical exam drill 
 ```
 
 ### Multimodal Lecture Slide Ingestion
-Medical students do not study from generic textbooks alone; they study from their university professor's dense slide decks. WalLearn allows students to upload raw lecture PDFs (such as *Clinical Neuroanatomy of the Brainstem* or *Autonomic Pharmacology*). WalLearn extracts the syllabus text and uses MemWal's atomic concept ingestion to anchor core exam facts to Walrus Mainnet.
+University students do not study from generic textbooks alone; they study from their university lecturers' dense slide decks. WalLearn allows students to upload raw lecture slides and documents (such as PDF or PPTX files from courses like *PCL301 - Evaluation of Drug Toxicity* or *BIO101*). WalLearn extracts the syllabus text and uses MemWal's atomic concept ingestion to anchor core exam facts to Walrus Mainnet.
 
 ### The 60/30/10 Cognitive Invariant
 When a student requests a study drill (`/study`), WalLearn does not generate a random quiz. An internal validator mathematically enforces a **60/30/10 distribution**:
 
 - **60% Weakness-Targeted:** Questions deliberately crafted around the student's active, unmastered misconceptions recalled from Walrus.
-- **30% Curriculum Breadth:** Fresh syllabus concepts to expand clinical coverage.
+- **30% Curriculum Breadth:** Fresh syllabus concepts to expand curriculum coverage.
 - **10% Retention Checks:** Spot-checking previously mastered topics to prevent psychological decay.
 
 ### The 3-Consecutive-Pass Mastery Rule
-Guessing correctly once on a multiple-choice question does not equal clinical mastery. WalLearn enforces a formal **3-consecutive-pass state machine**:
+Guessing correctly once on a multiple-choice question does not equal genuine subject mastery. WalLearn enforces a formal **3-consecutive-pass state machine**:
 
 - **Streak 0:** Active misconception identified.
-- **Streak 1 & 2:** Re-tested in subsequent distinct study sessions with rotated distractors and new clinical vignettes.
+- **Streak 1 & 2:** Re-tested in subsequent distinct study sessions with rotated distractors and new practice scenarios.
 - **Streak 3:** Graduated to **Mastered** on Walrus Protocol.
 - **Any relapse?** If a student fails a spot-check, their status is instantly demoted back to active recovery on-chain.
 
@@ -114,7 +114,7 @@ getUserNamespace(subject: string, chatId?: number): string {
 }
 // Example: u6878463854_pcl301 (Chat ID 6878463854 studying Pharmacology PCL301)
 ```
-No two students can ever leak or cross-contaminate clinical records.
+No two students can ever leak or cross-contaminate academic records.
 
 ### 2. Event Sourcing Over Raw Chat Storage
 Most naive chatbots attempt to store the entire raw conversation history. This pollutes vector search with conversational noise (*"hi"*, *"thanks"*, *"can you explain that again?"*).
@@ -194,7 +194,7 @@ To appreciate the impact of Walrus Protocol, observe how WalLearn transformed:
 
 ## 5. Real-World Field Session: Live Ingestion & CBT Drill on Pharmacology (`PCL301`)
 
-To validate WalLearn's end-to-end memory loop, we recorded a live study session with a medical student preparing for **PCL301: Evaluation of Drug Toxicity**. The session captured the complete cognitive lifecycle: multimodal ingestion of raw course slides, autonomous cold recall of past struggles from Walrus Mainnet, targeted adaptive questioning, and real-time on-chain state updates.
+To validate WalLearn's end-to-end memory loop, we recorded a live study session with a university student preparing for **PCL301: Evaluation of Drug Toxicity**. The session captured the complete cognitive lifecycle: multimodal ingestion of raw course slides, autonomous cold recall of past struggles from Walrus Mainnet, targeted adaptive questioning, and real-time on-chain state updates.
 
 ### Phase 1: Ingestion & Autonomous Walrus Recall
 
@@ -208,14 +208,14 @@ WalLearn ingests and processes all **104 slides**, grounding the syllabus facts.
 > *Recalled 2 active weak topics from Walrus Mainnet. Applying 60/30/10 drill ratio...*  
 > *⏳ Generating 5 questions via Gemini 2.5 Flash..."*
 
-Notice what happened: without the student typing a single word about their history, WalLearn recovered two unmastered clinical topics from previous study sessions and dynamically allocated them into the 5-question sprint.
+Notice what happened: without the student typing a single word about their history, WalLearn recovered two unmastered topics from previous study sessions and dynamically allocated them into the 5-question sprint.
 
 ---
 
 ### Phase 2: Live CBT Drill & Conversation Log
 
 #### Question 1: Identifying a New Misconception (Renal Elimination)
-The bot presents the first clinical vignette:
+The bot presents the first practice question:
 
 > **WalLearn:**  
 > 📖 **PCL301 · Question 1 of 5 CBT Mode**  
@@ -352,7 +352,7 @@ Large Language Models have mastered reasoning, but without memory, reasoning ope
 
 WalLearn demonstrates that decentralized storage protocols like **Walrus** on **Sui** are not merely cheaper alternatives to AWS S3—they are a **foundational infrastructure layer for autonomous, stateful AI agents**. By replacing volatile session cookies and centralized database silos with cryptographic, user-owned, append-only memory blobs, we can build AI companions that genuinely grow alongside human learners.
 
-For medical students, that means fewer forgotten mistakes, higher board exam pass rates, and better clinical outcomes.
+For university students, that means fewer forgotten mistakes, higher exam pass rates, and better academic outcomes.
 
 ---
 

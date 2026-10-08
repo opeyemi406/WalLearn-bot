@@ -286,15 +286,15 @@
 
 <!-- Article Container: Only this is copied -->
 <article id="article-content">
-<h1>Building WalLearn: How We Solved Chatbot Amnesia for Medical Students Using Walrus Protocol &amp; Sui</h1>
-<h3>An event-sourced cognitive architecture that ensures an aspiring doctor never fails the same clinical question twice.</h3>
+<h1>Building WalLearn: How We Solved Chatbot Amnesia for University Students Using Walrus Protocol &amp; Sui</h1>
+<h3>An event-sourced cognitive architecture that ensures a university student never fails the same exam question twice.</h3>
 <hr />
 <p><em>By the WalLearn Team • Built for The Walrus Sessions Hackathon</em><br />
 <em>Live Bot: <a href="https://t.me/WalLearnBot">@WalLearnBot</a> • GitHub: <a href="https://github.com/opeyemi406/WalLearn-bot">github.com/opeyemi406/WalLearn-bot</a> • 72+ On-Chain Receipts: <a href="https://walruscan.com">Walruscan Explorer</a></em></p>
 <hr />
 <h2>1. The Critical Failure of AI Tutors: "Chatbot Amnesia"</h2>
 <p>Every developer who has built an AI tutor or educational chatbot has hit the same invisible brick wall: <strong>Chatbot Amnesia</strong>.</p>
-<p>You sit down with a student. The student spends two hours working through tough clinical case vignettes. The model correctly identifies that the student consistently confuses <strong>Phase 1 depolarizing neuromuscular blockade</strong> with <strong>Phase 2 desensitization block</strong> when administering succinylcholine. The chatbot corrects them, offers a helpful explanation, and the session ends.</p>
+<p>You sit down with a student. The student spends two hours working through tough practice questions. The model correctly identifies that the student consistently confuses two core concepts in their course. The chatbot corrects them, offers a helpful explanation, and the session ends.</p>
 <p>The next morning, the student opens the chat:</p>
 <blockquote>
 <p><em>"Quiz me on pharmacology."</em></p>
@@ -303,13 +303,13 @@
 <blockquote>
 <p><em>"Sure! What would you like to study today?"</em></p>
 </blockquote>
-<p>Everything is gone. The chatbot has forgotten the student's struggle, their repeated mistakes, their streak count, and their clinical blind spots. </p>
-<p>In casual chat, amnesia is mildly annoying. In <strong>high-stakes medical education</strong>, it is fatal. Medical students preparing for licensing board examinations (USMLE, PLAB, MBBS) cannot afford generic flashcards. They need an adaptive system that <strong>ruthlessly targets their personal misconceptions</strong> and refuses to let them fail the same question twice.</p>
+<p>Everything is gone. The chatbot has forgotten the student's struggle, their repeated mistakes, their streak count, and their academic blind spots. </p>
+<p>In casual chat, amnesia is mildly annoying. In <strong>high-stakes university education</strong>, it is fatal. University students preparing for semester finals, midterms, and CBT exams cannot afford generic flashcards. They need an adaptive system that <strong>ruthlessly targets their personal misconceptions</strong> and refuses to let them fail the same question twice.</p>
 <p>Traditional Web2 solutions rely on centralized PostgreSQL databases or hosted vector cloud instances. But these create custodial data silos: if the application server shuts down or the database resets, years of student learning telemetry vanish. Furthermore, students do not own their cognitive data.</p>
 <p>This is why we built <strong>WalLearn</strong>: an intelligent study companion with <strong>sovereign, permanent cognitive memory anchored on Walrus Protocol and the Sui blockchain</strong>.</p>
 <hr />
 <h2>2. What WalLearn Does: Pedagogical Rigor Meets Multimodal AI</h2>
-<p>WalLearn is not another ChatGPT wrapper. It is an autonomous medical exam drill engine built around three pedagogical pillars:</p>
+<p>WalLearn is not another ChatGPT wrapper. It is an autonomous exam drill engine built around three pedagogical pillars:</p>
 <pre><code class="language-text">┌────────────────────────────────────────────────────────┐
 │                   WalLearn Architecture                │
 └────────────────────────────────────────────────────────┘
@@ -318,7 +318,7 @@
           │      Extracts high-yield facts directly from lecture decks
           │
           ├── 2. 60/30/10 Invariant Question Allocator
-          │      • 60% Active unmastered clinical weaknesses
+          │      • 60% Active unmastered academic weaknesses
           │      • 30% Broad curriculum syllabus coverage
           │      • 10% Spaced retention spot-checks
           │
@@ -326,19 +326,19 @@
                  Requires 3 independent passes across distinct sessions
 </code></pre>
 <h3>Multimodal Lecture Slide Ingestion</h3>
-<p>Medical students do not study from generic textbooks alone; they study from their university professor's dense slide decks. WalLearn allows students to upload raw lecture PDFs (such as <em>Clinical Neuroanatomy of the Brainstem</em> or <em>Autonomic Pharmacology</em>). WalLearn extracts the syllabus text and uses MemWal's atomic concept ingestion to anchor core exam facts to Walrus Mainnet.</p>
+<p>University students do not study from generic textbooks alone; they study from their university lecturers' dense slide decks. WalLearn allows students to upload raw lecture slides and documents (such as PDF or PPTX files from courses like <em>PCL301 - Evaluation of Drug Toxicity</em> or <em>BIO101</em>). WalLearn extracts the syllabus text and uses MemWal's atomic concept ingestion to anchor core exam facts to Walrus Mainnet.</p>
 <h3>The 60/30/10 Cognitive Invariant</h3>
 <p>When a student requests a study drill (<code>/study</code>), WalLearn does not generate a random quiz. An internal validator mathematically enforces a <strong>60/30/10 distribution</strong>:</p>
 <ul>
 <li><strong>60% Weakness-Targeted:</strong> Questions deliberately crafted around the student's active, unmastered misconceptions recalled from Walrus.</li>
-<li><strong>30% Curriculum Breadth:</strong> Fresh syllabus concepts to expand clinical coverage.</li>
+<li><strong>30% Curriculum Breadth:</strong> Fresh syllabus concepts to expand curriculum coverage.</li>
 <li><strong>10% Retention Checks:</strong> Spot-checking previously mastered topics to prevent psychological decay.</li>
 </ul>
 <h3>The 3-Consecutive-Pass Mastery Rule</h3>
-<p>Guessing correctly once on a multiple-choice question does not equal clinical mastery. WalLearn enforces a formal <strong>3-consecutive-pass state machine</strong>:</p>
+<p>Guessing correctly once on a multiple-choice question does not equal genuine subject mastery. WalLearn enforces a formal <strong>3-consecutive-pass state machine</strong>:</p>
 <ul>
 <li><strong>Streak 0:</strong> Active misconception identified.</li>
-<li><strong>Streak 1 &amp; 2:</strong> Re-tested in subsequent distinct study sessions with rotated distractors and new clinical vignettes.</li>
+<li><strong>Streak 1 &amp; 2:</strong> Re-tested in subsequent distinct study sessions with rotated distractors and new practice scenarios.</li>
 <li><strong>Streak 3:</strong> Graduated to <strong>Mastered</strong> on Walrus Protocol.</li>
 <li><strong>Any relapse?</strong> If a student fails a spot-check, their status is instantly demoted back to active recovery on-chain.</li>
 </ul>
@@ -380,7 +380,7 @@
 }
 // Example: u6878463854_pcl301 (Chat ID 6878463854 studying Pharmacology PCL301)
 </code></pre>
-<p>No two students can ever leak or cross-contaminate clinical records.</p>
+<p>No two students can ever leak or cross-contaminate academic records.</p>
 <h3>2. Event Sourcing Over Raw Chat Storage</h3>
 <p>Most naive chatbots attempt to store the entire raw conversation history. This pollutes vector search with conversational noise (<em>"hi"</em>, <em>"thanks"</em>, <em>"can you explain that again?"</em>).</p>
 <p>WalLearn treats Walrus as an <strong>append-only event store</strong>. We store four strictly typed event schemas:
@@ -451,7 +451,7 @@ const sig = await ed.signAsync(new TextEncoder().encode(canonicalMsg), fromHex(t
 </ul>
 <hr />
 <h2>5. Real-World Field Session: Live Ingestion &amp; CBT Drill on Pharmacology (<code>PCL301</code>)</h2>
-<p>To validate WalLearn's end-to-end memory loop, we recorded a live study session with a medical student preparing for <strong>PCL301: Evaluation of Drug Toxicity</strong>. The session captured the complete cognitive lifecycle: multimodal ingestion of raw course slides, autonomous cold recall of past struggles from Walrus Mainnet, targeted adaptive questioning, and real-time on-chain state updates.</p>
+<p>To validate WalLearn's end-to-end memory loop, we recorded a live study session with a university student preparing for <strong>PCL301: Evaluation of Drug Toxicity</strong>. The session captured the complete cognitive lifecycle: multimodal ingestion of raw course slides, autonomous cold recall of past struggles from Walrus Mainnet, targeted adaptive questioning, and real-time on-chain state updates.</p>
 <h3>Phase 1: Ingestion &amp; Autonomous Walrus Recall</h3>
 <p>The student sets the active course to <strong>PCL301 - Evaluation of Drug Toxicity</strong>, creating the isolated Sui namespace <code>pcl301</code>. Next, the student uploads their university lecture slide deck: <strong><code>PCL 301 Evaluation of Drug toxicity (2).pptx</code></strong> (2.3 MB).</p>
 <p>WalLearn ingests and processes all <strong>104 slides</strong>, grounding the syllabus facts. When the student taps <strong>⚡ 5 Questions (Sprint)</strong>, WalLearn immediately queries Walrus Protocol before generating the drill:</p>
@@ -462,11 +462,11 @@ const sig = await ed.signAsync(new TextEncoder().encode(canonicalMsg), fromHex(t
 <em>Recalled 2 active weak topics from Walrus Mainnet. Applying 60/30/10 drill ratio...</em><br />
 <em>⏳ Generating 5 questions via Gemini 2.5 Flash..."</em></p>
 </blockquote>
-<p>Notice what happened: without the student typing a single word about their history, WalLearn recovered two unmastered clinical topics from previous study sessions and dynamically allocated them into the 5-question sprint.</p>
+<p>Notice what happened: without the student typing a single word about their history, WalLearn recovered two unmastered topics from previous study sessions and dynamically allocated them into the 5-question sprint.</p>
 <hr />
 <h3>Phase 2: Live CBT Drill &amp; Conversation Log</h3>
 <h4>Question 1: Identifying a New Misconception (Renal Elimination)</h4>
-<p>The bot presents the first clinical vignette:</p>
+<p>The bot presents the first practice question:</p>
 <blockquote>
 <p><strong>WalLearn:</strong><br />
 📖 <strong>PCL301 · Question 1 of 5 CBT Mode</strong><br />
@@ -582,7 +582,7 @@ D. Limited to small quantities of drug administration.  </p>
 <h2>6. Conclusion: Sovereign Memory for Autonomous AI</h2>
 <p>Large Language Models have mastered reasoning, but without memory, reasoning operates in a vacuum.</p>
 <p>WalLearn demonstrates that decentralized storage protocols like <strong>Walrus</strong> on <strong>Sui</strong> are not merely cheaper alternatives to AWS S3—they are a <strong>foundational infrastructure layer for autonomous, stateful AI agents</strong>. By replacing volatile session cookies and centralized database silos with cryptographic, user-owned, append-only memory blobs, we can build AI companions that genuinely grow alongside human learners.</p>
-<p>For medical students, that means fewer forgotten mistakes, higher board exam pass rates, and better clinical outcomes.</p>
+<p>For university students, that means fewer forgotten mistakes, higher exam pass rates, and better academic outcomes.</p>
 <hr />
 <h3>Resources &amp; Links</h3>
 <ul>
@@ -607,7 +607,6 @@ async function copyArticle() {
   const toast = document.getElementById('toast');
 
   try {
-    // Rich clipboard copy: write both text/html and text/plain for full formatting support
     const htmlBlob = new Blob([article.innerHTML], { type: 'text/html' });
     const textBlob = new Blob([article.innerText], { type: 'text/plain' });
 
@@ -619,7 +618,6 @@ async function copyArticle() {
         })
       ]);
     } else {
-      // Fallback selection copy
       const range = document.createRange();
       range.selectNodeContents(article);
       const selection = window.getSelection();
@@ -629,7 +627,6 @@ async function copyArticle() {
       selection.removeAllRanges();
     }
 
-    // Visual feedback
     copyBtn.innerHTML = '<span>✅</span> <span>Copied to Clipboard!</span>';
     toast.classList.add('show');
     setTimeout(() => {
@@ -638,7 +635,6 @@ async function copyArticle() {
     }, 4000);
   } catch (err) {
     console.error('Failed to copy: ', err);
-    // Selection fallback
     const range = document.createRange();
     range.selectNodeContents(article);
     const selection = window.getSelection();
