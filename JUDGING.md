@@ -30,12 +30,12 @@ WalLearn demonstrates that decentralized memory on Walrus Protocol can serve as 
 
 | Evaluation Dimension | Standard Ephemeral Chatbots (Before) | WalLearn with Walrus Memory (After) | Verification Mechanism |
 |---|---|---|---|
-| **Memory Model** | **Volatile Context:** State cleared on session timeout or container restart. | **Cryptographic Event Streams:** State transitions committed to Walrus Mainnet. | Auditable on Walruscan (59 on-chain blobs). |
+| **Memory Model** | **Volatile Context:** State cleared on session timeout or container restart. | **Cryptographic Event Streams:** State transitions committed to Walrus Mainnet. | Auditable on Walruscan (72+ on-chain blobs in WALRUS_BLOBS.md). |
 | **Drill Allocation** | **Unconstrained Prompting:** Repetitive questions prone to prompt drift. | **Algorithmic Invariant:** $\ge 50\%$ allocation to active Walrus weakness topics. | Programmatic validator (`npm run test:validator`). |
 | **Continuity** | **Cold-Start Amnesia:** User must re-explain mistakes from the beginning. | **Zero-Input Recall:** `/briefing` surfaces weaknesses before any prompt. | Verified locally (`npm run test:cross-session`). |
 | **Mastery Verification** | **Single-Pass Heuristic:** One correct guess marks topic mastered. | **3-Consecutive-Pass Rule:** 3 verified passes across distinct sessions. | Deterministic state machine unit tests. |
 | **Disaster Recovery** | **Irrevocable Loss:** Deleted chat history permanently destroys profile. | **Decentralized State Replay:** `/restore` rebuilds state from Walrus blobs. | Verified by wiping cache and running `/restore`. |
-| **Study Efficiency** | **Unfocused Revision:** Student repeats known mistakes on exam day. | **Targeted Convergence:** Drills prioritize unmastered clinical misconceptions. | Medical student field study ([docs/CASE-STUDY.md](docs/CASE-STUDY.md)). |
+| **Study Efficiency** | **Unfocused Revision:** Student repeats known mistakes on exam day. | **Targeted Convergence:** Drills prioritize unmastered misconceptions. | University student field study ([docs/CASE-STUDY.md](docs/CASE-STUDY.md)). |
 
 ---
 
