@@ -3,6 +3,8 @@
 > **Hackathon Track:** Walrus Sessions: *Chatbots That Remember* (DeepSurge)
 > **Sub-Track:** Beyond the Big Two (`google/gemini-2.5-flash` via OpenRouter on Node.js/TypeScript)
 > **Production Bot:** [@WalLearnBot](https://t.me/WalLearnBot) (Live 24/7 on Railway)
+> 🎥 **Demo Video:** [Watch Live Walkthrough on YouTube](https://youtu.be/Fhf1N7epjBc)
+> ✍️ **Published Article:** [Read Deep Dive on Medium](https://medium.com/@opeyemi406/building-wallearn-how-we-solved-chatbot-amnesia-for-university-students-using-walrus-memory-0de459ac8b71)
 > **Repository:** [opeyemi406/WalLearn-bot](https://github.com/opeyemi406/WalLearn-bot)
 > **Reference Deployed Instance:** Sui Object [`0x75a533d83e9fee09e36b29b14e8b093862042ee92b188e5122338da7118be140`](https://suiscan.xyz/mainnet/object/0x75a533d83e9fee09e36b29b14e8b093862042ee92b188e5122338da7118be140)
 
@@ -24,7 +26,7 @@ WalLearn demonstrates that decentralized memory on Walrus Protocol can serve as 
 | **1. Does It Actually Remember?** | Real computational work vs. decorative chat logs. | Generative quiz weighting (`src/ai/prompts.ts`), invariant validator (`src/ai/validator.ts`), event-sourced state replay (`src/walrus/memory-events.ts`). | `npm run test:validator`<br>`npm run test:cross-session` |
 | **2. Real-World Use & Impact** | Real deployment, real users, before/after difference. | Public bot [@WalLearnBot](https://t.me/WalLearnBot) tested across pharmacology (`PCL301`, `PCL302`) & anatomy (`ANA201`). Documented N=1 longitudinal study. | [docs/CASE-STUDY.md](docs/CASE-STUDY.md)<br>Live Telegram Bot<br>[On-Chain Blob Sample](https://walruscan.com/mainnet/blob/5BTSt6okVpuhzpzS1wcmFvh5Kx863nki2avsXIKzt7U) |
 | **3. Build Quality & Reproducibility** | Official MemWal SDK, clean architecture, automated tests. | Official `@mysten-incubation/memwal` (v0.1.8), Ed25519 canonical request signer, bounded job waiting, strict credential isolation. | `npm test`<br>`npm run test:config`<br>`npm run test:polling`<br>`npm run test:pdf` |
-| **4. Best Article & Ecosystem Feedback** | Clear educational article and actionable feedback. | Published Medium article on building with MemWal; structured feedback on SDK ESM exports, cursor pagination on restore, and semantic distance filters. | Published Article<br>See Section 6 below |
+| **4. Best Article & Ecosystem Feedback** | Clear educational article and actionable feedback. | Published Medium article on building with MemWal; structured feedback on SDK ESM exports, cursor pagination on restore, and semantic distance filters. | [Published Medium Deep Dive](https://medium.com/@opeyemi406/building-wallearn-how-we-solved-chatbot-amnesia-for-university-students-using-walrus-memory-0de459ac8b71)<br>See Section 6 below |
 
 ### Before vs. After Comparative Matrix (Criterion 2 Evidence)
 
@@ -123,6 +125,8 @@ The table below documents the live public production deployment of `@WalLearnBot
 
 ## 9. Extended Documentation Links
 
+- 🎥 **[YouTube Demo Video](https://youtu.be/Fhf1N7epjBc)** — Live end-to-end recording of WalLearn in action.
+- ✍️ **[Medium Technical Article](https://medium.com/@opeyemi406/building-wallearn-how-we-solved-chatbot-amnesia-for-university-students-using-walrus-memory-0de459ac8b71)** — Published technical article detailing architecture, before/after impact, and real session evidence.
 - 📖 **[README.md](README.md)** — Project overview, bot commands, and onboarding guide.
 - 🔗 **[WALRUS_BLOBS.md](WALRUS_BLOBS.md)** — Audit log of 72+ confirmed Walrus Mainnet blob receipts with clickable explorer links.
 - 📐 **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Complete architectural diagrams, event schemas, and signer specs.

@@ -9,6 +9,8 @@
 
 > **Submission for the Walrus Sessions Hackathon: *Chatbots That Remember***
 > **Production Bot:** [@WalLearnBot](https://t.me/WalLearnBot) | **Primary AI Model:** `google/gemini-2.5-flash` via OpenRouter
+> 🎥 **Demo Video:** [Watch Live Walkthrough on YouTube](https://youtu.be/Fhf1N7epjBc)
+> ✍️ **Technical Article:** [Read Published Deep Dive on Medium](https://medium.com/@opeyemi406/building-wallearn-how-we-solved-chatbot-amnesia-for-university-students-using-walrus-memory-0de459ac8b71)
 > 📋 **Judges Quick Link:** Direct evaluation against all 4 criteria with auditable test evidence in [JUDGING.md](JUDGING.md).
 
 ---
@@ -143,6 +145,8 @@ WalLearn is pre-configured for automated cloud deployment via `railway.json`:
 
 ## 10. Extended Documentation
 
+- 🎥 **[YouTube Demo Video](https://youtu.be/Fhf1N7epjBc)** — Live end-to-end recording of WalLearn in action.
+- ✍️ **[Medium Technical Article](https://medium.com/@opeyemi406/building-wallearn-how-we-solved-chatbot-amnesia-for-university-students-using-walrus-memory-0de459ac8b71)** — Published technical article detailing architecture, before/after impact, and real session evidence.
 - 📋 **[JUDGING.md](JUDGING.md)** — Evidence-first evaluation dossier mapped to all 4 hackathon criteria.
 - 🔗 **[WALRUS_BLOBS.md](WALRUS_BLOBS.md)** — Audit log of 72+ confirmed Walrus Mainnet blob receipts with clickable explorer links.
 - 📐 **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Technical specification, dual-layer routing, and event-sourcing schemas.
