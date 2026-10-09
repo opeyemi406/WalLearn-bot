@@ -100,6 +100,7 @@ npm run test:pdf -- "tests/fixtures/sample-lecture.pdf"
 1. **SDK ESM Export Mapping:** `@mysten-incubation/memwal` (v0.1.8) lacks CommonJS export fallbacks, causing `ERR_PACKAGE_PATH_NOT_EXPORTED` in mixed build tooling. Adding dual CJS/ESM exports resolves packaging issues.
 2. **Restore Keyset Pagination:** `sdk.restore(namespace, limit)` currently performs a single-shot inspection without keyset cursors. Adding pagination cursors ensures deterministic recovery for large namespaces.
 3. **Semantic Distance Thresholds:** Exposing `maxDistance` parameters on `sdk.recall()` allows developers to tune sensitivity for short academic terms.
+4. **[Bug Bounty Issue #1155](https://github.com/MystenLabs/MemWal/issues/1155):** `MemWal.create()` missing `accountId` validation bug where unset or missing account IDs silently generate corrupted Ed25519 canonical signatures containing `"undefined"` and trigger misleading 401 AUTH_REJECTED relayer errors.
 
 ---
 
