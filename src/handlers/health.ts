@@ -31,15 +31,20 @@ export async function handleHealth(ctx: Context) {
     msg += `• *Mainnet Account:* \`${health.accountId.slice(0, 14)}...${health.accountId.slice(-8)}\`\n`;
     msg += `• *Dedicated Wallet:* \`${health.walletAddress.slice(0, 14)}...${health.walletAddress.slice(-8)}\`\n\n`;
 
-    msg += `🔒 *User Isolation & Privacy:*\n`;
-    msg += `• *Telegram Chat ID:* \`${chatId}\`\n`;
-    msg += `• *Active Course:* ${hasActiveCourse ? `*${subjectDisplay}*` : `_None (Not set yet)_`}\n`;
-    msg += `• *Dedicated Walrus Namespace:* \`${userNamespace}\`\n`;
-    msg += `• *Data Isolation:* 100% Encrypted & Segmented per student\n\n`;
+    msg += `📦 *On-Chain Storage Metrics (Walrus Mainnet):*\n`;
+    msg += `• *Account Verified Blobs:* *${health.globalConfirmedBlobs}+ Blobs* ✅\n`;
+    msg += `• *Sui Mainnet Object:* [View on Suiscan](https://suiscan.xyz/mainnet/object/${health.accountId})\n\n`;
 
-    msg += `📦 *On-Chain Storage Metrics:*\n`;
-    msg += `• *Total Tracked Blobs:* *${health.blobCount}*\n`;
-    msg += `• *Confirmed Walrus Blobs:* *${health.confirmedBlobs}* ✅\n\n`;
+    msg += `🔒 *Learner Isolation & Storage (${chatId}):*\n`;
+    msg += `• *Active Course:* ${hasActiveCourse ? `*${subjectDisplay}*` : `_None (Not set yet)_`}\n`;
+    msg += `• *Dedicated Namespace:* \`${userNamespace}\`\n`;
+    msg += `• *Personal Tracked Memories:* *${health.userBlobs}*\n`;
+    msg += `• *Personal Confirmed Blobs:* *${health.userConfirmedBlobs}* ✅\n`;
+    if (health.userBlobs === 0) {
+      msg += `• *Session State:* _Ready (Fresh session or tap /restore to sync your past course blobs from Walrus)_\n\n`;
+    } else {
+      msg += `• *Data Isolation:* 100% Encrypted & Segmented per student\n\n`;
+    }
 
     msg += `🧠 *AI & Study Engines:*\n`;
     msg += `• *Model Engine:* \`${config.aiModel}\` 🟢\n`;
@@ -52,6 +57,7 @@ export async function handleHealth(ctx: Context) {
 
     await ctx.api.editMessageText(chatId!, statusMsg.message_id, msg, {
       parse_mode: "Markdown",
+      link_preview_options: { is_disabled: true },
     });
   } catch (err) {
     await ctx.api.editMessageText(

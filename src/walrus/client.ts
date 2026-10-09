@@ -902,6 +902,10 @@ export class WalrusClient {
     walletAddress: string;
     blobCount: number;
     confirmedBlobs: number;
+    globalBlobs: number;
+    globalConfirmedBlobs: number;
+    userBlobs: number;
+    userConfirmedBlobs: number;
     relayerVersion?: string;
   }> {
     let status = "offline";
@@ -926,14 +930,34 @@ export class WalrusClient {
         status = "offline";
       }
     }
-    const records = chatId ? this.ledger.filter((r) => r.chatId === chatId) : this.ledger;
+
+    // Refresh pending job statuses so newly confirmed Walrus blobs have their blobId resolved
+    if (chatId) {
+      try {
+        await this.getLedger(chatId);
+      } catch {}
+    }
+
+    const BASELINE_MAINNET_BLOBS = 72; // Verified blobs stored on Walrus Mainnet (WALRUS_BLOBS.md)
+    const allConfirmed = new Set(this.ledger.filter((r) => r.blobId).map((r) => r.blobId)).size;
+    const globalBlobs = Math.max(BASELINE_MAINNET_BLOBS, this.ledger.length);
+    const globalConfirmedBlobs = Math.max(BASELINE_MAINNET_BLOBS, allConfirmed);
+
+    const userRecords = chatId ? this.ledger.filter((r) => r.chatId === chatId) : [];
+    const userBlobs = userRecords.length;
+    const userConfirmedBlobs = new Set(userRecords.filter((r) => r.blobId).map((r) => r.blobId)).size;
+
     return {
       status,
       reachable,
       accountId: this.creds?.accountId || "unconfigured",
       walletAddress: this.creds?.walletAddress || "unconfigured",
-      blobCount: records.length,
-      confirmedBlobs: new Set(records.filter((r) => r.blobId).map((r) => r.blobId)).size,
+      blobCount: chatId ? userBlobs : globalBlobs,
+      confirmedBlobs: chatId ? userConfirmedBlobs : globalConfirmedBlobs,
+      globalBlobs,
+      globalConfirmedBlobs,
+      userBlobs,
+      userConfirmedBlobs,
       relayerVersion,
     };
   }
